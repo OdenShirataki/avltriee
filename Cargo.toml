@@ -3,7 +3,14 @@ name = "tri_avltree"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["Oden Shirataki <oden.srtk@gmail.com>"]
+
+description = "Customized version of AVLTree library"
+
+repository = "https://github.com/OdenShirataki/tri_avltree"
+
+keywords = ["avltree","database"]
+license = "MIT"
 
 [dependencies]
 
