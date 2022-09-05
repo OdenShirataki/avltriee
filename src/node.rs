@@ -6,26 +6,26 @@ pub struct TriAVLTreeNode<T>{    //T:実データ型
     ,pub right: i64
     ,pub same: i64
     ,pub last: i64    //同一データの場合の終端id(ルートにのみ設定される。ユニークな場合自身のidが入る)
-    ,pub data: T
+    ,value: T
 }   //アドレスは64bitCPUの場合48bitとかになるらしいのでi64にしておく
 
 impl<T: std::fmt::Debug> std::fmt::Debug for TriAVLTreeNode<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
             f
-            ,"{{ height:{} , parent:{} , left:{} , right:{} , same:{} , last:{} , data:{:?} }}"
+            ,"{{ height:{} , parent:{} , left:{} , right:{} , same:{} , last:{} , value:{:?} }}"
             ,self.height
             ,self.parent
             ,self.left
             ,self.right
             ,self.same
             ,self.last
-            ,self.data
+            ,self.value
         )
     }
 }
 impl<T> TriAVLTreeNode<T>{
-    pub fn new(id:i64,parent:i64,data:T)->TriAVLTreeNode<T>{
+    pub fn new(id:i64,parent:i64,value:T)->TriAVLTreeNode<T>{
         TriAVLTreeNode{
             height:if id==0{0}else{1}
             ,parent
@@ -33,10 +33,10 @@ impl<T> TriAVLTreeNode<T>{
             ,right:0
             ,same:0
             ,last:id
-            ,data
+            ,value
         }
     }
-    pub fn new_same(parent:i64,data:T)->TriAVLTreeNode<T> where T:Clone{
+    pub fn new_same(parent:i64,value:T)->TriAVLTreeNode<T> where T:Clone{
         TriAVLTreeNode{
             height:1
             ,parent
@@ -44,7 +44,7 @@ impl<T> TriAVLTreeNode<T>{
             ,right:0
             ,same:0
             ,last:0
-            ,data:data
+            ,value
         }
     }
     pub fn reset(&mut self) where T : std::default::Default{
@@ -54,9 +54,9 @@ impl<T> TriAVLTreeNode<T>{
         self.right=0;
         self.same=0;
         self.last=0;
-        self.data=T::default();
+        self.value=T::default();
     }
-    pub fn data(&self)->&T{
-        &self.data
+    pub fn value(&self)->&T{
+        &self.value
     }
 }

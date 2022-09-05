@@ -45,7 +45,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
             if n.height==0{ //新規登録
                 self.insert_new(self.record_count as i64,newdata);
             }else{
-                if n.data().cmp(&newdata)!=Ordering::Equal{  //データが変更なしの場合は何もしない
+                if n.value().cmp(&newdata)!=Ordering::Equal{  //データが変更なしの場合は何もしない
                     self.remove(id);   //変更の場合、一旦消してから登録しなおす
                     self.update_with_search(id,newdata);
                 }
@@ -112,9 +112,9 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
             Some(&self.offset(id))
         }
     }
-    pub fn entity_data<'a>(&self,id:i64)->Option<&'a T>{
+    pub fn entity_value<'a>(&self,id:i64)->Option<&'a T>{
         if let Some(v)=self.node(id){
-            Some(&v.data())
+            Some(&v.value())
         }else{
             None
         }
@@ -204,7 +204,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
                     same.right=remove_target.right;
                     unsafe{*self.root=same_id}
                 }else{
-                    ret=RemoveResult::Unique(remove_target.data().clone());
+                    ret=RemoveResult::Unique(remove_target.value().clone());
                     if remove_target.left==0 && remove_target.right==0{
                         //唯一のデータが消失する
                         unsafe{*self.root=0}
@@ -245,7 +245,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
                         }
                     }
                 }else{
-                    ret=RemoveResult::Unique(remove_target.data().clone());
+                    ret=RemoveResult::Unique(remove_target.value().clone());
                     if remove_target.left==0 && remove_target.right==0{
                         //削除対象が末端の場合
                         if parent.right==target_id{
@@ -410,7 +410,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
 
         while origin!=0{
             let p=self.offset(origin);
-            ord=target.cmp(&p.data());
+            ord=target.cmp(&p.value());
             match ord{
                 Ordering::Less=>{
                     if p.left==0{
@@ -437,7 +437,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
 
         while origin!=0{
             let p=self.offset(origin);
-            ord=ord_cb(&p.data());
+            ord=ord_cb(&p.value());
             match ord{
                 Ordering::Less=>{
                     if p.left==0{
