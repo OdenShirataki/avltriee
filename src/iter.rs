@@ -1,5 +1,5 @@
 use super::TriAVLTree;
-use super::node::TriAVLTreeNode;
+use super::TriAVLTreeNode;
 
 pub struct TriAVLTreeIter<'a,T>{
     now:i64

@@ -1,5 +1,5 @@
 use tri_avltree::TriAVLTree;
-use tri_avltree::node::TriAVLTreeNode;
+use tri_avltree::TriAVLTreeNode;
 
 #[test]
 fn example(){

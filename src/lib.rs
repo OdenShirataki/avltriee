@@ -3,13 +3,69 @@ use std::hash::BuildHasherDefault;
 use std::collections::HashSet;
 use std::cmp::Ordering;
 
-pub mod node;
-use node::TriAVLTreeNode;
-
 mod iter;
 use iter::TriAVLTreeIter;
 use iter::AVLTreeRangeIter;
 use iter::AVLTreeIterSeq;
+
+#[derive(Clone)]
+pub struct TriAVLTreeNode<T>{    //T:実データ型
+    parent: i64
+    ,left: i64
+    ,right: i64
+    ,same: i64
+    ,height: u8
+    ,value: T
+}   //アドレスは64bitCPUの場合48bitとかになるらしいのでi64にしておく
+impl<T: std::fmt::Debug> std::fmt::Debug for TriAVLTreeNode<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f
+            ,"{{ height:{} , parent:{} , left:{} , right:{} , same:{} , value:{:?} }}"
+            ,self.height
+            ,self.parent
+            ,self.left
+            ,self.right
+            ,self.same
+            ,self.value
+        )
+    }
+}
+impl<T> TriAVLTreeNode<T>{
+    pub fn new(id:i64,parent:i64,value:T)->TriAVLTreeNode<T>{
+        TriAVLTreeNode{
+            height:if id==0{0}else{1}
+            ,parent
+            ,left:0
+            ,right:0
+            ,same:0
+            ,value
+        }
+    }
+    pub fn reset(&mut self) where T : std::default::Default{
+        self.height=0;
+        self.parent=0;
+        self.left=0;
+        self.right=0;
+        self.same=0;
+        self.value=T::default();
+    }
+    pub fn value(&self)->&T{
+        &self.value
+    }
+    pub fn parent(&self)->i64{
+        self.parent
+    }
+    pub fn left(&self)->i64{
+        self.left
+    }
+    pub fn right(&self)->i64{
+        self.right
+    }
+    pub fn same(&self)->i64{
+        self.same
+    }
+}
 
 pub enum RemoveResult<T>{
     Unique(T)
@@ -70,7 +126,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
     }
 
     pub fn update_node(&mut self,origin:i64,newid:i64,data:T,ord:Ordering) where T:Copy{
-        unsafe{        
+        unsafe{
             *self.node_list.offset(newid as isize)=TriAVLTreeNode::new(newid,origin,data);    //とりあえず終端の子として作る(起点ノード)
         }
         let p=self.offset_mut(origin);
@@ -82,6 +138,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
         }
         self.balance(origin);
     }
+
     pub fn same_last(&self,same_root:i64)->i64{
         let mut r=same_root;
         let mut same=self.offset(r);
@@ -93,11 +150,8 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
     }
     pub fn update_same(&mut self,vertex_id:i64,new_id:i64){
         let mut vertex=self.offset_mut(vertex_id);
-        unsafe{
-            *self.node_list.offset(new_id as isize)=vertex.clone();
-        }
-
         let mut new_vertex=self.offset_mut(new_id);
+        *new_vertex=vertex.clone();
         if new_vertex.parent==0{
             unsafe{*self.root=new_id;}
         }else{
@@ -113,7 +167,6 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
 
         vertex.left=0;
         vertex.right=0;
-        vertex.last=0;
     }
 
     pub fn iter(&self)->TriAVLTreeIter<T>{
@@ -176,13 +229,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
         unsafe{&mut *self.node_list.wrapping_offset(offset as isize)}
     }
 
-    fn same_root<'a>(&mut self,t:&'a mut TriAVLTreeNode<T>)->&'a mut TriAVLTreeNode<T>{
-        let mut root=t;
-        while root.last==0{   //rootを探す
-            root=self.offset_mut(root.parent);
-        }
-        root
-    }
+    
     fn join_intermediate(parent:&mut TriAVLTreeNode<T>,remove_target_id:i64,child_id:i64){
         if parent.right==remove_target_id{
             parent.right=child_id;
@@ -223,7 +270,6 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
                     //同じ値のものが存在する場合、それをrootに昇格
                     let same_id=remove_target.same;
                     let same=self.offset_mut(same_id);
-                    same.last=remove_target.last;
                     same.left=remove_target.left;
                     same.right=remove_target.right;
                     unsafe{*self.root=same_id}
@@ -253,21 +299,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
             }else{
                 let mut parent=self.offset_mut(remove_target.parent);
                 if parent.same==target_id{ //同じ値がある。前後をつなげる
-                    if parent.last==target_id{ //削除対象が終端かつ、rootの子が削除対象のみの場合、親は独立データとなる
-                        parent.last=remove_target.parent;   //lastは自身を指す
-                        parent.same=0;  //同じ値のものは無くなる
-                    }else{
-                        let mut root=self.same_root(parent);
-                        if root.last==target_id{
-                            //削除対象は末端データ。
-                            root.last=remove_target.parent;
-                            parent.same=0;
-                        }else{
-                            //削除対象は中間データ。親に子データを接ぐ
-                            parent.same=remove_target.same;
-                            self.offset_mut(remove_target.same).parent=remove_target.parent;
-                        }
-                    }
+                    parent.same=remove_target.same;
                 }else{
                     ret=RemoveResult::Unique(remove_target.value().clone());
                     if remove_target.left==0 && remove_target.right==0{
@@ -512,7 +544,11 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
         let node=self.offset(t);
         let r=node.right;
         if r==0{
-            node.last
+            if node.same!=0{
+                self.same_last(node.same)
+            }else{
+                t
+            }
         }else{
             self.max(r)
         }
@@ -521,7 +557,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
         let node=self.offset(t);
         let l=node.left;
         if l==0{
-            node.last
+            t
         }else{
             self.min(l)
         }
@@ -535,7 +571,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
             if parent_node.right==c{    //自身が右の場合、さらに大きいの値が上にある
                 self.retroactive(parent)
             }else{  //自身が左の場合、
-                Some(parent_node.last)
+                Some(parent)
             }
         }
     }
@@ -551,7 +587,11 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
                 Some(self.min(node.right))
             }else{
                 //自身の右ノードが無い場合、親と同じ値の最後のデータを返す
-                Some(parent_node.last)
+                if parent_node.same==0{
+                    Some(node.parent)
+                }else{
+                    Some(self.same_last(node.parent))
+                }
             }
         }else if parent_node.right==c{    //自身が右の場合
             if node.right!=0{
