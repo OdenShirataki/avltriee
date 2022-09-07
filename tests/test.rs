@@ -40,6 +40,8 @@ fn example(){
 
     t.remove(2);
 
+    t.insert(1);
+
     for (local_index,id,data) in t.iter(){
         println!("{},{},{:?}",local_index,id,data);
     }

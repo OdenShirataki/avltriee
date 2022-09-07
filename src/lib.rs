@@ -565,44 +565,47 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
     }
     pub fn next(&self,c:i64)->Option<i64>{
         let node=self.offset(c);
-        let parent_node=self.offset(node.parent);
-        if parent_node.same==c{
-            //親と同じ値の場合は親を返す
-            Some(node.parent)   
-        }else if parent_node.left==c{ //対象ノードが親の左の場合
-            if node.right!=0{
-                //自身の右にノードがある場合は右ノードのminを返す
-                Some(self.min(node.right))
-            }else{
-                //自身の右ノードが無い場合、親と同じ値の最後のデータを返す
-                if parent_node.same==0{
-                    Some(node.parent)
-                }else{
-                    Some(self.same_last(node.parent))
-                }
-            }
-        }else if parent_node.right==c{    //自身が右の場合
-            if node.right!=0{
-                //右ノードがあれば右の最小を返す
-                Some(self.min(node.right))
-            }else{  //右ノードが無い場合、はノードの終端。
-                if parent_node.parent==0{
-                    //親が無い場合
-                    if parent_node.right!=0{
-                        Some(self.min(parent_node.right))
-                    }else{
-                        None
-                    }
-                }else{
-                    self.retroactive(node.parent)
-                }
-            }
+        if node.same!=0{
+            Some(node.same)
         }else{
-            //自身がrootの場合、ここに来る場合がある
-            if node.right!=0{   //右ノードの最小値を返す
-                Some(self.min(node.right))
+            let parent_node=self.offset(node.parent);
+            if parent_node.same==c{
+                self.retroactive(node.parent)
+            }else if parent_node.left==c{ //対象ノードが親の左の場合
+                if node.right!=0{
+                    //自身の右にノードがある場合は右ノードのminを返す
+                    Some(self.min(node.right))
+                }else{
+                    //自身の右ノードが無い場合、親と同じ値の最後のデータを返す
+                    if parent_node.same==0{
+                        Some(node.parent)
+                    }else{
+                        Some(self.same_last(node.parent))
+                    }
+                }
+            }else if parent_node.right==c{    //自身が右の場合
+                if node.right!=0{
+                    //右ノードがあれば右の最小を返す
+                    Some(self.min(node.right))
+                }else{  //右ノードが無い場合、はノードの終端。
+                    if parent_node.parent==0{
+                        //親が無い場合
+                        if parent_node.right!=0{
+                            Some(self.min(parent_node.right))
+                        }else{
+                            None
+                        }
+                    }else{
+                        self.retroactive(node.parent)
+                    }
+                }
             }else{
-                None    //右も左も親も無い場合は自身が唯一のデータなので次は無い
+                //自身がrootの場合、ここに来る場合がある
+                if node.right!=0{   //右ノードの最小値を返す
+                    Some(self.min(node.right))
+                }else{
+                    None    //右も左も親も無い場合は自身が唯一のデータなので次は無い
+                }
             }
         }
     }
