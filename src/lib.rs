@@ -96,14 +96,14 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
         self.record_count+=1;
         self.insert_new(self.record_count as i64,data);
     }
-    pub fn update(&mut self,id:i64,newdata:T) where T:std::cmp::Ord{
+    pub fn update(&mut self,id:i64,new_data:T) where T:std::cmp::Ord{
         if let Some(n)=self.node(id){
             if n.height==0{ //新規登録
-                self.insert_new(self.record_count as i64,newdata);
+                self.insert_new(self.record_count as i64,new_data);
             }else{
-                if n.value().cmp(&newdata)!=Ordering::Equal{  //データが変更なしの場合は何もしない
+                if n.value().cmp(&new_data)!=Ordering::Equal{  //データが変更なしの場合は何もしない
                     self.remove(id);   //変更の場合、一旦消してから登録しなおす
-                    self.update_with_search(id,newdata);
+                    self.update_with_search(id,new_data);
                 }
             }
         }
@@ -125,22 +125,22 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
         }
     }
 
-    pub fn update_node(&mut self,origin:i64,newid:i64,data:T,ord:Ordering) where T:Copy{
+    pub fn update_node(&mut self,origin:i64,new_id:i64,data:T,ord:Ordering) where T:Copy{
         unsafe{
-            *self.node_list.offset(newid as isize)=TriAVLTreeNode::new(newid,origin,data);    //とりあえず終端の子として作る(起点ノード)
+            *self.node_list.offset(new_id as isize)=TriAVLTreeNode::new(new_id,origin,data);    //とりあえず終端の子として作る(起点ノード)
         }
         let p=self.offset_mut(origin);
         //親ノードのL/R更新。比較結果が小さい場合は左、大きい場合は右
         if ord==Ordering::Less{
-            p.left=newid;
+            p.left=new_id;
         }else{
-            p.right=newid;
+            p.right=new_id;
         }
         self.balance(origin);
     }
 
-    pub fn same_last(&self,same_root:i64)->i64{
-        let mut r=same_root;
+    pub fn same_last(&self,node_id:i64)->i64{
+        let mut r=node_id;
         let mut same=self.offset(r);
         while same.same!=0{
             r=same.same;
@@ -219,11 +219,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
     }
     
     pub fn offset<'a>(&self,offset:i64)->&'a TriAVLTreeNode<T>{
-        if offset==0 {
-            unsafe{&*self.node_list}
-        }else{
-            unsafe{&*self.node_list.wrapping_offset(offset as isize)}
-        }
+        unsafe{&*self.node_list.wrapping_offset(offset as isize)}
     }
     pub fn offset_mut<'a>(&mut self,offset:i64)->&'a mut TriAVLTreeNode<T>{
         unsafe{&mut *self.node_list.wrapping_offset(offset as isize)}
@@ -446,10 +442,6 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
                 left.height
                 ,right.height
             )+1;    //左右のノードの高い方の高さ+1
-            if vertex.parent!=0{
-                assert_ne!(vertex.parent,vertex.left);
-                assert_ne!(vertex.parent,vertex.right);
-            }
             vertex_id=parent_id;
             if vertex_id==0{    //頂点まで遡及完了した場合は抜ける
                 break;
@@ -544,11 +536,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
         let node=self.offset(t);
         let r=node.right;
         if r==0{
-            if node.same!=0{
-                self.same_last(node.same)
-            }else{
-                t
-            }
+            t
         }else{
             self.max(r)
         }
