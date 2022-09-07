@@ -563,6 +563,18 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
             }
         }
     }
+    fn same_root(&self,node_id:i64)->i64{
+        let mut r=node_id;
+        loop {
+            let same=self.offset(r);
+            let parent_node=self.offset(same.parent);
+            if parent_node.right==r{
+                break;
+            }
+            r=same.parent;
+        }
+        r
+    }
     pub fn next(&self,c:i64)->Option<i64>{
         let node=self.offset(c);
         if node.same!=0{
@@ -570,7 +582,12 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
         }else{
             let parent_node=self.offset(node.parent);
             if parent_node.same==c{
-                self.retroactive(node.parent)
+                let sr=self.same_root(node.parent);
+                if sr!=0{
+                    self.retroactive(sr)
+                }else{
+                    None
+                }
             }else if parent_node.left==c{ //対象ノードが親の左の場合
                 if node.right!=0{
                     //自身の右にノードがある場合は右ノードのminを返す
