@@ -63,7 +63,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
     fn update_with_search(&mut self,id:i64,data:T) where T:std::cmp::Ord{
         let (ord,found_id)=self.search(&data);
         if ord==Ordering::Equal && found_id!=0{
-            self.update_same(found_id,id,data);
+            self.update_same(found_id,id);
         }else{
             self.update_node(found_id,id,data,ord);
         }
@@ -82,14 +82,38 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
         }
         self.balance(origin);
     }
-    pub fn update_same(&mut self,sames_root:i64,newid:i64,data:T) where T:Clone{
-        let mut sames_root=self.offset_mut(sames_root);
-        let last=sames_root.last; //同一データのルートのlastに同一データの最終のidが入っているので取っておく
-        unsafe{
-            *self.node_list.offset(newid as isize)=TriAVLTreeNode::new_same(last,data);
+    pub fn same_last(&self,same_root:i64)->i64{
+        let mut r=same_root;
+        let mut same=self.offset(r);
+        while same.same!=0{
+            r=same.same;
+            same=self.offset(r);
         }
-        self.offset_mut(last).same=newid; //最終データのsameを新しく追加されたidに（追加される度に繋がっていく）
-        sames_root.last=newid; //ルートのlastを新しく追加されたidに
+        r
+    }
+    pub fn update_same(&mut self,vertex_id:i64,new_id:i64){
+        let mut vertex=self.offset_mut(vertex_id);
+        unsafe{
+            *self.node_list.offset(new_id as isize)=vertex.clone();
+        }
+
+        let mut new_vertex=self.offset_mut(new_id);
+        if new_vertex.parent==0{
+            unsafe{*self.root=new_id;}
+        }else{
+            let mut parent=self.offset_mut(new_vertex.parent);
+            if parent.left==vertex_id{
+                parent.left=new_id;
+            }else{
+                parent.right=new_id;
+            }
+        }
+        vertex.parent=new_id;
+        new_vertex.same=vertex_id;
+
+        vertex.left=0;
+        vertex.right=0;
+        vertex.last=0;
     }
 
     pub fn iter(&self)->TriAVLTreeIter<T>{
@@ -355,7 +379,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
  
                         self.calc_height(left_id);
 
-                        left=self.offset_mut(new_vertex.left);
+                        left=self.offset_mut(vertex.left);
 
                         parent_id=new_vertex_old_parent;
                     }
@@ -378,7 +402,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
 
                         self.calc_height(right_id);
 
-                        right=self.offset_mut(new_vertex.right);
+                        right=self.offset_mut(vertex.right);
 
                         parent_id=new_vertex_old_parent;
                     }

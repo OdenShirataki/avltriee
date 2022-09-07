@@ -1,4 +1,4 @@
-#[repr(C)]
+#[derive(Clone)]
 pub struct TriAVLTreeNode<T>{    //T:実データ型
     pub height: u8
     ,pub parent: i64
@@ -33,17 +33,6 @@ impl<T> TriAVLTreeNode<T>{
             ,right:0
             ,same:0
             ,last:id
-            ,value
-        }
-    }
-    pub fn new_same(parent:i64,value:T)->TriAVLTreeNode<T> where T:Clone{
-        TriAVLTreeNode{
-            height:1
-            ,parent
-            ,left:0
-            ,right:0
-            ,same:0
-            ,last:0
             ,value
         }
     }

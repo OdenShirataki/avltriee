@@ -37,4 +37,10 @@ fn example(){
 
     let (ord,id)=t.search(&92);
     println!("{:?},{}",ord,id);
+
+    t.remove(2);
+
+    for (local_index,id,data) in t.iter(){
+        println!("{},{},{:?}",local_index,id,data);
+    }
 }
