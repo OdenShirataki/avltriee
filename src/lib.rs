@@ -575,51 +575,67 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
         }
         r
     }
-    pub fn next(&self,c:i64)->Option<i64>{
+    pub fn next(&self,c:i64,same_branch:i64)->Option<(i64,i64)>{
         let node=self.offset(c);
+        let parent_node=self.offset(node.parent);
         if node.same!=0{
-            Some(node.same)
+            if parent_node.left==c || parent_node.right==c{
+                Some((node.same,c))
+            }else{
+                Some((node.same,same_branch))
+            }
         }else{
-            let parent_node=self.offset(node.parent);
             if parent_node.same==c{
-                let sr=self.same_root(node.parent);
+                let sr=if same_branch!=0{
+                    same_branch
+                }else{
+                    self.same_root(node.parent)
+                };
                 if sr!=0{
-                    self.retroactive(sr)
+                    if let Some(i)=self.retroactive(sr){
+                        Some((i,0))
+                    }else{
+                        None
+                    }
                 }else{
                     None
                 }
             }else if parent_node.left==c{ //対象ノードが親の左の場合
                 if node.right!=0{
                     //自身の右にノードがある場合は右ノードのminを返す
-                    Some(self.min(node.right))
+                    Some((self.min(node.right),same_branch))
                 }else{
                     //自身の右ノードが無い場合、親と同じ値の最後のデータを返す
                     if parent_node.same==0{
-                        Some(node.parent)
+                        Some((node.parent,same_branch))
                     }else{
-                        Some(self.same_last(node.parent))
+                        Some((self.same_last(node.parent),same_branch))
                     }
                 }
             }else if parent_node.right==c{    //自身が右の場合
                 if node.right!=0{
                     //右ノードがあれば右の最小を返す
-                    Some(self.min(node.right))
+                    Some((self.min(node.right),same_branch))
                 }else{  //右ノードが無い場合、はノードの終端。
                     if parent_node.parent==0{
                         //親が無い場合
                         if parent_node.right!=0{
-                            Some(self.min(parent_node.right))
+                            Some((self.min(parent_node.right),same_branch))
                         }else{
                             None
                         }
                     }else{
-                        self.retroactive(node.parent)
+                        if let Some(i)=self.retroactive(node.parent){
+                            Some((i,same_branch))
+                        }else{
+                            None
+                        }
                     }
                 }
             }else{
                 //自身がrootの場合、ここに来る場合がある
                 if node.right!=0{   //右ノードの最小値を返す
-                    Some(self.min(node.right))
+                    Some((self.min(node.right),same_branch))
                 }else{
                     None    //右も左も親も無い場合は自身が唯一のデータなので次は無い
                 }
