@@ -5,7 +5,7 @@ edition = "2021"
 
 authors = ["Oden Shirataki <oden.srtk@gmail.com>"]
 
-description = "Customized version of AVLTree library"
+description = "Customized version of AVLTree library.Process the same value in the third branch. One data is immovable from one row, and positional relationships such as left, right, and parent are all referenced by row numbers. No search is required for value reference by specifying a row."
 
 repository = "https://github.com/OdenShirataki/tri_avltree"
 
