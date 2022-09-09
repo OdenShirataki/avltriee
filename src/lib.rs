@@ -4,12 +4,12 @@ use std::collections::HashSet;
 use std::cmp::Ordering;
 
 mod iter;
-use iter::TriAVLTreeIter;
-use iter::AVLTreeRangeIter;
-use iter::AVLTreeIterSeq;
+use iter::AVLTrieeIter;
+use iter::AVLTrieeRangeIter;
+use iter::AVLTrieeIterSeq;
 
 #[derive(Clone)]
-pub struct TriAVLTreeNode<T>{    //T:実データ型
+pub struct AVLTrieeNode<T>{    //T:実データ型
     parent: i64
     ,left: i64
     ,right: i64
@@ -17,7 +17,7 @@ pub struct TriAVLTreeNode<T>{    //T:実データ型
     ,height: u8
     ,value: T
 }   //アドレスは64bitCPUの場合48bitとかになるらしいのでi64にしておく
-impl<T: std::fmt::Debug> std::fmt::Debug for TriAVLTreeNode<T> {
+impl<T: std::fmt::Debug> std::fmt::Debug for AVLTrieeNode<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
             f
@@ -31,9 +31,9 @@ impl<T: std::fmt::Debug> std::fmt::Debug for TriAVLTreeNode<T> {
         )
     }
 }
-impl<T> TriAVLTreeNode<T>{
-    pub fn new(id:i64,parent:i64,value:T)->TriAVLTreeNode<T>{
-        TriAVLTreeNode{
+impl<T> AVLTrieeNode<T>{
+    pub fn new(id:i64,parent:i64,value:T)->AVLTrieeNode<T>{
+        AVLTrieeNode{
             height:if id==0{0}else{1}
             ,parent
             ,left:0
@@ -74,18 +74,18 @@ pub enum RemoveResult<T>{
 
 pub type IdSet = HashSet<i64,BuildHasherDefault<FxHasher>>;
 
-pub struct TriAVLTree<T>{
+pub struct AVLTriee<T>{
     root: *mut i64
-    ,node_list: *mut TriAVLTreeNode<T>
+    ,node_list: *mut AVLTrieeNode<T>
     ,record_count:usize
 }
-impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTree<T>{
+impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee<T>{
     pub fn new(
         root: *mut i64
-        ,node_list: *mut TriAVLTreeNode<T>
+        ,node_list: *mut AVLTrieeNode<T>
         ,record_count:usize
-    )->TriAVLTree<T>{
-        TriAVLTree{
+    )->AVLTriee<T>{
+        AVLTriee{
             root
             ,node_list
             ,record_count
@@ -127,7 +127,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
 
     pub fn update_node(&mut self,origin:i64,new_id:i64,data:T,ord:Ordering) where T:Copy{
         unsafe{
-            *self.node_list.offset(new_id as isize)=TriAVLTreeNode::new(new_id,origin,data);    //とりあえず終端の子として作る(起点ノード)
+            *self.node_list.offset(new_id as isize)=AVLTrieeNode::new(new_id,origin,data);    //とりあえず終端の子として作る(起点ノード)
         }
         let p=self.offset_mut(origin);
         //親ノードのL/R更新。比較結果が小さい場合は左、大きい場合は右
@@ -169,20 +169,20 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
         vertex.right=0;
     }
 
-    pub fn iter(&self)->TriAVLTreeIter<T>{
-        TriAVLTreeIter::new(&self)
+    pub fn iter(&self)->AVLTrieeIter<T>{
+        AVLTrieeIter::new(&self)
     }
-    pub fn iter_begin_at(&self,begin:i64)->TriAVLTreeIter<T>{
-        TriAVLTreeIter::begin_at(&self,begin)
+    pub fn iter_begin_at(&self,begin:i64)->AVLTrieeIter<T>{
+        AVLTrieeIter::begin_at(&self,begin)
     }
-    pub fn iter_range(&self,begin:i64,end:i64)->AVLTreeRangeIter<T>{
-        AVLTreeRangeIter::new(&self,begin,end)
+    pub fn iter_range(&self,begin:i64,end:i64)->AVLTrieeRangeIter<T>{
+        AVLTrieeRangeIter::new(&self,begin,end)
     }
 
-    pub fn iter_seq(&self)->AVLTreeIterSeq<T>{
-        AVLTreeIterSeq::new(&self)
+    pub fn iter_seq(&self)->AVLTrieeIterSeq<T>{
+        AVLTrieeIterSeq::new(&self)
     }
-    pub fn node<'a>(&self,id:i64) ->Option<&'a TriAVLTreeNode<T>>{
+    pub fn node<'a>(&self,id:i64) ->Option<&'a AVLTrieeNode<T>>{
         if (self.record_count() as i64)<id{
             None    //存在しないidが指定されている場合はNoneを返す
         }else{
@@ -211,22 +211,22 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
     
     pub fn init_node(&mut self,data:T) where T:Default+Copy{
         unsafe{
-            *self.node_list=TriAVLTreeNode::new(0,0,T::default()); //0ノード
-            (*self.node_list.offset(1))=TriAVLTreeNode::new(1,0,data); //初回追加分
+            *self.node_list=AVLTrieeNode::new(0,0,T::default()); //0ノード
+            (*self.node_list.offset(1))=AVLTrieeNode::new(1,0,data); //初回追加分
             *self.root=1;
         }
         self.record_count=1;
     }
     
-    pub fn offset<'a>(&self,offset:i64)->&'a TriAVLTreeNode<T>{
+    pub fn offset<'a>(&self,offset:i64)->&'a AVLTrieeNode<T>{
         unsafe{&*self.node_list.wrapping_offset(offset as isize)}
     }
-    pub fn offset_mut<'a>(&mut self,offset:i64)->&'a mut TriAVLTreeNode<T>{
+    pub fn offset_mut<'a>(&mut self,offset:i64)->&'a mut AVLTrieeNode<T>{
         unsafe{&mut *self.node_list.wrapping_offset(offset as isize)}
     }
 
     
-    fn join_intermediate(parent:&mut TriAVLTreeNode<T>,remove_target_id:i64,child_id:i64){
+    fn join_intermediate(parent:&mut AVLTrieeNode<T>,remove_target_id:i64,child_id:i64){
         if parent.right==remove_target_id{
             parent.right=child_id;
         }else if parent.left==remove_target_id{
@@ -235,7 +235,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> TriAVLTr
             panic!("crash and burn"); 
         }
     }
-    fn remove_intermediate(&mut self,remove_target:&mut TriAVLTreeNode<T>)->(i64,i64){
+    fn remove_intermediate(&mut self,remove_target:&mut AVLTrieeNode<T>)->(i64,i64){
         let left_max_id=self.max(remove_target.left);
         let mut left_max=self.offset_mut(left_max_id);
         let left_max_parent_id=left_max.parent;

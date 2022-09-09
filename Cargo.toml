@@ -1,17 +1,16 @@
 [package]
-name = "tri_avltree"
-version = "0.4.5"
+name = "avltriee"
+version = "0.5.0"
 edition = "2021"
-
-authors = ["Oden Shirataki <oden.srtk@gmail.com>"]
 
 description = "Customized version of AVLTree library.Process the same value in the third branch. One data is immovable from one row, and positional relationships such as left, right, and parent are all referenced by row numbers. No search is required for value reference by specifying a row."
 
-repository = "https://github.com/OdenShirataki/tri_avltree"
+repository = "https://github.com/OdenShirataki/avltriee"
 
 keywords = ["avltree","database"]
-license = "MIT"
+license = "MIT/Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
 rustc-hash = { version = "1.0", default-features = false }

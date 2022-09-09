@@ -1,14 +1,14 @@
-use super::TriAVLTree;
-use super::TriAVLTreeNode;
+use super::AVLTriee;
+use super::AVLTrieeNode;
 
-pub struct TriAVLTreeIter<'a,T>{
+pub struct AVLTrieeIter<'a,T>{
     now:i64
     ,same_branch:i64
     ,local_index:isize
-    ,tree:&'a TriAVLTree<T>
+    ,tree:&'a AVLTriee<T>
 }
-impl<'a,T:Clone+Copy+Default> Iterator for TriAVLTreeIter<'a,T> {
-    type Item = (isize,i64,&'a TriAVLTreeNode<T>);
+impl<'a,T:Clone+Copy+Default> Iterator for AVLTrieeIter<'a,T> {
+    type Item = (isize,i64,&'a AVLTrieeNode<T>);
     fn next(&mut self) -> Option<Self::Item> {
         if self.now==0{
             None
@@ -28,17 +28,17 @@ impl<'a,T:Clone+Copy+Default> Iterator for TriAVLTreeIter<'a,T> {
         }
     }
 }
-impl<'a,T:Clone+Copy+Default> TriAVLTreeIter<'a,T>{
-    pub fn new(tree:&'a TriAVLTree<T>)->TriAVLTreeIter<'a,T>{
-        TriAVLTreeIter{
+impl<'a,T:Clone+Copy+Default> AVLTrieeIter<'a,T>{
+    pub fn new(tree:&'a AVLTriee<T>)->AVLTrieeIter<'a,T>{
+        AVLTrieeIter{
             now:tree.min(tree.root())
             ,same_branch:0
             ,local_index:0
             ,tree
         }
     }
-    pub fn begin_at(tree:&'a TriAVLTree<T>,begin:i64)->TriAVLTreeIter<'a,T>{
-        TriAVLTreeIter{
+    pub fn begin_at(tree:&'a AVLTriee<T>,begin:i64)->AVLTrieeIter<'a,T>{
+        AVLTrieeIter{
             now:begin
             ,same_branch:0
             ,local_index:0
@@ -47,15 +47,15 @@ impl<'a,T:Clone+Copy+Default> TriAVLTreeIter<'a,T>{
     }
 }
 
-pub struct AVLTreeRangeIter<'a,T>{
+pub struct AVLTrieeRangeIter<'a,T>{
     now:i64
     ,end:i64
     ,same_branch:i64
     ,local_index:isize
-    ,tree:&'a TriAVLTree<T>
+    ,tree:&'a AVLTriee<T>
 }
-impl<'a,T:Clone+Copy+Default> Iterator for AVLTreeRangeIter<'a,T> {
-    type Item = (isize,i64,&'a TriAVLTreeNode<T>);
+impl<'a,T:Clone+Copy+Default> Iterator for AVLTrieeRangeIter<'a,T> {
+    type Item = (isize,i64,&'a AVLTrieeNode<T>);
     fn next(&mut self) -> Option<Self::Item> {
         if self.now==0{
             None
@@ -79,9 +79,9 @@ impl<'a,T:Clone+Copy+Default> Iterator for AVLTreeRangeIter<'a,T> {
         }
     }
 }
-impl<'a,T:Clone+Copy+Default> AVLTreeRangeIter<'a,T>{
-    pub fn new(tree:&'a TriAVLTree<T>,begin:i64,end:i64)->AVLTreeRangeIter<'a,T>{
-        AVLTreeRangeIter{
+impl<'a,T:Clone+Copy+Default> AVLTrieeRangeIter<'a,T>{
+    pub fn new(tree:&'a AVLTriee<T>,begin:i64,end:i64)->AVLTrieeRangeIter<'a,T>{
+        AVLTrieeRangeIter{
             now:begin
             ,end
             ,same_branch:0
@@ -91,12 +91,12 @@ impl<'a,T:Clone+Copy+Default> AVLTreeRangeIter<'a,T>{
     }
 }
 
-pub struct AVLTreeIterSeq<'a,T>{
+pub struct AVLTrieeIterSeq<'a,T>{
     now:i64
-    ,tree:&'a TriAVLTree<T>
+    ,tree:&'a AVLTriee<T>
 }
-impl<'a,T:Clone+Copy+Default> Iterator for AVLTreeIterSeq<'a,T> {
-    type Item = (i64,&'a TriAVLTreeNode<T>);
+impl<'a,T:Clone+Copy+Default> Iterator for AVLTrieeIterSeq<'a,T> {
+    type Item = (i64,&'a AVLTrieeNode<T>);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.now += 1;
@@ -107,9 +107,9 @@ impl<'a,T:Clone+Copy+Default> Iterator for AVLTreeIterSeq<'a,T> {
         }
     }
 }
-impl<'a,T:Clone+Copy+Default> AVLTreeIterSeq<'a,T>{
-    pub fn new(tree:&'a TriAVLTree<T>)->AVLTreeIterSeq<'a,T>{
-        AVLTreeIterSeq{
+impl<'a,T:Clone+Copy+Default> AVLTrieeIterSeq<'a,T>{
+    pub fn new(tree:&'a AVLTriee<T>)->AVLTrieeIterSeq<'a,T>{
+        AVLTrieeIterSeq{
             now:0
             ,tree
         }
