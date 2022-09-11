@@ -276,10 +276,12 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
                     }else if remove_target.left==0{
                         //左が空いている。右ノードをrootに
                         unsafe{*self.root=remove_target.right}
+                        self.offset_mut(remove_target.right).parent=0;
                         self.balance(remove_target.right);
                     }else if remove_target.right==0{
                         //右が空いている。左ノードをrootに
                         unsafe{*self.root=remove_target.left}
+                        self.offset_mut(remove_target.left).parent=0;
                         self.balance(remove_target.left);
                     }else{
                         let (left_max_id,left_max_parent_id)=self.remove_intermediate(remove_target);
