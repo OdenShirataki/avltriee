@@ -2,13 +2,13 @@ use super::AVLTriee;
 use super::AVLTrieeNode;
 
 pub struct AVLTrieeIter<'a,T>{
-    now:i64
-    ,same_branch:i64
+    now:u32
+    ,same_branch:u32
     ,local_index:isize
     ,tree:&'a AVLTriee<T>
 }
 impl<'a,T:Clone+Copy+Default> Iterator for AVLTrieeIter<'a,T> {
-    type Item = (isize,i64,&'a AVLTrieeNode<T>);
+    type Item = (isize,u32,&'a AVLTrieeNode<T>);
     fn next(&mut self) -> Option<Self::Item> {
         if self.now==0{
             None
@@ -31,13 +31,13 @@ impl<'a,T:Clone+Copy+Default> Iterator for AVLTrieeIter<'a,T> {
 impl<'a,T:Clone+Copy+Default> AVLTrieeIter<'a,T>{
     pub fn new(tree:&'a AVLTriee<T>)->AVLTrieeIter<'a,T>{
         AVLTrieeIter{
-            now:tree.min(tree.root())
+            now:tree.min(tree.root() as u32)
             ,same_branch:0
             ,local_index:0
             ,tree
         }
     }
-    pub fn begin_at(tree:&'a AVLTriee<T>,begin:i64)->AVLTrieeIter<'a,T>{
+    pub fn begin_at(tree:&'a AVLTriee<T>,begin:u32)->AVLTrieeIter<'a,T>{
         AVLTrieeIter{
             now:begin
             ,same_branch:0
@@ -48,14 +48,14 @@ impl<'a,T:Clone+Copy+Default> AVLTrieeIter<'a,T>{
 }
 
 pub struct AVLTrieeRangeIter<'a,T>{
-    now:i64
-    ,end:i64
-    ,same_branch:i64
+    now:u32
+    ,end:u32
+    ,same_branch:u32
     ,local_index:isize
     ,tree:&'a AVLTriee<T>
 }
 impl<'a,T:Clone+Copy+Default> Iterator for AVLTrieeRangeIter<'a,T> {
-    type Item = (isize,i64,&'a AVLTrieeNode<T>);
+    type Item = (isize,u32,&'a AVLTrieeNode<T>);
     fn next(&mut self) -> Option<Self::Item> {
         if self.now==0{
             None
@@ -80,7 +80,7 @@ impl<'a,T:Clone+Copy+Default> Iterator for AVLTrieeRangeIter<'a,T> {
     }
 }
 impl<'a,T:Clone+Copy+Default> AVLTrieeRangeIter<'a,T>{
-    pub fn new(tree:&'a AVLTriee<T>,begin:i64,end:i64)->AVLTrieeRangeIter<'a,T>{
+    pub fn new(tree:&'a AVLTriee<T>,begin:u32,end:u32)->AVLTrieeRangeIter<'a,T>{
         AVLTrieeRangeIter{
             now:begin
             ,end
@@ -92,15 +92,15 @@ impl<'a,T:Clone+Copy+Default> AVLTrieeRangeIter<'a,T>{
 }
 
 pub struct AVLTrieeIterSeq<'a,T>{
-    now:i64
+    now:u32
     ,tree:&'a AVLTriee<T>
 }
 impl<'a,T:Clone+Copy+Default> Iterator for AVLTrieeIterSeq<'a,T> {
-    type Item = (i64,&'a AVLTrieeNode<T>);
+    type Item = (u32,&'a AVLTrieeNode<T>);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.now += 1;
-        if self.now<=self.tree.record_count() as i64{
+        if self.now<=self.tree.record_count(){
             Some((self.now,&self.tree.offset(self.now)))
         }else{
             None

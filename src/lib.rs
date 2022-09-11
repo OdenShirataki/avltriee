@@ -9,14 +9,14 @@ use iter::AVLTrieeRangeIter;
 use iter::AVLTrieeIterSeq;
 
 #[derive(Clone)]
-pub struct AVLTrieeNode<T>{    //T:実データ型
-    parent: i64
-    ,left: i64
-    ,right: i64
-    ,same: i64
+pub struct AVLTrieeNode<T>{
+    parent: u32
+    ,left: u32
+    ,right: u32
+    ,same: u32
     ,height: u8
-    ,value: T
-}   //アドレスは64bitCPUの場合48bitとかになるらしいのでi64にしておく
+    ,value: T    //T:実データ型
+}   //最大行数はu32の最大値となる。64bitCPUが扱えるアドレス的には不足だけど行当たり8バイトを超える時点で32bit行以内にアドレッシング出来くなくなりそうなのでヨシ
 impl<T: std::fmt::Debug> std::fmt::Debug for AVLTrieeNode<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
@@ -32,7 +32,7 @@ impl<T: std::fmt::Debug> std::fmt::Debug for AVLTrieeNode<T> {
     }
 }
 impl<T> AVLTrieeNode<T>{
-    pub fn new(id:i64,parent:i64,value:T)->AVLTrieeNode<T>{
+    pub fn new(id:u32,parent:u32,value:T)->AVLTrieeNode<T>{
         AVLTrieeNode{
             height:if id==0{0}else{1}
             ,parent
@@ -53,16 +53,16 @@ impl<T> AVLTrieeNode<T>{
     pub fn value(&self)->&T{
         &self.value
     }
-    pub fn parent(&self)->i64{
+    pub fn parent(&self)->u32{
         self.parent
     }
-    pub fn left(&self)->i64{
+    pub fn left(&self)->u32{
         self.left
     }
-    pub fn right(&self)->i64{
+    pub fn right(&self)->u32{
         self.right
     }
-    pub fn same(&self)->i64{
+    pub fn same(&self)->u32{
         self.same
     }
 }
@@ -75,15 +75,15 @@ pub enum RemoveResult<T>{
 pub type IdSet = HashSet<i64,BuildHasherDefault<FxHasher>>;
 
 pub struct AVLTriee<T>{
-    root: *mut i64
+    root: *mut u32
     ,node_list: *mut AVLTrieeNode<T>
-    ,record_count:usize
+    ,record_count:u32
 }
 impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee<T>{
     pub fn new(
-        root: *mut i64
+        root: *mut u32
         ,node_list: *mut AVLTrieeNode<T>
-        ,record_count:usize
+        ,record_count:u32
     )->AVLTriee<T>{
         AVLTriee{
             root
@@ -94,12 +94,12 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
     
     pub fn insert(&mut self,data:T) where T:std::cmp::Ord{
         self.record_count+=1;
-        self.insert_new(self.record_count as i64,data);
+        self.insert_new(self.record_count,data);
     }
-    pub fn update(&mut self,id:i64,new_data:T) where T:std::cmp::Ord{
+    pub fn update(&mut self,id:u32,new_data:T) where T:std::cmp::Ord{
         if let Some(n)=self.node(id){
             if n.height==0{ //新規登録
-                self.insert_new(self.record_count as i64,new_data);
+                self.insert_new(self.record_count,new_data);
             }else{
                 if n.value().cmp(&new_data)!=Ordering::Equal{  //データが変更なしの場合は何もしない
                     self.remove(id);   //変更の場合、一旦消してから登録しなおす
@@ -109,14 +109,14 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         }
     }
 
-    fn insert_new(&mut self,id:i64,data:T) where T:std::cmp::Ord{
+    fn insert_new(&mut self,id:u32,data:T) where T:std::cmp::Ord{
         if self.root()==0{  //初回登録
             self.init_node(data);
         }else{
             self.update_with_search(id,data);
         }
     }
-    fn update_with_search(&mut self,id:i64,data:T) where T:std::cmp::Ord{
+    fn update_with_search(&mut self,id:u32,data:T) where T:std::cmp::Ord{
         let (ord,found_id)=self.search(&data);
         if ord==Ordering::Equal && found_id!=0{
             self.update_same(found_id,id);
@@ -125,7 +125,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         }
     }
 
-    pub fn update_node(&mut self,origin:i64,new_id:i64,data:T,ord:Ordering) where T:Copy{
+    pub fn update_node(&mut self,origin:u32,new_id:u32,data:T,ord:Ordering) where T:Copy{
         unsafe{
             *self.node_list.offset(new_id as isize)=AVLTrieeNode::new(new_id,origin,data);    //とりあえず終端の子として作る(起点ノード)
         }
@@ -139,7 +139,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         self.balance(origin);
     }
 
-    pub fn same_last(&self,node_id:i64)->i64{
+    pub fn same_last(&self,node_id:u32)->u32{
         let mut r=node_id;
         let mut same=self.offset(r);
         while same.same!=0{
@@ -148,7 +148,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         }
         r
     }
-    pub fn update_same(&mut self,vertex_id:i64,new_id:i64){
+    pub fn update_same(&mut self,vertex_id:u32,new_id:u32){
         let mut vertex=self.offset_mut(vertex_id);
         let mut new_vertex=self.offset_mut(new_id);
         *new_vertex=vertex.clone();
@@ -172,40 +172,40 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
     pub fn iter(&self)->AVLTrieeIter<T>{
         AVLTrieeIter::new(&self)
     }
-    pub fn iter_begin_at(&self,begin:i64)->AVLTrieeIter<T>{
+    pub fn iter_begin_at(&self,begin:u32)->AVLTrieeIter<T>{
         AVLTrieeIter::begin_at(&self,begin)
     }
-    pub fn iter_range(&self,begin:i64,end:i64)->AVLTrieeRangeIter<T>{
+    pub fn iter_range(&self,begin:u32,end:u32)->AVLTrieeRangeIter<T>{
         AVLTrieeRangeIter::new(&self,begin,end)
     }
 
     pub fn iter_seq(&self)->AVLTrieeIterSeq<T>{
         AVLTrieeIterSeq::new(&self)
     }
-    pub fn node<'a>(&self,id:i64) ->Option<&'a AVLTrieeNode<T>>{
-        if (self.record_count() as i64)<id{
+    pub fn node<'a>(&self,id:u32) ->Option<&'a AVLTrieeNode<T>>{
+        if (self.record_count())<id{
             None    //存在しないidが指定されている場合はNoneを返す
         }else{
             Some(&self.offset(id))
         }
     }
-    pub fn entity_value<'a>(&self,id:i64)->Option<&'a T>{
+    pub fn entity_value<'a>(&self,id:u32)->Option<&'a T>{
         if let Some(v)=self.node(id){
             Some(&v.value())
         }else{
             None
         }
     }
-    pub fn record_count(&self)->usize{
+    pub fn record_count(&self)->u32{
         self.record_count
     }
-    pub fn set_record_count(&mut self,c:usize){
+    pub fn set_record_count(&mut self,c:u32){
         self.record_count=c;
     }
-    pub fn add_record_count(&mut self,c:usize){
+    pub fn add_record_count(&mut self,c:u32){
         self.record_count+=c;
     }
-    pub fn root(&self)->i64{
+    pub fn root(&self)->u32{
         unsafe{*self.root}
     }
     
@@ -218,15 +218,14 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         self.record_count=1;
     }
     
-    pub fn offset<'a>(&self,offset:i64)->&'a AVLTrieeNode<T>{
+    pub fn offset<'a>(&self,offset:u32)->&'a AVLTrieeNode<T>{
         unsafe{&*self.node_list.wrapping_offset(offset as isize)}
     }
-    pub fn offset_mut<'a>(&mut self,offset:i64)->&'a mut AVLTrieeNode<T>{
+    pub fn offset_mut<'a>(&mut self,offset:u32)->&'a mut AVLTrieeNode<T>{
         unsafe{&mut *self.node_list.wrapping_offset(offset as isize)}
     }
 
-    
-    fn join_intermediate(parent:&mut AVLTrieeNode<T>,remove_target_id:i64,child_id:i64){
+    fn join_intermediate(parent:&mut AVLTrieeNode<T>,remove_target_id:u32,child_id:u32){
         if parent.right==remove_target_id{
             parent.right=child_id;
         }else if parent.left==remove_target_id{
@@ -235,7 +234,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
             panic!("crash and burn"); 
         }
     }
-    fn remove_intermediate(&mut self,remove_target:&mut AVLTrieeNode<T>)->(i64,i64){
+    fn remove_intermediate(&mut self,remove_target:&mut AVLTrieeNode<T>)->(u32,u32){
         let left_max_id=self.max(remove_target.left);
         let mut left_max=self.offset_mut(left_max_id);
         let left_max_parent_id=left_max.parent;
@@ -255,8 +254,8 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         
         (left_max_id,left_max_parent_id)
     }
-    pub fn remove(&mut self,target_id:i64)->RemoveResult<T> where T:Default+Clone{
-        if self.record_count<(target_id as usize){
+    pub fn remove(&mut self,target_id:u32)->RemoveResult<T> where T:Default+Clone{
+        if self.record_count<target_id{
             RemoveResult::NotUnique
         }else{
             let mut ret=RemoveResult::NotUnique;
@@ -340,9 +339,8 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
             ret
         }
     }
-   
 
-    fn calc_height(&mut self,vertex_id:i64){
+    fn calc_height(&mut self,vertex_id:u32){
         let mut vertex=self.offset_mut(vertex_id);
 
         let left=self.offset(vertex.left);
@@ -353,7 +351,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
             ,right.height
         )+1;
     }
-    fn balance(&mut self,vertex_id:i64){
+    fn balance(&mut self,vertex_id:u32){
         let mut vertex_id=vertex_id;
         loop {
             let mut vertex=self.offset_mut(vertex_id);
@@ -452,8 +450,8 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
     与えられた値を検索する。
     最終的には左右どちらかが空いているノードが返される事になる
      */
-    pub fn search(&self,target:&T)->(Ordering,i64) where T:Ord{
-        let mut origin=self.root();
+    pub fn search(&self,target:&T)->(Ordering,u32) where T:Ord{
+        let mut origin=self.root() as u32;
         let mut ord=Ordering::Equal;
 
         while origin!=0{
@@ -479,8 +477,8 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         }
         (ord,origin)
     }
-    pub fn search_cb<F>(&self,ord_cb:F)->(Ordering,i64) where F:Fn(&T)->Ordering{
-        let mut origin=self.root();
+    pub fn search_cb<F>(&self,ord_cb:F)->(Ordering,u32) where F:Fn(&T)->Ordering{
+        let mut origin=self.root() as u32;
         let mut ord=Ordering::Equal;
 
         while origin!=0{
@@ -506,25 +504,26 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         }
         (ord,origin)
     }
-    pub fn sames(&self,result:&mut IdSet,t:i64){
+    pub fn sames(&self,result:&mut IdSet,t:u32){
         let mut t=t;
         loop{
             let node=self.offset(t);
             if node.same!=0{
-                result.insert(node.same);
+                result.insert(node.same.into());
                 t=node.same;
             }else{
                 break;
             }
         }
     }
-    pub fn sames_and(&self,result:&mut IdSet,and:&IdSet,t:i64){
+    pub fn sames_and(&self,result:&mut IdSet,and:&IdSet,t:u32){
         let mut t=t;
         loop{
             let node=self.offset(t);
             if node.same!=0{
-                if and.contains(&node.same){
-                    result.insert(node.same);
+                let same=node.same as i64;
+                if and.contains(&same){
+                    result.insert(same);
                 }
                 t=node.same;
             }else{
@@ -532,7 +531,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
             }
         }
     }
-    fn max(&self,t:i64)->i64{
+    fn max(&self,t:u32)->u32{
         let node=self.offset(t);
         let r=node.right;
         if r==0{
@@ -541,7 +540,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
             self.max(r)
         }
     }
-    fn min(&self,t:i64)->i64{
+    fn min(&self,t:u32)->u32{
         let node=self.offset(t);
         let l=node.left;
         if l==0{
@@ -550,7 +549,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
             self.min(l)
         }
     }
-    fn retroactive(&self,c:i64)->Option<i64>{
+    fn retroactive(&self,c:u32)->Option<u32>{
         let parent=self.offset(c).parent;
         if parent==0{
             None
@@ -563,7 +562,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
             }
         }
     }
-    fn same_root(&self,node_id:i64)->i64{
+    fn same_root(&self,node_id:u32)->u32{
         let mut r=node_id;
         loop {
             let same=self.offset(r);
@@ -575,7 +574,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         }
         r
     }
-    pub fn next(&self,c:i64,same_branch:i64)->Option<(i64,i64)>{
+    pub fn next(&self,c:u32,same_branch:u32)->Option<(u32,u32)>{
         let node=self.offset(c);
         let parent_node=self.offset(node.parent);
         if node.same!=0{
