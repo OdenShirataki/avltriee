@@ -99,7 +99,11 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
     pub fn update(&mut self,id:u32,new_data:T) where T:std::cmp::Ord{
         if let Some(n)=self.node(id){
             if n.height==0{ //新規登録
-                self.insert_new(self.record_count,new_data);
+                if self.record_count==id{
+                    self.insert_new(self.record_count,new_data);
+                }else{  //id使いまわし
+                    self.update_with_search(id,new_data);
+                }
             }else{
                 if n.value().cmp(&new_data)!=Ordering::Equal{  //データが変更なしの場合は何もしない
                     self.remove(id);   //変更の場合、一旦消してから登録しなおす
