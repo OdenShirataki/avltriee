@@ -259,11 +259,9 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         (left_max_id,left_max_parent_id)
     }
     pub fn remove(&mut self,target_id:u32)->RemoveResult<T> where T:Default+Clone{
-        if self.record_count<target_id{
-            RemoveResult::NotUnique
-        }else{
-            let mut ret=RemoveResult::NotUnique;
-            let remove_target=self.offset_mut(target_id);
+        let mut ret=RemoveResult::NotUnique;
+        let remove_target=self.offset_mut(target_id);
+        if remove_target.height>0{
             if remove_target.parent==0{ //rootを削除する場合
                 if remove_target.same!=0{
                     //同じ値のものが存在する場合、それをrootに昇格
@@ -342,8 +340,8 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
                 }
             }
             remove_target.reset();
-            ret
         }
+        ret
     }
 
     fn calc_height(&mut self,vertex_id:u32){
