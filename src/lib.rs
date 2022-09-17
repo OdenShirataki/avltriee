@@ -179,10 +179,9 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
     pub fn iter_begin_at(&self,begin:u32)->AVLTrieeIter<T>{
         AVLTrieeIter::begin_at(&self,begin)
     }
-    pub fn iter_range(&self,begin:u32,end:u32)->AVLTrieeRangeIter<T>{
-        AVLTrieeRangeIter::new(&self,begin,end)
+    pub fn iter_range<'a>(&'a self,min_value:&'a T,max_value:&'a T)->AVLTrieeRangeIter<T> where T:std::cmp::Ord{
+        AVLTrieeRangeIter::new(&self,min_value,max_value)
     }
-
     pub fn iter_seq(&self)->AVLTrieeIterSeq<T>{
         AVLTrieeIterSeq::new(&self)
     }

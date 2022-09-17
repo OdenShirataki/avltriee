@@ -5,7 +5,7 @@ pub struct AVLTrieeIter<'a,T>{
     now:u32
     ,same_branch:u32
     ,local_index:isize
-    ,tree:&'a AVLTriee<T>
+    ,triee:&'a AVLTriee<T>
 }
 impl<'a,T:Clone+Copy+Default> Iterator for AVLTrieeIter<'a,T> {
     type Item = (isize,u32,&'a AVLTrieeNode<T>);
@@ -15,7 +15,7 @@ impl<'a,T:Clone+Copy+Default> Iterator for AVLTrieeIter<'a,T> {
         }else{
             self.local_index += 1;
             let c=self.now;
-            match self.tree.next(self.now,self.same_branch){
+            match self.triee.next(self.now,self.same_branch){
                 Some((i,b))=>{
                     self.now=i;
                     self.same_branch=b;
@@ -24,37 +24,37 @@ impl<'a,T:Clone+Copy+Default> Iterator for AVLTrieeIter<'a,T> {
                     self.now=0;
                 }
             }
-            Some((self.local_index,c,&self.tree.offset(c)))
+            Some((self.local_index,c,&self.triee.offset(c)))
         }
     }
 }
 impl<'a,T:Clone+Copy+Default> AVLTrieeIter<'a,T>{
-    pub fn new(tree:&'a AVLTriee<T>)->AVLTrieeIter<'a,T>{
+    pub fn new(triee:&'a AVLTriee<T>)->AVLTrieeIter<'a,T>{
         AVLTrieeIter{
-            now:tree.min(tree.root() as u32)
+            now:triee.min(triee.root() as u32)
             ,same_branch:0
             ,local_index:0
-            ,tree
+            ,triee
         }
     }
-    pub fn begin_at(tree:&'a AVLTriee<T>,begin:u32)->AVLTrieeIter<'a,T>{
+    pub fn begin_at(triee:&'a AVLTriee<T>,begin:u32)->AVLTrieeIter<'a,T>{
         AVLTrieeIter{
             now:begin
             ,same_branch:0
             ,local_index:0
-            ,tree
+            ,triee
         }
     }
 }
 
 pub struct AVLTrieeRangeIter<'a,T>{
     now:u32
-    ,end:u32
+    ,max_value:&'a T
     ,same_branch:u32
     ,local_index:isize
-    ,tree:&'a AVLTriee<T>
+    ,triee:&'a AVLTriee<T>
 }
-impl<'a,T:Clone+Copy+Default> Iterator for AVLTrieeRangeIter<'a,T> {
+impl<'a,T:Clone+Copy+Default+std::cmp::Ord> Iterator for AVLTrieeRangeIter<'a,T> {
     type Item = (isize,u32,&'a AVLTrieeNode<T>);
     fn next(&mut self) -> Option<Self::Item> {
         if self.now==0{
@@ -62,10 +62,11 @@ impl<'a,T:Clone+Copy+Default> Iterator for AVLTrieeRangeIter<'a,T> {
         }else{
             self.local_index += 1;
             let c=self.now;
-            if self.now==self.end{
+            let v=self.triee.node(c).unwrap().value();
+            if v>self.max_value{
                 self.now=0;
             }else{
-                match self.tree.next(self.now,self.same_branch){
+                match self.triee.next(self.now,self.same_branch){
                     Some((i,b))=>{
                         self.now=i;
                         self.same_branch=b;
@@ -75,18 +76,19 @@ impl<'a,T:Clone+Copy+Default> Iterator for AVLTrieeRangeIter<'a,T> {
                     }
                 }
             }
-            Some((self.local_index,c,&self.tree.offset(c)))
+            Some((self.local_index,c,&self.triee.offset(c)))
         }
     }
 }
-impl<'a,T:Clone+Copy+Default> AVLTrieeRangeIter<'a,T>{
-    pub fn new(tree:&'a AVLTriee<T>,begin:u32,end:u32)->AVLTrieeRangeIter<'a,T>{
+impl<'a,T:Clone+Copy+Default+std::cmp::Ord> AVLTrieeRangeIter<'a,T>{
+    pub fn new(triee:&'a AVLTriee<T>,min_value:&T,max_value:&'a T)->AVLTrieeRangeIter<'a,T>{
+        let (_,id)=triee.search(min_value);
         AVLTrieeRangeIter{
-            now:begin
-            ,end
+            now:id
+            ,max_value
             ,same_branch:0
             ,local_index:0
-            ,tree
+            ,triee
         }
     }
 }
