@@ -72,7 +72,7 @@ pub enum RemoveResult<T>{
     ,NotUnique
 }
 
-pub type IdSet = HashSet<i64,BuildHasherDefault<FxHasher>>;
+pub type IdSet = HashSet<u32,BuildHasherDefault<FxHasher>>;
 
 pub struct AVLTriee<T>{
     root: *mut u32
@@ -532,7 +532,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         loop{
             let node=self.offset(t);
             if node.same!=0{
-                let same=node.same as i64;
+                let same=node.same;
                 if and.contains(&same){
                     result.insert(same);
                 }
