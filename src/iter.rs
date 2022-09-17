@@ -86,7 +86,7 @@ impl<'a,T:Clone+Copy+Default+std::cmp::Ord> Iterator for AVLTrieeRangeIter<'a,T>
 impl<'a,T:Clone+Copy+Default+std::cmp::Ord> AVLTrieeRangeIter<'a,T>{
     pub fn new(triee:&'a AVLTriee<T>,value_min:&T,value_max:&'a T)->AVLTrieeRangeIter<'a,T>{
         let (_,min_id)=triee.search(value_min);
-        let (_,max_id)=triee.search(value_min);
+        let (_,max_id)=triee.search(value_max);
         AVLTrieeRangeIter{
             now:min_id
             ,end_id:max_id
