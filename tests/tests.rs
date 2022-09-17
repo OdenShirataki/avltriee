@@ -43,7 +43,7 @@ fn example() {
 
     t.insert(1);
 
-    for (local_index,id,data) in t.iter(){
+    for (local_index,id,data) in t.iter_range(&20,&30){
         println!("{},{},{:?}",local_index,id,data);
     }
 }

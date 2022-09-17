@@ -49,7 +49,7 @@ impl<'a,T:Clone+Copy+Default> AVLTrieeIter<'a,T>{
 
 pub struct AVLTrieeRangeIter<'a,T>{
     now:u32
-    ,max_value:&'a T
+    ,end_id:u32
     ,same_branch:u32
     ,local_index:isize
     ,triee:&'a AVLTriee<T>
@@ -62,9 +62,12 @@ impl<'a,T:Clone+Copy+Default+std::cmp::Ord> Iterator for AVLTrieeRangeIter<'a,T>
         }else{
             self.local_index += 1;
             let c=self.now;
-            let v=self.triee.node(c).unwrap().value();
-            if v>self.max_value{
-                self.now=0;
+            if c==self.end_id{
+                let same=self.triee.offset(c).same();
+                if same!=0{
+                    self.end_id=same;
+                }
+                self.now=same;
             }else{
                 match self.triee.next(self.now,self.same_branch){
                     Some((i,b))=>{
@@ -82,10 +85,11 @@ impl<'a,T:Clone+Copy+Default+std::cmp::Ord> Iterator for AVLTrieeRangeIter<'a,T>
 }
 impl<'a,T:Clone+Copy+Default+std::cmp::Ord> AVLTrieeRangeIter<'a,T>{
     pub fn new(triee:&'a AVLTriee<T>,min_value:&T,max_value:&'a T)->AVLTrieeRangeIter<'a,T>{
-        let (_,id)=triee.search(min_value);
+        let (_,min_id)=triee.search(min_value);
+        let (_,max_id)=triee.search(max_value);
         AVLTrieeRangeIter{
-            now:id
-            ,max_value
+            now:min_id
+            ,end_id:max_id
             ,same_branch:0
             ,local_index:0
             ,triee

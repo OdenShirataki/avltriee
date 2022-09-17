@@ -176,6 +176,10 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
     pub fn iter(&self)->AVLTrieeIter<T>{
         AVLTrieeIter::new(&self)
     }
+    pub fn iter_value_from(&self,min_value:&T)->AVLTrieeIter<T> where T:std::cmp::Ord{
+        let (_,id)=self.search(min_value);
+        AVLTrieeIter::begin_at(&self,id)
+    }
     pub fn iter_begin_at(&self,begin:u32)->AVLTrieeIter<T>{
         AVLTrieeIter::begin_at(&self,begin)
     }
