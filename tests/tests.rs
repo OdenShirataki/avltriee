@@ -44,17 +44,17 @@ fn example() {
     t.insert(1);
 
     println!("iter_range");
-    for (local_index,id,data) in t.iter_range(&20,&30){
+    for (local_index,id,data) in t.iter_by_value_from_to(&20,&30){
         println!("{},{},{:?}",local_index,id,data);
     }
 
     println!("iter_value_from");
-    for (local_index,id,data) in t.iter_value_from(&50){
+    for (local_index,id,data) in t.iter_by_value_from(&50){
         println!("{},{},{:?}",local_index,id,data);
     }
 
     println!("iter_value_to");
-    for (local_index,id,data) in t.iter_value_to(&90){
+    for (local_index,id,data) in t.iter_by_value_to(&90){
         println!("{},{},{:?}",local_index,id,data);
     }
 }

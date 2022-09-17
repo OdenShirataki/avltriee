@@ -176,14 +176,14 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
     pub fn iter(&self)->AVLTrieeIter<T>{
         AVLTrieeIter::new(&self)
     }
-    pub fn iter_value_from(&self,min_value:&T)->AVLTrieeIter<T> where T:std::cmp::Ord{
+    pub fn iter_by_value_from(&self,min_value:&T)->AVLTrieeIter<T> where T:std::cmp::Ord{
         let (_,id)=self.search(min_value);
         AVLTrieeIter::begin_at(&self,id)
     }
-    pub fn iter_value_to<'a>(&'a self,max_value:&'a T)->AVLTrieeRangeIter<T> where T:std::cmp::Ord{
+    pub fn iter_by_value_to<'a>(&'a self,max_value:&'a T)->AVLTrieeRangeIter<T> where T:std::cmp::Ord{
         AVLTrieeRangeIter::new_with_value_max(&self,max_value)
     }
-    pub fn iter_range<'a>(&'a self,min_value:&'a T,max_value:&'a T)->AVLTrieeRangeIter<T> where T:std::cmp::Ord{
+    pub fn iter_by_value_from_to<'a>(&'a self,min_value:&'a T,max_value:&'a T)->AVLTrieeRangeIter<T> where T:std::cmp::Ord{
         AVLTrieeRangeIter::new(&self,min_value,max_value)
     }
     pub fn iter_begin_at(&self,begin:u32)->AVLTrieeIter<T>{
