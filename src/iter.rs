@@ -7,7 +7,7 @@ pub struct AVLTrieeIter<'a,T>{
     ,local_index:isize
     ,triee:&'a AVLTriee<T>
 }
-impl<'a,T:Clone+Copy+Default> Iterator for AVLTrieeIter<'a,T> {
+impl<'a,T:Clone + Copy + Default> Iterator for AVLTrieeIter<'a,T> {
     type Item = (isize,u32,&'a AVLTrieeNode<T>);
     fn next(&mut self) -> Option<Self::Item> {
         if self.now==0{
@@ -28,7 +28,7 @@ impl<'a,T:Clone+Copy+Default> Iterator for AVLTrieeIter<'a,T> {
         }
     }
 }
-impl<'a,T:Clone+Copy+Default> AVLTrieeIter<'a,T>{
+impl<'a,T:Clone + Copy + Default> AVLTrieeIter<'a,T>{
     pub fn new(triee:&'a AVLTriee<T>)->AVLTrieeIter<'a,T>{
         AVLTrieeIter{
             now:triee.min(triee.root() as u32)
@@ -54,7 +54,7 @@ pub struct AVLTrieeRangeIter<'a,T>{
     ,local_index:isize
     ,triee:&'a AVLTriee<T>
 }
-impl<'a,T:Clone+Copy+Default+std::cmp::Ord> Iterator for AVLTrieeRangeIter<'a,T> {
+impl<'a,T:Clone + Copy + Default> Iterator for AVLTrieeRangeIter<'a,T> {
     type Item = (isize,u32,&'a AVLTrieeNode<T>);
     fn next(&mut self) -> Option<Self::Item> {
         if self.now==0{
@@ -83,8 +83,8 @@ impl<'a,T:Clone+Copy+Default+std::cmp::Ord> Iterator for AVLTrieeRangeIter<'a,T>
         }
     }
 }
-impl<'a,T:Clone+Copy+Default+std::cmp::Ord> AVLTrieeRangeIter<'a,T>{
-    pub fn new(triee:&'a AVLTriee<T>,value_min:&T,value_max:&'a T)->AVLTrieeRangeIter<'a,T>{
+impl<'a,T:Clone + Copy + Default> AVLTrieeRangeIter<'a,T>{
+    pub fn new_with_value(triee:&'a AVLTriee<T>,value_min:&T,value_max:&'a T)->AVLTrieeRangeIter<'a,T> where T:std::cmp::Ord{
         let (_,min_id)=triee.search(value_min);
         let (_,max_id)=triee.search(value_max);
         AVLTrieeRangeIter{
@@ -95,11 +95,23 @@ impl<'a,T:Clone+Copy+Default+std::cmp::Ord> AVLTrieeRangeIter<'a,T>{
             ,triee
         }
     }
-    pub fn new_with_value_max(triee:&'a AVLTriee<T>,value_max:&'a T)->AVLTrieeRangeIter<'a,T>{
+    pub fn new_with_value_max(triee:&'a AVLTriee<T>,value_max:&'a T)->AVLTrieeRangeIter<'a,T> where T:std::cmp::Ord{
         let (_,max_id)=triee.search(value_max);
         AVLTrieeRangeIter{
             now:triee.min(triee.root() as u32)
             ,end_id:max_id
+            ,same_branch:0
+            ,local_index:0
+            ,triee
+        }
+    }
+    pub fn new(
+        triee:&'a AVLTriee<T>,now:u32,end_id:u32
+    ) -> AVLTrieeRangeIter<'a,T>
+    {
+        AVLTrieeRangeIter{
+            now
+            ,end_id
             ,same_branch:0
             ,local_index:0
             ,triee
@@ -111,7 +123,7 @@ pub struct AVLTrieeIterSeq<'a,T>{
     now:u32
     ,tree:&'a AVLTriee<T>
 }
-impl<'a,T:Clone+Copy+Default> Iterator for AVLTrieeIterSeq<'a,T> {
+impl<'a,T:Clone + Copy + Default> Iterator for AVLTrieeIterSeq<'a,T> {
     type Item = (u32,&'a AVLTrieeNode<T>);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -123,7 +135,7 @@ impl<'a,T:Clone+Copy+Default> Iterator for AVLTrieeIterSeq<'a,T> {
         }
     }
 }
-impl<'a,T:Clone+Copy+Default> AVLTrieeIterSeq<'a,T>{
+impl<'a,T:Clone + Copy + Default> AVLTrieeIterSeq<'a,T>{
     pub fn new(tree:&'a AVLTriee<T>)->AVLTrieeIterSeq<'a,T>{
         AVLTrieeIterSeq{
             now:0
