@@ -1,6 +1,6 @@
 [package]
 name = "avltriee"
-version = "0.9.0"
+version = "0.10.0"
 edition = "2021"
 
 description = "Customized version of AVLTree library.Process the same value in the third branch. One data is immovable from one row, and positional relationships such as left, right, and parent are all referenced by row numbers. No search is required for value reference by specifying a row."
