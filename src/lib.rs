@@ -96,6 +96,9 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         }else{
             self.update_with_search(id,new_data);
         }
+        if self.root()==0{
+            unsafe{*self.root=id;}
+        }
     }
 
     fn update_with_search(&mut self,id:u32,data:T) where T:std::cmp::Ord{
