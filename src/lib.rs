@@ -6,7 +6,6 @@ use std::cmp::Ordering;
 mod iter;
 use iter::AVLTrieeIter;
 use iter::AVLTrieeRangeIter;
-use iter::AVLTrieeIterSeq;
 
 #[derive(Clone)]
 pub struct AVLTrieeNode<T>{
@@ -77,24 +76,16 @@ pub type IdSet = HashSet<u32,BuildHasherDefault<FxHasher>>;
 pub struct AVLTriee<T>{
     root: *mut u32
     ,node_list: *mut AVLTrieeNode<T>
-    ,record_count:u32
 }
 impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee<T>{
     pub fn new(
         root: *mut u32
         ,node_list: *mut AVLTrieeNode<T>
-        ,record_count:u32
     )->AVLTriee<T>{
         AVLTriee{
             root
             ,node_list
-            ,record_count
         }
-    }
-    
-    pub fn insert(&mut self,data:T) where T:std::cmp::Ord{
-        self.record_count+=1;
-        self.insert_new(self.record_count,data);
     }
     pub fn update(&mut self,id:u32,new_data:T) where T:std::cmp::Ord{
         if let Some(n)=self.node(id){
@@ -103,21 +94,10 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
                 self.update_with_search(id,new_data);
             }
         }else{
-            if self.record_count==id{   //新規登録
-                self.insert_new(self.record_count,new_data);
-            }else{  //id使いまわし
-                self.update_with_search(id,new_data);
-            }
+            self.update_with_search(id,new_data);
         }
     }
 
-    fn insert_new(&mut self,id:u32,data:T) where T:std::cmp::Ord{
-        if self.root()==0{  //初回登録
-            self.init_node(data,id);
-        }else{
-            self.update_with_search(id,data);
-        }
-    }
     fn update_with_search(&mut self,id:u32,data:T) where T:std::cmp::Ord{
         let (ord,found_id)=self.search(&data);
         if ord==Ordering::Equal && found_id!=0{
@@ -193,10 +173,6 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
     pub fn iter_by_id_to(&self,end:u32)->AVLTrieeRangeIter<T>{
         AVLTrieeRangeIter::new(&self,self.min(self.root()),end)
     }
-
-    pub fn iter_seq(&self)->AVLTrieeIterSeq<T>{
-        AVLTrieeIterSeq::new(&self)
-    }
     pub fn node<'a>(&self,id:u32) ->Option<&'a AVLTrieeNode<T>>{
         let node=self.offset(id);
         if node.height>0{
@@ -212,16 +188,6 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
             None
         }
     }
-    pub fn record_count(&self)->u32{
-        self.record_count
-    }
-    pub fn set_record_count(&mut self,c:u32){
-        self.record_count=c;
-    }
-    pub fn add_record_count(&mut self,c:u32)->u32{
-        self.record_count+=c;
-        self.record_count
-    }
     pub fn root(&self)->u32{
         unsafe{*self.root}
     }
@@ -232,7 +198,6 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
             (*self.node_list.offset(root as isize))=AVLTrieeNode::new(1,0,data); //初回追加分
             *self.root=root;
         }
-        self.record_count=1;
     }
     
     pub fn offset<'a>(&self,offset:u32)->&'a AVLTrieeNode<T>{

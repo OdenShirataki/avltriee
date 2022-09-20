@@ -9,9 +9,9 @@ fn example() {
     let mut t=AVLTriee::new(
         &mut root
         ,rl.as_mut_ptr()
-        ,0
     );
 
+    let mut insert_id=0;
     let d=vec![
         110i64
         ,100
@@ -29,7 +29,8 @@ fn example() {
         ,80
     ];
     for i in d{
-        t.insert(i);
+        insert_id+=1;
+        t.update(insert_id,i);
     }
 
     for (local_index,id,data) in t.iter(){
@@ -41,7 +42,8 @@ fn example() {
 
     t.remove(2);
 
-    t.insert(1);
+    insert_id+=1;
+    t.update(insert_id,1);
 
     println!("iter_range");
     for (local_index,id,data) in t.iter_by_value_from_to(&20,&30){

@@ -118,28 +118,3 @@ impl<'a,T:Clone + Copy + Default> AVLTrieeRangeIter<'a,T>{
         }
     }
 }
-
-pub struct AVLTrieeIterSeq<'a,T>{
-    now:u32
-    ,tree:&'a AVLTriee<T>
-}
-impl<'a,T:Clone + Copy + Default> Iterator for AVLTrieeIterSeq<'a,T> {
-    type Item = (u32,&'a AVLTrieeNode<T>);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.now += 1;
-        if self.now<=self.tree.record_count(){
-            Some((self.now,&self.tree.offset(self.now)))
-        }else{
-            None
-        }
-    }
-}
-impl<'a,T:Clone + Copy + Default> AVLTrieeIterSeq<'a,T>{
-    pub fn new(tree:&'a AVLTriee<T>)->AVLTrieeIterSeq<'a,T>{
-        AVLTrieeIterSeq{
-            now:0
-            ,tree
-        }
-    }
-}
