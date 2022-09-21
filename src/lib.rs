@@ -595,7 +595,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
                 }else{  //右ノードが無い場合、はノードの終端。
                     if parent_node.parent==0{
                         //親が無い場合
-                        if parent_node.right!=0{
+                        if parent_node.right!=0&&parent_node.right!=c{
                             Some((self.min(parent_node.right),same_branch))
                         }else{
                             None
