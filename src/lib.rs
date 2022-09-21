@@ -508,21 +508,6 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
             }
         }
     }
-    pub fn sames_and(&self,result:&mut IdSet,and:&IdSet,t:u32){
-        let mut t=t;
-        loop{
-            let node=self.offset(t);
-            if node.same!=0{
-                let same=node.same;
-                if and.contains(&same){
-                    result.insert(same);
-                }
-                t=node.same;
-            }else{
-                break;
-            }
-        }
-    }
     fn max(&self,t:u32)->u32{
         let node=self.offset(t);
         let r=node.right;
