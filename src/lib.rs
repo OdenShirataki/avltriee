@@ -1,6 +1,3 @@
-use rustc_hash::FxHasher;
-use std::hash::BuildHasherDefault;
-use std::collections::HashSet;
 use std::cmp::Ordering;
 
 mod iter;
@@ -70,8 +67,6 @@ pub enum RemoveResult<T>{
     Unique(T)
     ,NotUnique
 }
-
-pub type IdSet = HashSet<u32,BuildHasherDefault<FxHasher>>;
 
 pub struct AVLTriee<T>{
     root: *mut u32
@@ -496,17 +491,19 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
     pub fn search_cb<F>(&self,ord_cb:F)->(Ordering,u32) where F:Fn(&T)->Ordering{
         self.search_cb_from(self.root() as u32,ord_cb)
     }
-    pub fn sames(&self,result:&mut IdSet,t:u32){
-        let mut t=t;
+    pub fn sames(&self,same_root:u32)->Vec<u32>{
+        let mut r=Vec::new();
+        let mut t=same_root;
         loop{
             let node=self.offset(t);
             if node.same!=0{
-                result.insert(node.same.into());
+                r.push(node.same.into());
                 t=node.same;
             }else{
                 break;
             }
         }
+        r
     }
     fn max(&self,t:u32)->u32{
         let node=self.offset(t);
