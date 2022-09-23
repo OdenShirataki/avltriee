@@ -457,14 +457,9 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         }
         (ord,origin)
     }
-    pub fn search_cb_from<F>(&self,from:u32,ord_cb:F)->(Ordering,u32) where F:Fn(&T)->Ordering{
-        let mut origin=if from==0{
-            self.root() as u32
-        }else{
-            from
-        };
+    pub fn search_cb<F>(&self,ord_cb:F)->(Ordering,u32) where F:Fn(&T)->Ordering{
+        let mut origin=self.root() as u32;
         let mut ord=Ordering::Equal;
-
         while origin!=0{
             let p=self.offset(origin);
             ord=ord_cb(&p.value());
@@ -487,9 +482,6 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
             }
         }
         (ord,origin)
-    }
-    pub fn search_cb<F>(&self,ord_cb:F)->(Ordering,u32) where F:Fn(&T)->Ordering{
-        self.search_cb_from(self.root() as u32,ord_cb)
     }
     pub fn sames(&self,same_root:u32)->Vec<u32>{
         let mut r=Vec::new();
