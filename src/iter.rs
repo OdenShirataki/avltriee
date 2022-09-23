@@ -49,7 +49,7 @@ impl<'a,T:Clone + Copy + Default> AVLTrieeIter<'a,T>{
 
 pub struct AVLTrieeRangeIter<'a,T>{
     now:u32
-    ,end_id:u32
+    ,end_row:u32
     ,same_branch:u32
     ,local_index:isize
     ,triee:&'a AVLTriee<T>
@@ -62,10 +62,10 @@ impl<'a,T:Clone + Copy + Default> Iterator for AVLTrieeRangeIter<'a,T> {
         }else{
             self.local_index += 1;
             let c=self.now;
-            if c==self.end_id{
+            if c==self.end_row{
                 let same=self.triee.offset(c).same();
                 if same!=0{
-                    self.end_id=same;
+                    self.end_row=same;
                 }
                 self.now=same;
             }else{
@@ -85,33 +85,33 @@ impl<'a,T:Clone + Copy + Default> Iterator for AVLTrieeRangeIter<'a,T> {
 }
 impl<'a,T:Clone + Copy + Default> AVLTrieeRangeIter<'a,T>{
     pub fn new_with_value(triee:&'a AVLTriee<T>,value_min:&T,value_max:&'a T)->AVLTrieeRangeIter<'a,T> where T:std::cmp::Ord{
-        let (_,min_id)=triee.search(value_min);
-        let (_,max_id)=triee.search(value_max);
+        let (_,min_row)=triee.search(value_min);
+        let (_,max_row)=triee.search(value_max);
         AVLTrieeRangeIter{
-            now:min_id
-            ,end_id:max_id
+            now:min_row
+            ,end_row:max_row
             ,same_branch:0
             ,local_index:0
             ,triee
         }
     }
     pub fn new_with_value_max(triee:&'a AVLTriee<T>,value_max:&'a T)->AVLTrieeRangeIter<'a,T> where T:std::cmp::Ord{
-        let (_,max_id)=triee.search(value_max);
+        let (_,max_row)=triee.search(value_max);
         AVLTrieeRangeIter{
             now:triee.min(triee.root() as u32)
-            ,end_id:max_id
+            ,end_row:max_row
             ,same_branch:0
             ,local_index:0
             ,triee
         }
     }
     pub fn new(
-        triee:&'a AVLTriee<T>,now:u32,end_id:u32
+        triee:&'a AVLTriee<T>,now:u32,end_row:u32
     ) -> AVLTrieeRangeIter<'a,T>
     {
         AVLTrieeRangeIter{
             now
-            ,end_id
+            ,end_row
             ,same_branch:0
             ,local_index:0
             ,triee

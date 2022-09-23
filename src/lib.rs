@@ -28,9 +28,9 @@ impl<T: std::fmt::Debug> std::fmt::Debug for AVLTrieeNode<T> {
     }
 }
 impl<T> AVLTrieeNode<T>{
-    pub fn new(id:u32,parent:u32,value:T)->AVLTrieeNode<T>{
+    pub fn new(row:u32,parent:u32,value:T)->AVLTrieeNode<T>{
         AVLTrieeNode{
-            height:if id==0{0}else{1}
+            height:if row==0{0}else{1}
             ,parent
             ,left:0
             ,right:0
@@ -82,45 +82,45 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
             ,node_list
         }
     }
-    pub fn update(&mut self,id:u32,new_data:T) where T:std::cmp::Ord{
-        if let Some(n)=self.node(id){
+    pub fn update(&mut self,row:u32,new_data:T) where T:std::cmp::Ord{
+        if let Some(n)=self.node(row){
             if n.value().cmp(&new_data)!=Ordering::Equal{  //データが変更なしの場合は何もしない
-                self.remove(id);   //変更の場合、一旦消してから登録しなおす
-                self.update_with_search(id,new_data);
+                self.remove(row);   //変更の場合、一旦消してから登録しなおす
+                self.update_with_search(row,new_data);
             }
         }else{
-            self.update_with_search(id,new_data);
+            self.update_with_search(row,new_data);
         }
         if self.root()==0{
-            unsafe{*self.root=id;}
+            unsafe{*self.root=row;}
         }
     }
 
-    fn update_with_search(&mut self,id:u32,data:T) where T:std::cmp::Ord{
-        let (ord,found_id)=self.search(&data);
-        if ord==Ordering::Equal && found_id!=0{
-            self.update_same(found_id,id);
+    fn update_with_search(&mut self,row:u32,data:T) where T:std::cmp::Ord{
+        let (ord,found_row)=self.search(&data);
+        if ord==Ordering::Equal && found_row!=0{
+            self.update_same(found_row,row);
         }else{
-            self.update_node(found_id,id,data,ord);
+            self.update_node(found_row,row,data,ord);
         }
     }
 
-    pub fn update_node(&mut self,origin:u32,new_id:u32,data:T,ord:Ordering) where T:Copy{
+    pub fn update_node(&mut self,origin:u32,target_row:u32,data:T,ord:Ordering) where T:Copy{
         unsafe{
-            *self.node_list.offset(new_id as isize)=AVLTrieeNode::new(new_id,origin,data);    //とりあえず終端の子として作る(起点ノード)
+            *self.node_list.offset(target_row as isize)=AVLTrieeNode::new(target_row,origin,data);    //とりあえず終端の子として作る(起点ノード)
         }
         let p=self.offset_mut(origin);
         //親ノードのL/R更新。比較結果が小さい場合は左、大きい場合は右
         if ord==Ordering::Less{
-            p.left=new_id;
+            p.left=target_row;
         }else{
-            p.right=new_id;
+            p.right=target_row;
         }
         self.balance(origin);
     }
 
-    pub fn same_last(&self,node_id:u32)->u32{
-        let mut r=node_id;
+    pub fn same_last(&self,row:u32)->u32{
+        let mut r=row;
         let mut same=self.offset(r);
         while same.same!=0{
             r=same.same;
@@ -128,22 +128,22 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         }
         r
     }
-    pub fn update_same(&mut self,vertex_id:u32,new_id:u32){
-        let mut vertex=self.offset_mut(vertex_id);
-        let mut new_vertex=self.offset_mut(new_id);
+    pub fn update_same(&mut self,vertex_row:u32,update_target_row:u32){
+        let mut vertex=self.offset_mut(vertex_row);
+        let mut new_vertex=self.offset_mut(update_target_row);
         *new_vertex=vertex.clone();
         if new_vertex.parent==0{
-            unsafe{*self.root=new_id;}
+            unsafe{*self.root=update_target_row;}
         }else{
             let mut parent=self.offset_mut(new_vertex.parent);
-            if parent.left==vertex_id{
-                parent.left=new_id;
+            if parent.left==vertex_row{
+                parent.left=update_target_row;
             }else{
-                parent.right=new_id;
+                parent.right=update_target_row;
             }
         }
-        vertex.parent=new_id;
-        new_vertex.same=vertex_id;
+        vertex.parent=update_target_row;
+        new_vertex.same=vertex_row;
 
         vertex.left=0;
         vertex.right=0;
@@ -153,8 +153,8 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         AVLTrieeIter::new(&self)
     }
     pub fn iter_by_value_from(&self,min_value:&T)->AVLTrieeIter<T> where T:std::cmp::Ord{
-        let (_,id)=self.search(min_value);
-        AVLTrieeIter::begin_at(&self,id)
+        let (_,row)=self.search(min_value);
+        AVLTrieeIter::begin_at(&self,row)
     }
     pub fn iter_by_value_to<'a>(&'a self,max_value:&'a T)->AVLTrieeRangeIter<T> where T:std::cmp::Ord{
         AVLTrieeRangeIter::new_with_value_max(&self,max_value)
@@ -162,25 +162,25 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
     pub fn iter_by_value_from_to<'a>(&'a self,min_value:&'a T,max_value:&'a T)->AVLTrieeRangeIter<T> where T:std::cmp::Ord{
         AVLTrieeRangeIter::new_with_value(&self,min_value,max_value)
     }
-    pub fn iter_by_id_from_to(&self,begin:u32,end:u32)->AVLTrieeRangeIter<T>{
+    pub fn iter_by_row_from_to(&self,begin:u32,end:u32)->AVLTrieeRangeIter<T>{
         AVLTrieeRangeIter::new(&self,begin,end)
     }
-    pub fn iter_by_id_from(&self,begin:u32)->AVLTrieeIter<T>{
+    pub fn iter_by_row_from(&self,begin:u32)->AVLTrieeIter<T>{
         AVLTrieeIter::begin_at(&self,begin)
     }
-    pub fn iter_by_id_to(&self,end:u32)->AVLTrieeRangeIter<T>{
+    pub fn iter_by_row_to(&self,end:u32)->AVLTrieeRangeIter<T>{
         AVLTrieeRangeIter::new(&self,self.min(self.root()),end)
     }
-    pub fn node<'a>(&self,id:u32) ->Option<&'a AVLTrieeNode<T>>{
-        let node=self.offset(id);
+    pub fn node<'a>(&self,row:u32) ->Option<&'a AVLTrieeNode<T>>{
+        let node=self.offset(row);
         if node.height>0{
             Some(node)
         }else{
             None
         }
     }
-    pub fn entity_value<'a>(&self,id:u32)->Option<&'a T>{
-        if let Some(v)=self.node(id){
+    pub fn entity_value<'a>(&self,row:u32)->Option<&'a T>{
+        if let Some(v)=self.node(row){
             Some(&v.value())
         }else{
             None
@@ -205,22 +205,22 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         unsafe{&mut *self.node_list.wrapping_offset(offset as isize)}
     }
 
-    fn join_intermediate(parent:&mut AVLTrieeNode<T>,remove_target_id:u32,child_id:u32){
-        if parent.right==remove_target_id{
-            parent.right=child_id;
-        }else if parent.left==remove_target_id{
-            parent.left=child_id;
+    fn join_intermediate(parent:&mut AVLTrieeNode<T>,remove_target_row:u32,child_row:u32){
+        if parent.right==remove_target_row{
+            parent.right=child_row;
+        }else if parent.left==remove_target_row{
+            parent.left=child_row;
         }else{
             panic!("crash and burn"); 
         }
     }
     fn remove_intermediate(&mut self,remove_target:&mut AVLTrieeNode<T>)->(u32,u32){
-        let left_max_id=self.max(remove_target.left);
-        let mut left_max=self.offset_mut(left_max_id);
-        let left_max_parent_id=left_max.parent;
-        let mut left_max_parent=self.offset_mut(left_max_parent_id);
+        let left_max_row=self.max(remove_target.left);
+        let mut left_max=self.offset_mut(left_max_row);
+        let left_max_parent_row=left_max.parent;
+        let mut left_max_parent=self.offset_mut(left_max_parent_row);
 
-        if remove_target.left!=left_max_id{
+        if remove_target.left!=left_max_row{
             //左最大値の親が削除対象の場合はこの処理は不要
             left_max_parent.right=left_max.left;
             left_max.left=remove_target.left;
@@ -230,22 +230,22 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         left_max.right=remove_target.right;
 
         let mut right=self.offset_mut(remove_target.right);
-        right.parent=left_max_id;
+        right.parent=left_max_row;
         
-        (left_max_id,left_max_parent_id)
+        (left_max_row,left_max_parent_row)
     }
-    pub fn remove(&mut self,target_id:u32)->RemoveResult<T> where T:Default+Clone{
+    pub fn remove(&mut self,target_row:u32)->RemoveResult<T> where T:Default+Clone{
         let mut ret=RemoveResult::NotUnique;
-        let remove_target=self.offset_mut(target_id);
+        let remove_target=self.offset_mut(target_row);
         if remove_target.height>0{
             if remove_target.parent==0{ //rootを削除する場合
                 if remove_target.same!=0{
                     //同じ値のものが存在する場合、それをrootに昇格
-                    let same_id=remove_target.same;
-                    let same=self.offset_mut(same_id);
+                    let same_row=remove_target.same;
+                    let same=self.offset_mut(same_row);
                     same.left=remove_target.left;
                     same.right=remove_target.right;
-                    unsafe{*self.root=same_id}
+                    unsafe{*self.root=same_row}
                 }else{
                     ret=RemoveResult::Unique(remove_target.value().clone());
                     if remove_target.left==0 && remove_target.right==0{
@@ -262,55 +262,55 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
                         self.offset_mut(remove_target.left).parent=0;
                         self.balance(remove_target.left);
                     }else{
-                        let (left_max_id,left_max_parent_id)=self.remove_intermediate(remove_target);
-                        unsafe{*self.root=left_max_id}
-                        if left_max_parent_id==target_id{
-                            self.balance(left_max_id);
+                        let (left_max_row,left_max_parent_row)=self.remove_intermediate(remove_target);
+                        unsafe{*self.root=left_max_row}
+                        if left_max_parent_row==target_row{
+                            self.balance(left_max_row);
                         }else{
-                            self.balance(left_max_parent_id);
+                            self.balance(left_max_parent_row);
                         }
                     }
                 }
             }else{
                 let mut parent=self.offset_mut(remove_target.parent);
-                if parent.same==target_id{ //同じ値がある。前後をつなげる
+                if parent.same==target_row{ //同じ値がある。前後をつなげる
                     parent.same=remove_target.same;
                 }else{
                     ret=RemoveResult::Unique(remove_target.value().clone());
                     if remove_target.left==0 && remove_target.right==0{
                         //削除対象が末端の場合
-                        if parent.right==target_id{
+                        if parent.right==target_row{
                             parent.right=0;
-                        }else if parent.left==target_id{
+                        }else if parent.left==target_row{
                             parent.left=0;
                         }
                         self.balance(remove_target.parent);
                     }else if remove_target.left==0{
                         //左が空いている。右ノードを親に接ぐ
-                        Self::join_intermediate(parent,target_id,remove_target.right);
+                        Self::join_intermediate(parent,target_row,remove_target.right);
                         if remove_target.right!=0{
                             self.offset_mut(remove_target.right).parent=remove_target.parent;
                         }
                         self.balance(remove_target.parent);
                     }else if remove_target.right==0{
                         //右が空いている。左ノードを親に接ぐ
-                        Self::join_intermediate(parent,target_id,remove_target.left);
+                        Self::join_intermediate(parent,target_row,remove_target.left);
                         if remove_target.left!=0{
                             self.offset_mut(remove_target.left).parent=remove_target.parent;
                         }
                         self.balance(remove_target.parent);
                     }else{
                         //削除対象は中間ノード
-                        let (left_max_id,left_max_parent_id)=self.remove_intermediate(remove_target);
-                        if parent.right==target_id{
-                            parent.right=left_max_id;
+                        let (left_max_row,left_max_parent_row)=self.remove_intermediate(remove_target);
+                        if parent.right==target_row{
+                            parent.right=left_max_row;
                         }else{
-                            parent.left=left_max_id;
+                            parent.left=left_max_row;
                         }
-                        if left_max_parent_id==target_id{
-                            self.balance(left_max_id);
+                        if left_max_parent_row==target_row{
+                            self.balance(left_max_row);
                         }else{
-                            self.balance(left_max_parent_id);
+                            self.balance(left_max_parent_row);
                         }
                     }
                 }
@@ -320,8 +320,8 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         ret
     }
 
-    fn calc_height(&mut self,vertex_id:u32){
-        let mut vertex=self.offset_mut(vertex_id);
+    fn calc_height(&mut self,vertex_row:u32){
+        let mut vertex=self.offset_mut(vertex_row);
 
         let left=self.offset(vertex.left);
         let right=self.offset(vertex.right);
@@ -331,88 +331,88 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
             ,right.height
         )+1;
     }
-    fn balance(&mut self,vertex_id:u32){
-        let mut vertex_id=vertex_id;
+    fn balance(&mut self,vertex_row:u32){
+        let mut vertex_row=vertex_row;
         loop {
-            let mut vertex=self.offset_mut(vertex_id);
+            let mut vertex=self.offset_mut(vertex_row);
 
-            let mut parent_id=vertex.parent;
+            let mut parent_row=vertex.parent;
 
-            let left_id=vertex.left;
-            let right_id=vertex.right;
+            let left_row=vertex.left;
+            let right_row=vertex.right;
 
-            let mut left=self.offset_mut(left_id);
-            let mut right=self.offset_mut(right_id);
+            let mut left=self.offset_mut(left_row);
+            let mut right=self.offset_mut(right_row);
 
             let diff=left.height as isize  - right.height as isize;
             if diff.abs()>=2{
                 let high_is_left=diff>0;
 
-                let new_vertex_id=if high_is_left{
-                    self.max(left_id)
+                let new_vertex_row=if high_is_left{
+                    self.max(left_row)
                 }else{
-                    self.min(right_id)
+                    self.min(right_row)
                 };
-                let new_vertex=self.offset_mut(new_vertex_id);
+                let new_vertex=self.offset_mut(new_vertex_row);
                 let new_vertex_old_parent=new_vertex.parent;
-                vertex.parent=new_vertex_id;
-                new_vertex.parent=parent_id;
-                if parent_id==0{ 
-                    unsafe{*self.root=new_vertex_id;}
+                vertex.parent=new_vertex_row;
+                new_vertex.parent=parent_row;
+                if parent_row==0{ 
+                    unsafe{*self.root=new_vertex_row;}
                 }else{
-                    let parent=self.offset_mut(parent_id);
-                    if parent.left==vertex_id{
-                        parent.left=new_vertex_id;
+                    let parent=self.offset_mut(parent_row);
+                    if parent.left==vertex_row{
+                        parent.left=new_vertex_row;
                     }else{
-                        parent.right=new_vertex_id;
+                        parent.right=new_vertex_row;
                     }
                 }
                 if high_is_left{
-                    new_vertex.right=vertex_id;
+                    new_vertex.right=vertex_row;
                     vertex.left=0;
-                    if new_vertex_id==left_id{
-                        vertex=self.offset_mut(left_id);
+                    if new_vertex_row==left_row{
+                        vertex=self.offset_mut(left_row);
                         left=self.offset_mut(vertex.left);
-                        right=self.offset_mut(vertex_id);
+                        right=self.offset_mut(vertex_row);
 
                         self.calc_height(vertex.left);
                     }else{
-                        let new_left=self.offset_mut(self.min(new_vertex_id));
-                        new_left.left=left_id;
+                        let new_left=self.offset_mut(self.min(new_vertex_row));
+                        new_left.left=left_row;
 
-                        left.parent=new_vertex_id;
+                        left.parent=new_vertex_row;
                         self.offset_mut(new_vertex_old_parent).right=0;
  
-                        self.calc_height(left_id);
+                        self.calc_height(left_row);
 
                         left=self.offset_mut(vertex.left);
 
-                        parent_id=new_vertex_old_parent;
+                        parent_row=new_vertex_old_parent;
                     }
-                    self.calc_height(vertex_id);
+                    self.calc_height(vertex_row);
                 }else{
-                    new_vertex.left=vertex_id;
+                    new_vertex.left=vertex_row;
                     vertex.right=0;
-                    if new_vertex_id==right_id{
-                        vertex=self.offset_mut(right_id);
-                        left=self.offset_mut(vertex_id);
+                    if new_vertex_row==right_row{
+                        vertex=self.offset_mut(right_row);
+                        left=self.offset_mut(vertex_row);
                         right=self.offset_mut(vertex.right);
 
                         self.calc_height(vertex.right);
                     }else{
-                        let new_right=self.offset_mut(self.max(new_vertex_id));
-                        new_right.right=right_id;
+                        let new_right=self.offset_mut(self.max(new_vertex_row));
+                        new_right.right=right_row;
 
-                        right.parent=new_vertex_id;
+                        right.parent=new_vertex_row;
                         self.offset_mut(new_vertex_old_parent).left=0;
 
-                        self.calc_height(right_id);
+                        self.calc_height(right_row);
 
                         right=self.offset_mut(vertex.right);
 
-                        parent_id=new_vertex_old_parent;
+                        parent_row=new_vertex_old_parent;
                     }
-                    self.calc_height(vertex_id);
+                    self.calc_height(vertex_row);
                 }
             }
 
@@ -420,8 +420,8 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
                 left.height
                 ,right.height
             )+1;    //左右のノードの高い方の高さ+1
-            vertex_id=parent_id;
-            if vertex_id==0{    //頂点まで遡及完了した場合は抜ける
+            vertex_row=parent_row;
+            if vertex_row==0{    //頂点まで遡及完了した場合は抜ける
                 break;
             }
         }
@@ -528,8 +528,8 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
             }
         }
     }
-    fn same_root(&self,node_id:u32)->u32{
-        let mut r=node_id;
+    fn same_root(&self,row:u32)->u32{
+        let mut r=row;
         loop {
             let same=self.offset(r);
             let parent_node=self.offset(same.parent);

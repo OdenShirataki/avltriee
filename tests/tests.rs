@@ -11,7 +11,7 @@ fn example() {
         ,rl.as_mut_ptr()
     );
 
-    let mut insert_id=0;
+    let mut insert_row=0;
     let d=vec![
         110i64
         ,100
@@ -29,34 +29,34 @@ fn example() {
         ,80
     ];
     for i in d{
-        insert_id+=1;
-        t.update(insert_id,i);
+        insert_row+=1;
+        t.update(insert_row,i);
     }
 
-    for (local_index,id,data) in t.iter(){
-        println!("{},{},{:?}",local_index,id,data);
+    for (local_index,row,data) in t.iter(){
+        println!("{},{},{:?}",local_index,row,data);
     }
 
-    let (ord,id)=t.search(&92);
-    println!("{:?},{}",ord,id);
+    let (ord,row)=t.search(&92);
+    println!("{:?},{}",ord,row);
 
     t.remove(2);
 
-    insert_id+=1;
-    t.update(insert_id,1);
+    insert_row+=1;
+    t.update(insert_row,1);
 
     println!("iter_range");
-    for (local_index,id,data) in t.iter_by_value_from_to(&20,&30){
-        println!("{},{},{:?}",local_index,id,data);
+    for (local_index,row,data) in t.iter_by_value_from_to(&20,&30){
+        println!("{},{},{:?}",local_index,row,data);
     }
 
     println!("iter_value_from");
-    for (local_index,id,data) in t.iter_by_value_from(&50){
-        println!("{},{},{:?}",local_index,id,data);
+    for (local_index,row,data) in t.iter_by_value_from(&50){
+        println!("{},{},{:?}",local_index,row,data);
     }
 
     println!("iter_value_to");
-    for (local_index,id,data) in t.iter_by_value_to(&90){
-        println!("{},{},{:?}",local_index,id,data);
+    for (local_index,row,data) in t.iter_by_value_to(&90){
+        println!("{},{},{:?}",local_index,row,data);
     }
 }
