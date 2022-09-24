@@ -1,12 +1,12 @@
-use avltriee::AVLTriee;
-use avltriee::AVLTrieeNode;
+use avltriee::Avltriee;
+use avltriee::AvltrieeNode;
 
 #[test]
 fn example() {
     let mut root=0;
-    let mut list:Vec<AVLTrieeNode<i64>>=Vec::with_capacity(100);
+    let mut list:Vec<AvltrieeNode<i64>>=Vec::with_capacity(100);
     let rl=&mut list;
-    let mut t=AVLTriee::new(
+    let mut t=Avltriee::new(
         &mut root
         ,rl.as_mut_ptr()
     );

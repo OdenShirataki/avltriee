@@ -1,11 +1,11 @@
 use std::cmp::Ordering;
 
 mod iter;
-use iter::AVLTrieeIter;
-use iter::AVLTrieeRangeIter;
+use iter::AvltrieeIter;
+use iter::AvltrieeRangeIter;
 
 #[derive(Clone)]
-pub struct AVLTrieeNode<T>{
+pub struct AvltrieeNode<T>{
     parent: u32
     ,left: u32
     ,right: u32
@@ -13,7 +13,7 @@ pub struct AVLTrieeNode<T>{
     ,height: u8
     ,value: T    //T:実データ型
 }   //最大行数はu32の最大値となる。64bitCPUが扱えるアドレス的には不足だけど行当たり8バイトを超える時点で32bit行以内にアドレッシング出来くなくなりそうなのでヨシ
-impl<T: std::fmt::Debug> std::fmt::Debug for AVLTrieeNode<T> {
+impl<T: std::fmt::Debug> std::fmt::Debug for AvltrieeNode<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
             f
@@ -27,9 +27,9 @@ impl<T: std::fmt::Debug> std::fmt::Debug for AVLTrieeNode<T> {
         )
     }
 }
-impl<T> AVLTrieeNode<T>{
-    pub fn new(row:u32,parent:u32,value:T)->AVLTrieeNode<T>{
-        AVLTrieeNode{
+impl<T> AvltrieeNode<T>{
+    pub fn new(row:u32,parent:u32,value:T)->AvltrieeNode<T>{
+        AvltrieeNode{
             height:if row==0{0}else{1}
             ,parent
             ,left:0
@@ -68,16 +68,16 @@ pub enum RemoveResult<T>{
     ,NotUnique
 }
 
-pub struct AVLTriee<T>{
+pub struct Avltriee<T>{
     root: *mut u32
-    ,node_list: *mut AVLTrieeNode<T>
+    ,node_list: *mut AvltrieeNode<T>
 }
-impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee<T>{
+impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee<T>{
     pub fn new(
         root: *mut u32
-        ,node_list: *mut AVLTrieeNode<T>
-    )->AVLTriee<T>{
-        AVLTriee{
+        ,node_list: *mut AvltrieeNode<T>
+    )->Avltriee<T>{
+        Avltriee{
             root
             ,node_list
         }
@@ -107,7 +107,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
 
     pub fn update_node(&mut self,origin:u32,target_row:u32,data:T,ord:Ordering) where T:Copy{
         unsafe{
-            *self.node_list.offset(target_row as isize)=AVLTrieeNode::new(target_row,origin,data);    //とりあえず終端の子として作る(起点ノード)
+            *self.node_list.offset(target_row as isize)=AvltrieeNode::new(target_row,origin,data);    //とりあえず終端の子として作る(起点ノード)
         }
         let p=self.offset_mut(origin);
         //親ノードのL/R更新。比較結果が小さい場合は左、大きい場合は右
@@ -149,29 +149,29 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
         vertex.right=0;
     }
 
-    pub fn iter(&self)->AVLTrieeIter<T>{
-        AVLTrieeIter::new(&self)
+    pub fn iter(&self)->AvltrieeIter<T>{
+        AvltrieeIter::new(&self)
     }
-    pub fn iter_by_value_from(&self,min_value:&T)->AVLTrieeIter<T> where T:std::cmp::Ord{
+    pub fn iter_by_value_from(&self,min_value:&T)->AvltrieeIter<T> where T:std::cmp::Ord{
         let (_,row)=self.search(min_value);
-        AVLTrieeIter::begin_at(&self,row)
+        AvltrieeIter::begin_at(&self,row)
     }
-    pub fn iter_by_value_to<'a>(&'a self,max_value:&'a T)->AVLTrieeRangeIter<T> where T:std::cmp::Ord{
-        AVLTrieeRangeIter::new_with_value_max(&self,max_value)
+    pub fn iter_by_value_to<'a>(&'a self,max_value:&'a T)->AvltrieeRangeIter<T> where T:std::cmp::Ord{
+        AvltrieeRangeIter::new_with_value_max(&self,max_value)
     }
-    pub fn iter_by_value_from_to<'a>(&'a self,min_value:&'a T,max_value:&'a T)->AVLTrieeRangeIter<T> where T:std::cmp::Ord{
-        AVLTrieeRangeIter::new_with_value(&self,min_value,max_value)
+    pub fn iter_by_value_from_to<'a>(&'a self,min_value:&'a T,max_value:&'a T)->AvltrieeRangeIter<T> where T:std::cmp::Ord{
+        AvltrieeRangeIter::new_with_value(&self,min_value,max_value)
     }
-    pub fn iter_by_row_from_to(&self,begin:u32,end:u32)->AVLTrieeRangeIter<T>{
-        AVLTrieeRangeIter::new(&self,begin,end)
+    pub fn iter_by_row_from_to(&self,begin:u32,end:u32)->AvltrieeRangeIter<T>{
+        AvltrieeRangeIter::new(&self,begin,end)
     }
-    pub fn iter_by_row_from(&self,begin:u32)->AVLTrieeIter<T>{
-        AVLTrieeIter::begin_at(&self,begin)
+    pub fn iter_by_row_from(&self,begin:u32)->AvltrieeIter<T>{
+        AvltrieeIter::begin_at(&self,begin)
     }
-    pub fn iter_by_row_to(&self,end:u32)->AVLTrieeRangeIter<T>{
-        AVLTrieeRangeIter::new(&self,self.min(self.root()),end)
+    pub fn iter_by_row_to(&self,end:u32)->AvltrieeRangeIter<T>{
+        AvltrieeRangeIter::new(&self,self.min(self.root()),end)
     }
-    pub fn node<'a>(&self,row:u32) ->Option<&'a AVLTrieeNode<T>>{
+    pub fn node<'a>(&self,row:u32) ->Option<&'a AvltrieeNode<T>>{
         let node=self.offset(row);
         if node.height>0{
             Some(node)
@@ -192,20 +192,20 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
     
     pub fn init_node(&mut self,data:T,root:u32) where T:Default+Copy{
         unsafe{
-            *self.node_list=AVLTrieeNode::new(0,0,T::default()); //0ノード
-            (*self.node_list.offset(root as isize))=AVLTrieeNode::new(1,0,data); //初回追加分
+            *self.node_list=AvltrieeNode::new(0,0,T::default()); //0ノード
+            (*self.node_list.offset(root as isize))=AvltrieeNode::new(1,0,data); //初回追加分
             *self.root=root;
         }
     }
     
-    pub fn offset<'a>(&self,offset:u32)->&'a AVLTrieeNode<T>{
+    pub fn offset<'a>(&self,offset:u32)->&'a AvltrieeNode<T>{
         unsafe{&*self.node_list.wrapping_offset(offset as isize)}
     }
-    pub fn offset_mut<'a>(&mut self,offset:u32)->&'a mut AVLTrieeNode<T>{
+    pub fn offset_mut<'a>(&mut self,offset:u32)->&'a mut AvltrieeNode<T>{
         unsafe{&mut *self.node_list.wrapping_offset(offset as isize)}
     }
 
-    fn join_intermediate(parent:&mut AVLTrieeNode<T>,remove_target_row:u32,child_row:u32){
+    fn join_intermediate(parent:&mut AvltrieeNode<T>,remove_target_row:u32,child_row:u32){
         if parent.right==remove_target_row{
             parent.right=child_row;
         }else if parent.left==remove_target_row{
@@ -214,7 +214,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> AVLTriee
             panic!("crash and burn"); 
         }
     }
-    fn remove_intermediate(&mut self,remove_target:&mut AVLTrieeNode<T>)->(u32,u32){
+    fn remove_intermediate(&mut self,remove_target:&mut AvltrieeNode<T>)->(u32,u32){
         let left_max_row=self.max(remove_target.left);
         let mut left_max=self.offset_mut(left_max_row);
         let left_max_parent_row=left_max.parent;
