@@ -109,14 +109,16 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         unsafe{
             *self.node_list.offset(target_row as isize)=AvltrieeNode::new(target_row,origin,data);    //とりあえず終端の子として作る(起点ノード)
         }
-        let p=self.offset_mut(origin);
-        //親ノードのL/R更新。比較結果が小さい場合は左、大きい場合は右
-        if ord==Ordering::Less{
-            p.left=target_row;
-        }else{
-            p.right=target_row;
+        if origin>0{
+            let p=self.offset_mut(origin);
+            //親ノードのL/R更新。比較結果が小さい場合は左、大きい場合は右
+            if ord==Ordering::Less{
+                p.left=target_row;
+            }else{
+                p.right=target_row;
+            }
+            self.balance(origin);
         }
-        self.balance(origin);
     }
 
     pub fn same_last(&self,row:u32)->u32{
