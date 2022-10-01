@@ -4,7 +4,7 @@ use avltriee::AvltrieeNode;
 #[test]
 fn example() {
     let mut root=0;
-    let mut list:Vec<AvltrieeNode<i64>>=Vec::with_capacity(100);
+    let mut list:Vec<AvltrieeNode<i64>>=(0..100).map(|_|AvltrieeNode::new(0,0,0)).collect();
     let rl=&mut list;
     let mut t=Avltriee::new(
         &mut root

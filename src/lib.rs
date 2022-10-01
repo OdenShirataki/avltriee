@@ -69,8 +69,8 @@ pub enum RemoveResult<T>{
 }
 
 pub struct Avltriee<T>{
-    root: *mut u32
-    ,node_list: *mut AvltrieeNode<T>
+    root: Vec<u32>
+    ,node_list: Vec<AvltrieeNode<T>>
 }
 impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee<T>{
     pub fn new(
@@ -78,8 +78,8 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         ,node_list: *mut AvltrieeNode<T>
     )->Avltriee<T>{
         Avltriee{
-            root
-            ,node_list
+            root:unsafe {Vec::from_raw_parts(root,1,0)} //capを1以上にするとおそらくスコープ抜けたら破棄されようとして死ぬ。そのうち使えなくなるかもだけどcap0で作成しとく（最悪0,0で作ってvevから生ポインタを得ればいいと思う）
+            ,node_list: unsafe{Vec::from_raw_parts(node_list,1,0)}
         }
     }
     pub fn update(&mut self,row:u32,new_data:T) where T:std::cmp::Ord{
@@ -92,7 +92,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
             self.update_with_search(row,new_data);
         }
         if self.root()==0{
-            unsafe{*self.root=row;}
+            self.root[0]=row;   //unsafe{*self.root=row;}
         }
     }
 
@@ -107,7 +107,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
 
     pub fn update_node(&mut self,origin:u32,target_row:u32,data:T,ord:Ordering) where T:Copy{
         unsafe{
-            *self.node_list.offset(target_row as isize)=AvltrieeNode::new(target_row,origin,data);    //とりあえず終端の子として作る(起点ノード)
+            *(self.node_list.as_ptr() as *mut AvltrieeNode<T>).offset(target_row as isize)=AvltrieeNode::new(target_row,origin,data);
         }
         if origin>0{
             let p=self.offset_mut(origin);
@@ -135,7 +135,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         let mut new_vertex=self.offset_mut(update_target_row);
         *new_vertex=vertex.clone();
         if new_vertex.parent==0{
-            unsafe{*self.root=update_target_row;}
+            self.root[0]=update_target_row; //unsafe{*self.root=update_target_row;}
         }else{
             let mut parent=self.offset_mut(new_vertex.parent);
             if parent.left==vertex_row{
@@ -189,22 +189,26 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         }
     }
     pub fn root(&self)->u32{
-        unsafe{*self.root}
+        self.root[0]
     }
     
     pub fn init_node(&mut self,data:T,root:u32) where T:Default+Copy{
         unsafe{
-            *self.node_list=AvltrieeNode::new(0,0,T::default()); //0ノード
-            (*self.node_list.offset(root as isize))=AvltrieeNode::new(1,0,data); //初回追加分
-            *self.root=root;
+            *(self.node_list.as_ptr() as *mut AvltrieeNode<T>)=AvltrieeNode::new(0,0,T::default()); //0ノード
+            *(self.node_list.as_ptr() as *mut AvltrieeNode<T>).offset(root as isize)=AvltrieeNode::new(1,0,data); //初回追加分
         }
+        self.root[0]=root;
     }
     
     pub fn offset<'a>(&self,offset:u32)->&'a AvltrieeNode<T>{
-        unsafe{&*self.node_list.wrapping_offset(offset as isize)}
+        unsafe{
+            &*self.node_list.as_ptr().offset(offset as isize)
+        }
     }
     pub fn offset_mut<'a>(&mut self,offset:u32)->&'a mut AvltrieeNode<T>{
-        unsafe{&mut *self.node_list.wrapping_offset(offset as isize)}
+        unsafe{
+            &mut *(self.node_list.as_ptr() as *mut AvltrieeNode<T>).offset(offset as isize)
+        }
     }
 
     fn join_intermediate(parent:&mut AvltrieeNode<T>,remove_target_row:u32,child_row:u32){
@@ -247,25 +251,25 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
                     let same=self.offset_mut(same_row);
                     same.left=remove_target.left;
                     same.right=remove_target.right;
-                    unsafe{*self.root=same_row}
+                    self.root[0]=same_row;
                 }else{
                     ret=RemoveResult::Unique(remove_target.value().clone());
                     if remove_target.left==0 && remove_target.right==0{
                         //唯一のデータが消失する
-                        unsafe{*self.root=0}
+                        self.root[0]=0;
                     }else if remove_target.left==0{
                         //左が空いている。右ノードをrootに
-                        unsafe{*self.root=remove_target.right}
+                        self.root[0]=remove_target.right;
                         self.offset_mut(remove_target.right).parent=0;
                         self.balance(remove_target.right);
                     }else if remove_target.right==0{
                         //右が空いている。左ノードをrootに
-                        unsafe{*self.root=remove_target.left}
+                        self.root[0]=remove_target.left;
                         self.offset_mut(remove_target.left).parent=0;
                         self.balance(remove_target.left);
                     }else{
                         let (left_max_row,left_max_parent_row)=self.remove_intermediate(remove_target);
-                        unsafe{*self.root=left_max_row}
+                        self.root[0]=left_max_row;
                         if left_max_parent_row==target_row{
                             self.balance(left_max_row);
                         }else{
@@ -360,7 +364,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
                 vertex.parent=new_vertex_row;
                 new_vertex.parent=parent_row;
                 if parent_row==0{ 
-                    unsafe{*self.root=new_vertex_row;}
+                    self.root[0]=new_vertex_row;
                 }else{
                     let parent=self.offset_mut(parent_row);
                     if parent.left==vertex_row{
