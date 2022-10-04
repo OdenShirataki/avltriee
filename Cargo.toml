@@ -8,7 +8,7 @@ description = "Customized version of AVLTree library.Process the same value in t
 repository = "https://github.com/OdenShirataki/avltriee"
 
 keywords = ["avltree","database"]
-categories = ["algorithms","database"]
+categories = ["algorithms"]
 
 license = "MIT/Apache-2.0"
 
