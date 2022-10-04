@@ -1,8 +1,10 @@
 use std::cmp::Ordering;
 
 mod iter;
-use iter::AvltrieeIter;
-use iter::AvltrieeRangeIter;
+use iter::{
+    AvltrieeIter
+    ,AvltrieeRangeIter
+};
 
 #[derive(Clone)]
 pub struct AvltrieeNode<T>{
@@ -63,9 +65,9 @@ impl<T> AvltrieeNode<T>{
     }
 }
 
-pub enum RemoveResult<T>{
-    Unique(T)
-    ,NotUnique
+pub enum Removed<T>{
+    Last(T)
+    ,Remain
 }
 
 pub struct Avltriee<T>{
@@ -240,8 +242,8 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         
         (left_max_row,left_max_parent_row)
     }
-    pub fn remove(&mut self,target_row:u32)->RemoveResult<T> where T:Default+Clone{
-        let mut ret=RemoveResult::NotUnique;
+    pub fn remove(&mut self,target_row:u32)->Removed<T> where T:Default+Clone{
+        let mut ret=Removed::Remain;
         let remove_target=self.offset_mut(target_row);
         if remove_target.height>0{
             if remove_target.parent==0{ //rootを削除する場合
@@ -253,7 +255,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
                     same.right=remove_target.right;
                     self.root[0]=same_row;
                 }else{
-                    ret=RemoveResult::Unique(remove_target.value().clone());
+                    ret=Removed::Last(remove_target.value().clone());
                     if remove_target.left==0 && remove_target.right==0{
                         //唯一のデータが消失する
                         self.root[0]=0;
@@ -282,7 +284,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
                 if parent.same==target_row{ //同じ値がある。前後をつなげる
                     parent.same=remove_target.same;
                 }else{
-                    ret=RemoveResult::Unique(remove_target.value().clone());
+                    ret=Removed::Last(remove_target.value().clone());
                     if remove_target.left==0 && remove_target.right==0{
                         //削除対象が末端の場合
                         if parent.right==target_row{
