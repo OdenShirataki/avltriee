@@ -33,8 +33,8 @@ fn example() {
         t.update(insert_row,i);
     }
 
-    for (local_index,row,data) in t.iter(){
-        println!("{},{},{:?}",local_index,row,data);
+    for r in t.iter(){
+        println!("{},{},{:?}",r.index(),r.row(),r.value());
     }
 
     let (ord,row)=t.search(&92);
@@ -46,17 +46,17 @@ fn example() {
     t.update(insert_row,1);
 
     println!("iter_range");
-    for (local_index,row,data) in t.iter_by_value_from_to(&20,&30){
-        println!("{},{},{:?}",local_index,row,data);
+    for r in t.iter_by_value_from_to(&20,&30){
+        println!("{},{},{:?}",r.index(),r.row(),r.value());
     }
 
     println!("iter_value_from");
-    for (local_index,row,data) in t.iter_by_value_from(&50){
-        println!("{},{},{:?}",local_index,row,data);
+    for r in t.iter_by_value_from(&50){
+        println!("{},{},{:?}",r.index(),r.row(),r.value());
     }
 
     println!("iter_value_to");
-    for (local_index,row,data) in t.iter_by_value_to(&90){
-        println!("{},{},{:?}",local_index,row,data);
+    for r in t.iter_by_value_to(&90){
+        println!("{},{},{:?}",r.index(),r.row(),r.value());
     }
 }

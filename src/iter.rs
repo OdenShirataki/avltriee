@@ -1,14 +1,31 @@
 use super::Avltriee;
 use super::AvltrieeNode;
 
+pub struct AvlTrieeIterResult<'a,T>{
+    index:isize
+    ,row:u32
+    ,node:&'a AvltrieeNode<T>
+}
+impl<'a,T> AvlTrieeIterResult<'a,T>{
+    pub fn index(&self)->isize{
+        self.index
+    }
+    pub fn row(&self)->u32{
+        self.row
+    }
+    pub fn value(&self)->&'a T{
+        self.node.value()
+    }
+}
 pub struct AvltrieeIter<'a,T>{
     now:u32
     ,same_branch:u32
     ,local_index:isize
     ,triee:&'a Avltriee<T>
 }
+
 impl<'a,T:Clone + Copy + Default> Iterator for AvltrieeIter<'a,T> {
-    type Item = (isize,u32,&'a AvltrieeNode<T>);
+    type Item = AvlTrieeIterResult<'a,T>;
     fn next(&mut self) -> Option<Self::Item> {
         if self.now==0{
             None
@@ -24,7 +41,11 @@ impl<'a,T:Clone + Copy + Default> Iterator for AvltrieeIter<'a,T> {
                     self.now=0;
                 }
             }
-            Some((self.local_index,c,&self.triee.offset(c)))
+            Some(AvlTrieeIterResult{
+                index:self.local_index
+                ,row:c
+                ,node:&self.triee.offset(c)
+            })
         }
     }
 }
@@ -55,7 +76,7 @@ pub struct AvltrieeRangeIter<'a,T>{
     ,triee:&'a Avltriee<T>
 }
 impl<'a,T:Clone + Copy + Default> Iterator for AvltrieeRangeIter<'a,T> {
-    type Item = (isize,u32,&'a AvltrieeNode<T>);
+    type Item = AvlTrieeIterResult<'a,T>;
     fn next(&mut self) -> Option<Self::Item> {
         if self.now==0{
             None
@@ -79,7 +100,11 @@ impl<'a,T:Clone + Copy + Default> Iterator for AvltrieeRangeIter<'a,T> {
                     }
                 }
             }
-            Some((self.local_index,c,&self.triee.offset(c)))
+            Some(AvlTrieeIterResult{
+                index:self.local_index
+                ,row:c
+                ,node:&self.triee.offset(c)
+            })
         }
     }
 }

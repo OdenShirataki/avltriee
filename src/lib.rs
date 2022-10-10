@@ -94,7 +94,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
             self.update_with_search(row,new_data);
         }
         if self.root()==0{
-            self.root[0]=row;   //unsafe{*self.root=row;}
+            self.root[0]=row;
         }
     }
 
@@ -137,7 +137,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         let mut new_vertex=self.offset_mut(update_target_row);
         *new_vertex=vertex.clone();
         if new_vertex.parent==0{
-            self.root[0]=update_target_row; //unsafe{*self.root=update_target_row;}
+            self.root[0]=update_target_row;
         }else{
             let mut parent=self.offset_mut(new_vertex.parent);
             if parent.left==vertex_row{
