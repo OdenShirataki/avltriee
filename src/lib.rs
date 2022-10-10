@@ -13,21 +13,7 @@ pub struct AvltrieeNode<T>{
     ,right: u32
     ,same: u32
     ,height: u8
-    ,value: T    //T:実データ型
-}   //最大行数はu32の最大値となる。64bitCPUが扱えるアドレス的には不足だけど行当たり8バイトを超える時点で32bit行以内にアドレッシング出来くなくなりそうなのでヨシ
-impl<T: std::fmt::Debug> std::fmt::Debug for AvltrieeNode<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(
-            f
-            ,"{{ height:{} , parent:{} , left:{} , right:{} , same:{} , value:{:?} }}"
-            ,self.height
-            ,self.parent
-            ,self.left
-            ,self.right
-            ,self.same
-            ,self.value
-        )
-    }
+    ,value: T
 }
 impl<T> AvltrieeNode<T>{
     pub fn new(row:u32,parent:u32,value:T)->AvltrieeNode<T>{
@@ -50,18 +36,6 @@ impl<T> AvltrieeNode<T>{
     }
     pub fn value(&self)->&T{
         &self.value
-    }
-    pub fn parent(&self)->u32{
-        self.parent
-    }
-    pub fn left(&self)->u32{
-        self.left
-    }
-    pub fn right(&self)->u32{
-        self.right
-    }
-    pub fn same(&self)->u32{
-        self.same
     }
 }
 

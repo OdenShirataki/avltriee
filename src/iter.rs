@@ -84,7 +84,7 @@ impl<'a,T:Clone + Copy + Default> Iterator for AvltrieeRangeIter<'a,T> {
             self.local_index += 1;
             let c=self.now;
             if c==self.end_row{
-                let same=self.triee.offset(c).same();
+                let same=self.triee.offset(c).same;
                 if same!=0{
                     self.end_row=same;
                 }
