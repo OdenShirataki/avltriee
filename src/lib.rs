@@ -157,7 +157,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
             None
         }
     }
-    pub fn entity_value<'a>(&self,row:u32)->Option<&'a T>{
+    pub fn value<'a>(&self,row:u32)->Option<&'a T>{
         if let Some(v)=self.node(row){
             Some(&v.value())
         }else{
@@ -525,7 +525,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         }
         r
     }
-    pub fn next(&self,c:u32,same_branch:u32)->Option<(u32,u32)>{
+    pub(crate) fn next(&self,c:u32,same_branch:u32)->Option<(u32,u32)>{
         let node=self.offset(c);
         let parent_node=self.offset(node.parent);
         if node.same!=0{
