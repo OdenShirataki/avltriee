@@ -120,7 +120,12 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         }
         vertex.parent=update_target_row;
         new_vertex.same=vertex_row;
-
+        if new_vertex.left!=0{
+            self.offset_mut(new_vertex.left).parent=update_target_row;
+        }
+        if new_vertex.right!=0{
+            self.offset_mut(new_vertex.right).parent=update_target_row;
+        }
         vertex.left=0;
         vertex.right=0;
     }

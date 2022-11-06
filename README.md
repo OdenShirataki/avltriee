@@ -1,4 +1,4 @@
-# avltiree
+# avltriee
 ## Features
 A customized version of AVLTree.
 Process the same value in the third branch.
