@@ -249,6 +249,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
                     }else{
                         let (left_max_row,left_max_parent_row)=self.remove_intermediate(remove_target);
                         **self.root=left_max_row;
+                        self.offset_mut(left_max_parent_row).parent=left_max_row;
                         if left_max_parent_row==target_row{
                             self.balance(left_max_row);
                         }else{
@@ -362,17 +363,18 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
 
                         self.calc_height(vertex.left);
                     }else{
-                        let new_left=self.offset_mut(self.min(new_vertex_row));
+                        let new_left_row=self.min(new_vertex_row);
+                        let new_left=self.offset_mut(new_left_row);
                         new_left.left=left_row;
 
-                        left.parent=new_vertex_row;
-                        self.offset_mut(new_vertex_old_parent).right=0;
+                        left.parent=new_left_row;
+                        left.right=0;
  
                         self.calc_height(left_row);
 
                         left=self.offset_mut(vertex.left);
 
-                        parent_row=new_vertex_old_parent;
+                        parent_row=new_left_row;
                     }
                     self.calc_height(vertex_row);
                 }else{
@@ -385,11 +387,12 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
 
                         self.calc_height(vertex.right);
                     }else{
-                        let new_right=self.offset_mut(self.max(new_vertex_row));
+                        let new_right_row=self.max(new_vertex_row);
+                        let new_right=self.offset_mut(new_right_row);
                         new_right.right=right_row;
 
-                        right.parent=new_vertex_row;
-                        self.offset_mut(new_vertex_old_parent).left=0;
+                        right.parent=new_right_row;
+                        right.left=0;
 
                         self.calc_height(right_row);
 
