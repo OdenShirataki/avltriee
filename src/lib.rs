@@ -368,13 +368,13 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
                         new_left.left=left_row;
 
                         left.parent=new_left_row;
-                        left.right=0;
- 
+                        self.offset_mut(new_vertex_old_parent).right=0;
+
                         self.calc_height(left_row);
 
                         left=self.offset_mut(vertex.left);
 
-                        parent_row=new_left_row;
+                        parent_row=new_vertex_old_parent;
                     }
                     self.calc_height(vertex_row);
                 }else{
@@ -392,7 +392,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
                         new_right.right=right_row;
 
                         right.parent=new_right_row;
-                        right.left=0;
+                        self.offset_mut(new_vertex_old_parent).left=0;
 
                         self.calc_height(right_row);
 
