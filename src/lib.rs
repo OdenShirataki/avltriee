@@ -67,7 +67,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         }else{
             self.update_with_search(row,new_data);
         }
-        if self.root()==0{
+        if **self.root==0{
             **self.root=row;
         }
     }
@@ -104,27 +104,27 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         }
         r
     }
-    pub fn update_same(&mut self,vertex_row:u32,update_target_row:u32){
+    pub fn update_same(&mut self,vertex_row:u32,new_row:u32){
         let mut vertex=self.offset_mut(vertex_row);
-        let mut new_vertex=self.offset_mut(update_target_row);
+        let mut new_vertex=self.offset_mut(new_row);
         *new_vertex=vertex.clone();
         if new_vertex.parent==0{
-            **self.root=update_target_row;
+            **self.root=new_row;
         }else{
             let mut parent=self.offset_mut(new_vertex.parent);
             if parent.left==vertex_row{
-                parent.left=update_target_row;
+                parent.left=new_row;
             }else{
-                parent.right=update_target_row;
+                parent.right=new_row;
             }
         }
-        vertex.parent=update_target_row;
+        vertex.parent=new_row;
         new_vertex.same=vertex_row;
         if new_vertex.left!=0{
-            self.offset_mut(new_vertex.left).parent=update_target_row;
+            self.offset_mut(new_vertex.left).parent=new_row;
         }
         if new_vertex.right!=0{
-            self.offset_mut(new_vertex.right).parent=update_target_row;
+            self.offset_mut(new_vertex.right).parent=new_row;
         }
         vertex.left=0;
         vertex.right=0;
@@ -150,7 +150,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         AvltrieeIter::begin_at(&self,begin)
     }
     pub fn iter_by_row_to(&self,end:u32)->AvltrieeRangeIter<T>{
-        AvltrieeRangeIter::new(&self,self.min(self.root()),end)
+        AvltrieeRangeIter::new(&self,self.min(**self.root),end)
     }
     pub fn node<'a>(&self,row:u32) ->Option<&'a AvltrieeNode<T>>{
         let node=self.offset(row);
@@ -419,7 +419,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
     最終的には左右どちらかが空いているノードが返される事になる
      */
     pub fn search(&self,target:&T)->(Ordering,u32) where T:Ord{
-        let mut origin=self.root() as u32;
+        let mut origin=**self.root;
         let mut ord=Ordering::Equal;
 
         while origin!=0{
@@ -446,7 +446,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         (ord,origin)
     }
     pub fn search_cb<F>(&self,ord_cb:F)->(Ordering,u32) where F:Fn(&T)->Ordering{
-        let mut origin=self.root() as u32;
+        let mut origin=**self.root;
         let mut ord=Ordering::Equal;
         while origin!=0{
             let p=self.offset(origin);
@@ -504,9 +504,14 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         }
     }
     fn retroactive(&self,c:u32)->Option<u32>{
-        let parent=self.offset(c).parent;
+        let t=self.offset(c);
+        let parent=t.parent;
         if parent==0{
-            None
+            if t.right==0{
+                None
+            }else{
+                Some(t.right)
+            }
         }else{
             let parent_node=self.offset(parent);
             if parent_node.right==c{    //自身が右の場合、さらに大きいの値が上にある
