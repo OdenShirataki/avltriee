@@ -63,12 +63,15 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
             if n.value().cmp(&new_data)!=Ordering::Equal{  //データが変更なしの場合は何もしない
                 self.remove(row);   //変更の場合、一旦消してから登録しなおす
                 self.update_with_search(row,new_data);
+                if **self.root==0{
+                    **self.root=row;
+                }
             }
         }else{
             self.update_with_search(row,new_data);
-        }
-        if **self.root==0{
-            **self.root=row;
+            if **self.root==0{
+                **self.root=row;
+            }
         }
     }
 
@@ -228,6 +231,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
                     //同じ値のものが存在する場合、それをrootに昇格
                     let same_row=remove_target.same;
                     let same=self.offset_mut(same_row);
+                    same.parent=0;
                     same.left=remove_target.left;
                     same.right=remove_target.right;
                     **self.root=same_row;

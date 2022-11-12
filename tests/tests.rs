@@ -2,6 +2,48 @@ use avltriee::Avltriee;
 use avltriee::AvltrieeNode;
 
 #[test]
+fn test2() {
+    let mut root=0;
+    let mut list:Vec<AvltrieeNode<i64>>=(0..10).map(|_|AvltrieeNode::new(0,0,0)).collect();
+    let rl=&mut list;
+    let mut t=Avltriee::new(
+        &mut root
+        ,rl.as_mut_ptr()
+    );
+    t.update(1,1);
+    t.update(2,1);
+    t.update(3,1);
+
+    t.update(1,1);
+    t.update(2,1);
+    t.update(3,1);
+
+    t.update(4,2);
+    t.update(5,2);
+    t.update(6,2);
+
+    t.update(1,2);
+    t.update(2,2);
+    t.update(3,2);
+    t.update(4,2);
+    t.update(5,2);
+    t.update(6,2);
+
+    t.update(7,3);
+    t.update(8,3);
+    t.update(9,3);
+
+    t.update(1,3);
+    t.update(2,3);
+    t.update(3,3);
+    t.update(4,3);
+    t.update(5,3);
+    t.update(6,3);
+    t.update(7,3);
+    t.update(8,3);
+    t.update(9,3);
+}
+#[test]
 fn example() {
     let mut root=0;
     let mut list:Vec<AvltrieeNode<i64>>=(0..100).map(|_|AvltrieeNode::new(0,0,0)).collect();
