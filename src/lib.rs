@@ -207,6 +207,9 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
             //左最大値の親が削除対象の場合はこの処理は不要
             left_max_parent.right=left_max.left;
             left_max.left=remove_target.left;
+            if left_max.left!=0{
+                self.offset_mut(left_max.left).parent=left_max_row;
+            }
         }
 
         left_max.parent=remove_target.parent;
@@ -255,8 +258,8 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
                     }else{
                         let (left_max_row,left_max_parent_row)=self.remove_intermediate(remove_target);
                         **self.root=left_max_row;
-                        self.offset_mut(left_max_parent_row).parent=left_max_row;
                         if left_max_parent_row==target_row{
+                            self.offset_mut(left_max_parent_row).parent=left_max_row;
                             self.balance(left_max_row);
                         }else{
                             self.balance(left_max_parent_row);
