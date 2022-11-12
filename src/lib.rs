@@ -42,6 +42,7 @@ impl<T> AvltrieeNode<T>{
 pub enum Removed<T>{
     Last(T)
     ,Remain
+    ,None
 }
 
 pub struct Avltriee<T>{
@@ -509,7 +510,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         let t=self.offset(c);
         let parent=t.parent;
         if parent==0{
-            if t.right==0{
+            if t.right==0 || t.same==0{
                 None
             }else{
                 Some(t.right)
