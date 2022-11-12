@@ -32,7 +32,9 @@ impl<'a,T:Clone + Copy + Default> Iterator for AvltrieeIter<'a,T> {
         }else{
             self.local_index += 1;
             let c=self.now;
-            match self.triee.next(self.now,self.same_branch){
+            match unsafe{
+                self.triee.next(self.now,self.same_branch)
+            }{
                 Some((i,b))=>{
                     self.now=i;
                     self.same_branch=b;
@@ -44,7 +46,9 @@ impl<'a,T:Clone + Copy + Default> Iterator for AvltrieeIter<'a,T> {
             Some(AvlTrieeIterResult{
                 index:self.local_index
                 ,row:c
-                ,node:&self.triee.offset(c)
+                ,node:unsafe{
+                    &self.triee.offset(c)
+                }
             })
         }
     }
@@ -52,7 +56,7 @@ impl<'a,T:Clone + Copy + Default> Iterator for AvltrieeIter<'a,T> {
 impl<'a,T:Clone + Copy + Default>AvltrieeIter<'a,T>{
     pub fn new(triee:&'a Avltriee<T>)->AvltrieeIter<'a,T>{
         AvltrieeIter{
-            now:triee.min(triee.root() as u32)
+            now:unsafe{triee.min(triee.root() as u32)}
             ,same_branch:0
             ,local_index:0
             ,triee
@@ -84,13 +88,17 @@ impl<'a,T:Clone + Copy + Default> Iterator for AvltrieeRangeIter<'a,T> {
             self.local_index += 1;
             let c=self.now;
             if c==self.end_row{
-                let same=self.triee.offset(c).same;
+                let same=unsafe{
+                    self.triee.offset(c)
+                }.same;
                 if same!=0{
                     self.end_row=same;
                 }
                 self.now=same;
             }else{
-                match self.triee.next(self.now,self.same_branch){
+                match unsafe{
+                    self.triee.next(self.now,self.same_branch)
+                }{
                     Some((i,b))=>{
                         self.now=i;
                         self.same_branch=b;
@@ -103,7 +111,9 @@ impl<'a,T:Clone + Copy + Default> Iterator for AvltrieeRangeIter<'a,T> {
             Some(AvlTrieeIterResult{
                 index:self.local_index
                 ,row:c
-                ,node:&self.triee.offset(c)
+                ,node:unsafe{
+                    &self.triee.offset(c)
+                }
             })
         }
     }
@@ -123,7 +133,7 @@ impl<'a,T:Clone + Copy + Default> AvltrieeRangeIter<'a,T>{
     pub fn new_with_value_max(triee:&'a Avltriee<T>,value_max:&'a T)->AvltrieeRangeIter<'a,T> where T:std::cmp::Ord{
         let (_,max_row)=triee.search(value_max);
         AvltrieeRangeIter{
-            now:triee.min(triee.root() as u32)
+            now:unsafe{triee.min(triee.root() as u32)}
             ,end_row:max_row
             ,same_branch:0
             ,local_index:0

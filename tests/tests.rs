@@ -10,38 +10,40 @@ fn test2() {
         &mut root
         ,rl.as_mut_ptr()
     );
-    t.update(1,1);
-    t.update(2,1);
-    t.update(3,1);
+    unsafe{
+        t.update(1,1);
+        t.update(2,1);
+        t.update(3,1);
 
-    t.update(1,1);
-    t.update(2,1);
-    t.update(3,1);
+        t.update(1,1);
+        t.update(2,1);
+        t.update(3,1);
 
-    t.update(4,2);
-    t.update(5,2);
-    t.update(6,2);
+        t.update(4,2);
+        t.update(5,2);
+        t.update(6,2);
 
-    t.update(1,2);
-    t.update(2,2);
-    t.update(3,2);
-    t.update(4,2);
-    t.update(5,2);
-    t.update(6,2);
+        t.update(1,2);
+        t.update(2,2);
+        t.update(3,2);
+        t.update(4,2);
+        t.update(5,2);
+        t.update(6,2);
 
-    t.update(7,3);
-    t.update(8,3);
-    t.update(9,3);
+        t.update(7,3);
+        t.update(8,3);
+        t.update(9,3);
 
-    t.update(1,3);
-    t.update(2,3);
-    t.update(3,3);
-    t.update(4,3);
-    t.update(5,3);
-    t.update(6,3);
-    t.update(7,3);
-    t.update(8,3);
-    t.update(9,3);
+        t.update(1,3);
+        t.update(2,3);
+        t.update(3,3);
+        t.update(4,3);
+        t.update(5,3);
+        t.update(6,3);
+        t.update(7,3);
+        t.update(8,3);
+        t.update(9,3);
+    }
 }
 #[test]
 fn example() {
@@ -72,7 +74,9 @@ fn example() {
     ];
     for i in d{
         insert_row+=1;
-        t.update(insert_row,i);
+        unsafe{
+            t.update(insert_row,i);
+        }
     }
 
     for r in t.iter(){
@@ -82,10 +86,14 @@ fn example() {
     let (ord,row)=t.search(&92);
     println!("{:?},{}",ord,row);
 
-    t.remove(2);
+    unsafe{
+        t.remove(2);
+    }
 
     insert_row+=1;
-    t.update(insert_row,1);
+    unsafe{
+        t.update(insert_row,1);
+    }
 
     println!("iter_range");
     for r in t.iter_by_value_from_to(&20,&30){

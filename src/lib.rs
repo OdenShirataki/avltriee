@@ -58,33 +58,29 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
             ,node_list:ManuallyDrop::new(unsafe{Box::from_raw(node_list)})
         }
     }
-    pub fn update(&mut self,row:u32,new_data:T) where T:std::cmp::Ord{
+    pub unsafe fn update(&mut self,row:u32,new_data:T) where T:std::cmp::Ord{
         if let Some(n)=self.node(row){
             if n.value().cmp(&new_data)!=Ordering::Equal{  //データが変更なしの場合は何もしない
                 self.remove(row);   //変更の場合、一旦消してから登録しなおす
                 self.update_with_search(row,new_data);
-                if **self.root==0{
-                    **self.root=row;
-                }
             }
         }else{
             self.update_with_search(row,new_data);
-            if **self.root==0{
-                **self.root=row;
-            }
         }
     }
-
-    fn update_with_search(&mut self,row:u32,data:T) where T:std::cmp::Ord{
+    unsafe fn update_with_search(&mut self,row:u32,data:T) where T:std::cmp::Ord{
         let (ord,found_row)=self.search(&data);
         if ord==Ordering::Equal && found_row!=0{
             self.update_same(found_row,row);
         }else{
             self.update_node(found_row,row,data,ord);
         }
+        if **self.root==0{
+            **self.root=row;
+        }
     }
 
-    pub fn update_node(&mut self,origin:u32,target_row:u32,data:T,ord:Ordering) where T:Copy{
+    pub unsafe fn update_node(&mut self,origin:u32,target_row:u32,data:T,ord:Ordering) where T:Copy{
         *self.offset_mut(target_row)=AvltrieeNode::new(target_row,origin,data);
         if origin>0{
             let p=self.offset_mut(origin);
@@ -98,7 +94,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         }
     }
 
-    pub fn same_last(&self,row:u32)->u32{
+    unsafe fn same_last(&self,row:u32)->u32{
         let mut r=row;
         let mut same=self.offset(r);
         while same.same!=0{
@@ -107,7 +103,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         }
         r
     }
-    pub fn update_same(&mut self,vertex_row:u32,new_row:u32){
+    pub unsafe fn update_same(&mut self,vertex_row:u32,new_row:u32){
         let mut vertex=self.offset_mut(vertex_row);
         let mut new_vertex=self.offset_mut(new_row);
         *new_vertex=vertex.clone();
@@ -153,9 +149,9 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         AvltrieeIter::begin_at(&self,begin)
     }
     pub fn iter_by_row_to(&self,end:u32)->AvltrieeRangeIter<T>{
-        AvltrieeRangeIter::new(&self,self.min(**self.root),end)
+        AvltrieeRangeIter::new(&self,unsafe{self.min(**self.root)},end)
     }
-    pub fn node<'a>(&self,row:u32) ->Option<&'a AvltrieeNode<T>>{
+    pub unsafe fn node<'a>(&self,row:u32) ->Option<&'a AvltrieeNode<T>>{
         let node=self.offset(row);
         if node.height>0{
             Some(node)
@@ -163,7 +159,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
             None
         }
     }
-    pub fn value<'a>(&self,row:u32)->Option<&'a T>{
+    pub unsafe fn value<'a>(&self,row:u32)->Option<&'a T>{
         if let Some(v)=self.node(row){
             Some(&v.value())
         }else{
@@ -174,23 +170,21 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         **self.root
     }
     pub fn init_node(&mut self,data:T,root:u32) where T:Default+Copy{
-        *self.offset_mut(0)=AvltrieeNode::new(0,0,T::default()); //0ノード 
-        *self.offset_mut(root)=AvltrieeNode::new(1,0,data); //初回追加分
+        unsafe{
+            *self.offset_mut(0)=AvltrieeNode::new(0,0,T::default()); //0ノード 
+            *self.offset_mut(root)=AvltrieeNode::new(1,0,data); //初回追加分
+        }
         **self.root=root;
     }
 
     fn node_list_mut(&mut self)->*mut AvltrieeNode<T>{
         &mut**self.node_list
     }
-    pub fn offset<'a>(&self,offset:u32)->&'a AvltrieeNode<T>{
-        unsafe{
-            &*(&**self.node_list as *const AvltrieeNode<T>).offset(offset as isize)
-        }
+    pub(crate) unsafe fn offset<'a>(&self,offset:u32)->&'a AvltrieeNode<T>{
+        &*(&**self.node_list as *const AvltrieeNode<T>).offset(offset as isize)
     }
-    pub fn offset_mut<'a>(&mut self,offset:u32)->&'a mut AvltrieeNode<T>{
-        unsafe{
-            &mut*self.node_list_mut().offset(offset as isize)
-        }
+    pub(crate) unsafe fn offset_mut<'a>(&mut self,offset:u32)->&'a mut AvltrieeNode<T>{
+        &mut*self.node_list_mut().offset(offset as isize)
     }
 
     fn join_intermediate(parent:&mut AvltrieeNode<T>,remove_target_row:u32,child_row:u32){
@@ -202,7 +196,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
             panic!("crash and burn"); 
         }
     }
-    fn remove_intermediate(&mut self,remove_target:&mut AvltrieeNode<T>)->(u32,u32){
+    unsafe fn remove_intermediate(&mut self,remove_target:&mut AvltrieeNode<T>)->(u32,u32){
         let left_max_row=self.max(remove_target.left);
         let mut left_max=self.offset_mut(left_max_row);
         let left_max_parent_row=left_max.parent;
@@ -222,7 +216,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         
         (left_max_row,left_max_parent_row)
     }
-    pub fn remove(&mut self,target_row:u32)->Removed<T> where T:Default+Clone{
+    pub unsafe fn remove(&mut self,target_row:u32)->Removed<T> where T:Default+Clone{
         let mut ret=Removed::Remain;
         let remove_target=self.offset_mut(target_row);
         if remove_target.height>0{
@@ -310,7 +304,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         ret
     }
 
-    fn calc_height(&mut self,vertex_row:u32){
+    unsafe fn calc_height(&mut self,vertex_row:u32){
         let mut vertex=self.offset_mut(vertex_row);
 
         let left=self.offset(vertex.left);
@@ -321,7 +315,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
             ,right.height
         )+1;
     }
-    fn balance(&mut self,vertex_row:u32){
+    unsafe fn balance(&mut self,vertex_row:u32){
         let mut vertex_row=vertex_row;
         loop {
             let mut vertex=self.offset_mut(vertex_row);
@@ -334,7 +328,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
             let mut left=self.offset_mut(left_row);
             let mut right=self.offset_mut(right_row);
 
-            let diff=left.height as isize  - right.height as isize;
+            let diff=left.height as isize - right.height as isize;
             if diff.abs()>=2{
                 let high_is_left=diff>0;
 
@@ -422,13 +416,15 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
     与えられた値を検索する。
     最終的には左右どちらかが空いているノードが返される事になる
      */
-    pub fn search(&self,target:&T)->(Ordering,u32) where T:Ord{
+    pub fn search(&self,value:&T)->(Ordering,u32) where T:Ord{
         let mut origin=**self.root;
         let mut ord=Ordering::Equal;
 
         while origin!=0{
-            let p=self.offset(origin);
-            ord=target.cmp(&p.value());
+            let p=unsafe{
+                self.offset(origin)
+            };
+            ord=value.cmp(&p.value());
             match ord{
                 Ordering::Less=>{
                     if p.left==0{
@@ -453,7 +449,9 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         let mut origin=**self.root;
         let mut ord=Ordering::Equal;
         while origin!=0{
-            let p=self.offset(origin);
+            let p=unsafe{
+                self.offset(origin)
+            };
             ord=ord_cb(&p.value());
             match ord{
                 Ordering::Less=>{
@@ -475,7 +473,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         }
         (ord,origin)
     }
-    pub fn sames(&self,same_root:u32)->Vec<u32>{
+    pub unsafe fn sames(&self,same_root:u32)->Vec<u32>{
         let mut r=Vec::new();
         let mut t=same_root;
         loop{
@@ -489,7 +487,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         }
         r
     }
-    fn max(&self,t:u32)->u32{
+    unsafe fn max(&self,t:u32)->u32{
         let node=self.offset(t);
         let r=node.right;
         if r==0{
@@ -498,7 +496,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
             self.max(r)
         }
     }
-    fn min(&self,t:u32)->u32{
+    unsafe fn min(&self,t:u32)->u32{
         let node=self.offset(t);
         let l=node.left;
         if l==0{
@@ -507,7 +505,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
             self.min(l)
         }
     }
-    fn retroactive(&self,c:u32)->Option<u32>{
+    unsafe fn retroactive(&self,c:u32)->Option<u32>{
         let t=self.offset(c);
         let parent=t.parent;
         if parent==0{
@@ -525,7 +523,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
             }
         }
     }
-    fn same_root(&self,row:u32)->u32{
+    unsafe fn same_root(&self,row:u32)->u32{
         let mut r=row;
         loop {
             let same=self.offset(r);
@@ -540,7 +538,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         }
         r
     }
-    pub(crate) fn next(&self,c:u32,same_branch:u32)->Option<(u32,u32)>{
+    pub(crate) unsafe fn next(&self,c:u32,same_branch:u32)->Option<(u32,u32)>{
         let node=self.offset(c);
         let parent_node=self.offset(node.parent);
         if node.same!=0{
