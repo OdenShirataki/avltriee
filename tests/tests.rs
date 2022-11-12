@@ -43,6 +43,10 @@ fn test2() {
         t.update(7,3);
         t.update(8,3);
         t.update(9,3);
+
+        for i in t.iter(){
+            println!("{}:{}",i.index(),i.value());
+        }
     }
 }
 #[test]

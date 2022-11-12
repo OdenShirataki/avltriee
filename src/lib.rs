@@ -75,9 +75,9 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
             self.update_same(found_row,row);
         }else{
             self.update_node(found_row,row,data,ord);
-        }
-        if **self.root==0{
-            **self.root=row;
+            if **self.root==0{
+                **self.root=row;
+            }
         }
     }
 
@@ -229,6 +229,13 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
                     same.parent=0;
                     same.left=remove_target.left;
                     same.right=remove_target.right;
+                    same.height=remove_target.height;
+                    if same.left!=0{
+                        self.offset_mut(same.left).parent=same_row;
+                    }
+                    if same.right!=0{
+                        self.offset_mut(same.right).parent=same_row;
+                    }
                     **self.root=same_row;
                 }else{
                     ret=Removed::Last(remove_target.value().clone());
