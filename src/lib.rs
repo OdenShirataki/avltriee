@@ -206,6 +206,9 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         if remove_target.left!=left_max_row{
             //左最大値の親が削除対象の場合はこの処理は不要
             left_max_parent.right=left_max.left;
+            if left_max_parent.right!=0{
+                self.offset_mut(left_max_parent.right).parent=left_max_parent_row;
+            }
             left_max.left=remove_target.left;
             if left_max.left!=0{
                 self.offset_mut(left_max.left).parent=left_max_row;
@@ -416,7 +419,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
             vertex.height=std::cmp::max(
                 left.height
                 ,right.height
-            )+1;    //左右のノードの高い方の高さ+1
+            )+1;
             vertex_row=parent_row;
             if vertex_row==0{    //頂点まで遡及完了した場合は抜ける
                 break;
