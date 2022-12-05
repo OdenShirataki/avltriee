@@ -530,9 +530,17 @@ impl<T:Clone+Default> Avltriee<T>{
             }
         }else{
             let parent_node=self.offset(parent);
-            if parent_node.right==c{    //自身が右の場合、さらに大きいの値が上にある
-                self.retroactive(parent)
-            }else{  //自身が左の場合、
+            if parent_node.right==c{
+                if let Some(p)=self.retroactive(parent){
+                    if p!=c{
+                        Some(p)
+                    }else{
+                        None
+                    }
+                }else{
+                    None
+                }
+            }else{
                 Some(parent)
             }
         }
