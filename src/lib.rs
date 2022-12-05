@@ -1,4 +1,4 @@
-use std::{cmp::Ordering,mem::ManuallyDrop};
+use std::{cmp::{Ord,Ordering},mem::ManuallyDrop};
 
 mod iter;
 use iter::{
@@ -15,7 +15,7 @@ pub struct AvltrieeNode<T>{
     ,height: u8
     ,value: T
 }
-impl<T> AvltrieeNode<T>{
+impl<T:Clone+Default> AvltrieeNode<T>{
     pub fn new(row:u32,parent:u32,value:T)->AvltrieeNode<T>{
         AvltrieeNode{
             height:if row==0{0}else{1}
@@ -23,10 +23,10 @@ impl<T> AvltrieeNode<T>{
             ,left:0
             ,right:0
             ,same:0
-            ,value
+            ,value:value.clone()
         }
     }
-    pub fn reset(&mut self) where T : std::default::Default{
+    pub fn reset(&mut self){
         self.height=0;
         self.parent=0;
         self.left=0;
@@ -49,7 +49,7 @@ pub struct Avltriee<T>{
     root: ManuallyDrop<Box<u32>>
     ,node_list: ManuallyDrop<Box<AvltrieeNode<T>>>
 }
-impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee<T>{
+impl<T:Clone+Default> Avltriee<T>{
     pub fn new(
         root: *mut u32
         ,node_list: *mut AvltrieeNode<T>
@@ -59,7 +59,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
             ,node_list:ManuallyDrop::new(unsafe{Box::from_raw(node_list)})
         }
     }
-    pub unsafe fn update(&mut self,row:u32,new_data:T) where T:std::cmp::Ord{
+    pub unsafe fn update(&mut self,row:u32,new_data:T) where T:Ord{
         if let Some(n)=self.node(row){
             if n.value().cmp(&new_data)!=Ordering::Equal{  //データが変更なしの場合は何もしない
                 self.remove(row);   //変更の場合、一旦消してから登録しなおす
@@ -69,7 +69,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
             self.update_with_search(row,new_data);
         }
     }
-    unsafe fn update_with_search(&mut self,row:u32,data:T) where T:std::cmp::Ord{
+    unsafe fn update_with_search(&mut self,row:u32,data:T) where T:Ord{
         let (ord,found_row)=self.search(&data);
         if ord==Ordering::Equal && found_row!=0{
             self.update_same(found_row,row);
@@ -81,8 +81,8 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         }
     }
 
-    pub unsafe fn update_node(&mut self,origin:u32,target_row:u32,data:T,ord:Ordering) where T:Copy{
-        *self.offset_mut(target_row)=AvltrieeNode::new(target_row,origin,data);
+    pub unsafe fn update_node(&mut self,origin:u32,target_row:u32,data:T,ord:Ordering){
+        *self.offset_mut(target_row)=AvltrieeNode::new(target_row,origin,data.clone());
         if origin>0{
             let p=self.offset_mut(origin);
             //親ノードのL/R更新。比較結果が小さい場合は左、大きい場合は右
@@ -133,14 +133,14 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
     pub fn iter(&self)->AvltrieeIter<T>{
         AvltrieeIter::new(&self)
     }
-    pub fn iter_by_value_from(&self,min_value:&T)->AvltrieeIter<T> where T:std::cmp::Ord{
+    pub fn iter_by_value_from(&self,min_value:&T)->AvltrieeIter<T> where T:Ord{
         let (_,row)=self.search(min_value);
         AvltrieeIter::begin_at(&self,row)
     }
-    pub fn iter_by_value_to<'a>(&'a self,max_value:&'a T)->AvltrieeRangeIter<T> where T:std::cmp::Ord{
+    pub fn iter_by_value_to<'a>(&'a self,max_value:&'a T)->AvltrieeRangeIter<T> where T:Ord{
         AvltrieeRangeIter::new_with_value_max(&self,max_value)
     }
-    pub fn iter_by_value_from_to<'a>(&'a self,min_value:&'a T,max_value:&'a T)->AvltrieeRangeIter<T> where T:std::cmp::Ord{
+    pub fn iter_by_value_from_to<'a>(&'a self,min_value:&'a T,max_value:&'a T)->AvltrieeRangeIter<T> where T:Ord{
         AvltrieeRangeIter::new_with_value(&self,min_value,max_value)
     }
     pub fn iter_by_row_from_to(&self,begin:u32,end:u32)->AvltrieeRangeIter<T>{
@@ -170,10 +170,10 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
     pub fn root(&self)->u32{
         **self.root
     }
-    pub fn init_node(&mut self,data:T,root:u32) where T:Default+Copy{
+    pub fn init_node(&mut self,data:T,root:u32){
         unsafe{
             *self.offset_mut(0)=AvltrieeNode::new(0,0,T::default()); //0ノード 
-            *self.offset_mut(root)=AvltrieeNode::new(1,0,data); //初回追加分
+            *self.offset_mut(root)=AvltrieeNode::new(1,0,data.clone()); //初回追加分
         }
         **self.root=root;
     }
@@ -223,7 +223,7 @@ impl<T: std::marker::Copy +  std::clone::Clone + std::default::Default> Avltriee
         
         (left_max_row,left_max_parent_row)
     }
-    pub unsafe fn remove(&mut self,target_row:u32)->Removed<T> where T:Default+Clone{
+    pub unsafe fn remove(&mut self,target_row:u32)->Removed<T>{
         let mut ret=Removed::Remain;
         let remove_target=self.offset_mut(target_row);
         if remove_target.height>0{

@@ -1,12 +1,15 @@
-use super::Avltriee;
-use super::AvltrieeNode;
+use std::cmp::Ord;
+use super::{
+    Avltriee
+    ,AvltrieeNode
+};
 
 pub struct AvlTrieeIterResult<'a,T>{
     index:isize
     ,row:u32
     ,node:&'a AvltrieeNode<T>
 }
-impl<'a,T> AvlTrieeIterResult<'a,T>{
+impl<'a,T:Clone+Default> AvlTrieeIterResult<'a,T>{
     pub fn index(&self)->isize{
         self.index
     }
@@ -24,9 +27,9 @@ pub struct AvltrieeIter<'a,T>{
     ,triee:&'a Avltriee<T>
 }
 
-impl<'a,T:Clone + Copy + Default> Iterator for AvltrieeIter<'a,T> {
+impl<'a,T:Clone+Default> Iterator for AvltrieeIter<'a,T> {
     type Item = AvlTrieeIterResult<'a,T>;
-    fn next(&mut self) -> Option<Self::Item> {
+    fn next(&mut self) -> Option<Self::Item>{
         if self.now==0{
             None
         }else{
@@ -53,7 +56,7 @@ impl<'a,T:Clone + Copy + Default> Iterator for AvltrieeIter<'a,T> {
         }
     }
 }
-impl<'a,T:Clone + Copy + Default>AvltrieeIter<'a,T>{
+impl<'a,T:Clone+Default>AvltrieeIter<'a,T>{
     pub fn new(triee:&'a Avltriee<T>)->AvltrieeIter<'a,T>{
         AvltrieeIter{
             now:unsafe{triee.min(triee.root() as u32)}
@@ -79,7 +82,7 @@ pub struct AvltrieeRangeIter<'a,T>{
     ,local_index:isize
     ,triee:&'a Avltriee<T>
 }
-impl<'a,T:Clone + Copy + Default> Iterator for AvltrieeRangeIter<'a,T> {
+impl<'a,T:Clone+Default> Iterator for AvltrieeRangeIter<'a,T> {
     type Item = AvlTrieeIterResult<'a,T>;
     fn next(&mut self) -> Option<Self::Item> {
         if self.now==0{
@@ -118,8 +121,8 @@ impl<'a,T:Clone + Copy + Default> Iterator for AvltrieeRangeIter<'a,T> {
         }
     }
 }
-impl<'a,T:Clone + Copy + Default> AvltrieeRangeIter<'a,T>{
-    pub fn new_with_value(triee:&'a Avltriee<T>,value_min:&T,value_max:&'a T)->AvltrieeRangeIter<'a,T> where T:std::cmp::Ord{
+impl<'a,T:Clone+Default> AvltrieeRangeIter<'a,T>{
+    pub fn new_with_value(triee:&'a Avltriee<T>,value_min:&T,value_max:&'a T)->AvltrieeRangeIter<'a,T> where T:Ord{
         let (_,min_row)=triee.search(value_min);
         let (_,max_row)=triee.search(value_max);
         AvltrieeRangeIter{
@@ -130,7 +133,7 @@ impl<'a,T:Clone + Copy + Default> AvltrieeRangeIter<'a,T>{
             ,triee
         }
     }
-    pub fn new_with_value_max(triee:&'a Avltriee<T>,value_max:&'a T)->AvltrieeRangeIter<'a,T> where T:std::cmp::Ord{
+    pub fn new_with_value_max(triee:&'a Avltriee<T>,value_max:&'a T)->AvltrieeRangeIter<'a,T> where T:Ord{
         let (_,max_row)=triee.search(value_max);
         AvltrieeRangeIter{
             now:unsafe{triee.min(triee.root() as u32)}
