@@ -2,26 +2,7 @@ use avltriee::Avltriee;
 use avltriee::AvltrieeNode;
 
 #[test]
-fn test3() {
-    let mut root=0;
-    let mut list:Vec<AvltrieeNode<i64>>=(0..100).map(|_|AvltrieeNode::new(0,0,0)).collect();
-    let rl=&mut list;
-    let mut t=Avltriee::new(
-        &mut root
-        ,rl.as_mut_ptr()
-    );
-    for i in 1..=20{
-        unsafe{
-            t.update(i,(i%3).into());
-        }
-    }
-    for i in t.iter(){
-        println!("{}:{}:{}",i.index(),i.row(),i.value());
-    }
-}
-
-#[test]
-fn test2() {
+fn test() {
     let mut root=0;
     let mut list:Vec<AvltrieeNode<i64>>=(0..10).map(|_|AvltrieeNode::new(0,0,0)).collect();
     let rl=&mut list;
@@ -102,7 +83,12 @@ fn example() {
         }
     }
 
+    println!("ASC");
     for r in t.iter(){
+        println!("{},{},{:?}",r.index(),r.row(),r.value());
+    }
+    println!("DESC");
+    for r in t.desc_iter(){
         println!("{},{},{:?}",r.index(),r.row(),r.value());
     }
 

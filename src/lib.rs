@@ -1,7 +1,7 @@
 use std::{cmp::{Ord,Ordering},mem::ManuallyDrop};
 
 mod iter;
-use iter::{
+pub use iter::{
     AvltrieeIter
     ,AvltrieeRangeIter
 };
@@ -131,11 +131,14 @@ impl<T:Clone+Default> Avltriee<T>{
     }
 
     pub fn iter(&self)->AvltrieeIter<T>{
-        AvltrieeIter::new(&self)
+        AvltrieeIter::new(&self,iter::Order::Asc)
+    }
+    pub fn desc_iter(&self)->AvltrieeIter<T>{
+        AvltrieeIter::new(&self,iter::Order::Desc)
     }
     pub fn iter_by_value_from(&self,min_value:&T)->AvltrieeIter<T> where T:Ord{
         let (_,row)=self.search(min_value);
-        AvltrieeIter::begin_at(&self,row)
+        AvltrieeIter::begin_at(&self,row,iter::Order::Asc)
     }
     pub fn iter_by_value_to<'a>(&'a self,max_value:&'a T)->AvltrieeRangeIter<T> where T:Ord{
         AvltrieeRangeIter::new_with_value_max(&self,max_value)
@@ -147,7 +150,7 @@ impl<T:Clone+Default> Avltriee<T>{
         AvltrieeRangeIter::new(&self,begin,end)
     }
     pub fn iter_by_row_from(&self,begin:u32)->AvltrieeIter<T>{
-        AvltrieeIter::begin_at(&self,begin)
+        AvltrieeIter::begin_at(&self,begin,iter::Order::Asc)
     }
     pub fn iter_by_row_to(&self,end:u32)->AvltrieeRangeIter<T>{
         AvltrieeRangeIter::new(&self,unsafe{self.min(**self.root)},end)
@@ -618,6 +621,91 @@ impl<T:Clone+Default> Avltriee<T>{
                     Some((self.min(node.right),same_branch))
                 }else{
                     None    //右も左も親も無い場合は自身が唯一のデータなので次は無い
+                }
+            }
+        }
+    }
+
+    unsafe fn retroactive_desc(&self,c:u32)->Option<u32>{
+        let t=self.offset(c);
+        let parent=t.parent;
+        if parent==0{
+            if t.left==0 || t.same==0{
+                None
+            }else{
+                Some(t.left)
+            }
+        }else{
+            let parent_node=self.offset(parent);
+            if parent_node.left==c{
+                if let Some(p)=self.retroactive_desc(parent){
+                    if p!=c{
+                        Some(p)
+                    }else{
+                        None
+                    }
+                }else{
+                    None
+                }
+            }else{
+                Some(parent)
+            }
+        }
+    }
+    pub(crate) unsafe fn next_desc(&self,c:u32,same_branch:u32)->Option<(u32,u32)>{
+        let node=self.offset(c);
+        let parent_node=self.offset(node.parent);
+        if node.same!=0{
+            if parent_node.left==c || parent_node.right==c{
+                Some((node.same,c))
+            }else{
+                Some((node.same,same_branch))
+            }
+        }else{
+            if parent_node.same==c{
+                let sr=if same_branch!=0{
+                    same_branch
+                }else{
+                    self.same_root(node.parent)
+                };
+                if sr!=0{
+                    if let Some(i)=self.retroactive_desc(sr){
+                        Some((i,0))
+                    }else{
+                        None
+                    }
+                }else{
+                    None
+                }
+            }else if parent_node.right==c{
+                if node.left!=0{
+                    Some((self.max(node.left),same_branch))
+                }else{
+                    if parent_node.same==0{
+                        Some((node.parent,same_branch))
+                    }else{
+                        Some((self.same_last(node.parent),same_branch))
+                    }
+                }
+            }else if parent_node.left==c{
+                if node.left!=0{
+                    Some((self.max(node.left),same_branch))
+                }else{
+                    if parent_node.parent==0{
+                        None
+                    }else{
+                        if let Some(i)=self.retroactive_desc(node.parent){
+                            Some((i,same_branch))
+                        }else{
+                            None
+                        }
+                    }
+                }
+            }else{
+                if node.left!=0{
+                    Some((self.max(node.left),same_branch))
+                }else{
+                    None
                 }
             }
         }
