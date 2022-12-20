@@ -10,7 +10,7 @@ pub struct AvltrieeIter<'a, T> {
     next_func: unsafe fn(&Avltriee<T>, u32, u32) -> Option<(u32, u32)>,
 }
 
-impl<'a, T: Clone + Default> AvltrieeIter<'a, T> {
+impl<'a, T> AvltrieeIter<'a, T> {
     pub fn new(triee: &'a Avltriee<T>, order: super::Order) -> AvltrieeIter<'a, T> {
         match order {
             super::Order::Asc => AvltrieeIter {
@@ -47,7 +47,7 @@ impl<'a, T: Clone + Default> AvltrieeIter<'a, T> {
     }
 }
 
-impl<'a, T: Clone + Default> Iterator for AvltrieeIter<'a, T> {
+impl<'a, T> Iterator for AvltrieeIter<'a, T> {
     type Item = AvlTrieeIterResult<'a, T>;
     fn next(&mut self) -> Option<Self::Item> {
         if self.now == 0 {

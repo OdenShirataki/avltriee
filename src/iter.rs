@@ -16,7 +16,7 @@ pub struct AvlTrieeIterResult<'a, T> {
     row: u32,
     node: &'a AvltrieeNode<T>,
 }
-impl<'a, T: Clone + Default> AvlTrieeIterResult<'a, T> {
+impl<'a, T> AvlTrieeIterResult<'a, T> {
     pub fn index(&self) -> isize {
         self.index
     }

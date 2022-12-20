@@ -15,7 +15,7 @@ pub struct AvltrieeNode<T> {
     height: u8,
     value: T,
 }
-impl<T: Clone + Default> AvltrieeNode<T> {
+impl<T> AvltrieeNode<T> {
     pub fn new(row: u32, parent: u32, value: T) -> AvltrieeNode<T> {
         AvltrieeNode {
             height: if row == 0 { 0 } else { 1 },
@@ -23,10 +23,13 @@ impl<T: Clone + Default> AvltrieeNode<T> {
             left: 0,
             right: 0,
             same: 0,
-            value: value.clone(),
+            value,
         }
     }
-    pub fn reset(&mut self) {
+    pub fn reset(&mut self)
+    where
+        T: Default,
+    {
         self.height = 0;
         self.parent = 0;
         self.left = 0;
@@ -49,7 +52,7 @@ pub struct Avltriee<T> {
     root: ManuallyDrop<Box<u32>>,
     node_list: ManuallyDrop<Box<AvltrieeNode<T>>>,
 }
-impl<T: Clone + Default> Avltriee<T> {
+impl<T> Avltriee<T> {
     pub fn new(root: *mut u32, node_list: *mut AvltrieeNode<T>) -> Avltriee<T> {
         Avltriee {
             root: ManuallyDrop::new(unsafe { Box::from_raw(root) }),
@@ -58,7 +61,7 @@ impl<T: Clone + Default> Avltriee<T> {
     }
     pub unsafe fn update(&mut self, row: u32, new_data: T)
     where
-        T: Ord,
+        T: Ord + Clone + Default,
     {
         if let Some(n) = self.node(row) {
             if n.value().cmp(&new_data) != Ordering::Equal {
@@ -72,7 +75,7 @@ impl<T: Clone + Default> Avltriee<T> {
     }
     unsafe fn update_with_search(&mut self, row: u32, data: T)
     where
-        T: Ord,
+        T: Ord + Clone,
     {
         let (ord, found_row) = self.search(&data);
         if ord == Ordering::Equal && found_row != 0 {
@@ -86,7 +89,7 @@ impl<T: Clone + Default> Avltriee<T> {
     }
 
     pub unsafe fn update_node(&mut self, origin: u32, target_row: u32, data: T, ord: Ordering) {
-        *self.offset_mut(target_row) = AvltrieeNode::new(target_row, origin, data.clone());
+        *self.offset_mut(target_row) = AvltrieeNode::new(target_row, origin, data);
         if origin > 0 {
             let p = self.offset_mut(origin);
             //親ノードのL/R更新。比較結果が小さい場合は左、大きい場合は右
@@ -108,7 +111,10 @@ impl<T: Clone + Default> Avltriee<T> {
         }
         r
     }
-    pub unsafe fn update_same(&mut self, vertex_row: u32, new_row: u32) {
+    pub unsafe fn update_same(&mut self, vertex_row: u32, new_row: u32)
+    where
+        T: Clone,
+    {
         let mut vertex = self.offset_mut(vertex_row);
         let mut new_vertex = self.offset_mut(new_row);
         *new_vertex = vertex.clone();
@@ -190,10 +196,13 @@ impl<T: Clone + Default> Avltriee<T> {
     pub fn root(&self) -> u32 {
         **self.root
     }
-    pub fn init_node(&mut self, data: T, root: u32) {
+    pub fn init_node(&mut self, data: T, root: u32)
+    where
+        T: Default,
+    {
         unsafe {
             *self.offset_mut(0) = AvltrieeNode::new(0, 0, T::default()); //0ノード
-            *self.offset_mut(root) = AvltrieeNode::new(1, 0, data.clone()); //初回追加分
+            *self.offset_mut(root) = AvltrieeNode::new(1, 0, data); //初回追加分
         }
         **self.root = root;
     }
@@ -243,7 +252,10 @@ impl<T: Clone + Default> Avltriee<T> {
 
         (left_max_row, left_max_parent_row)
     }
-    pub unsafe fn remove(&mut self, target_row: u32) -> Removed<T> {
+    pub unsafe fn remove(&mut self, target_row: u32) -> Removed<T>
+    where
+        T: Default + Clone,
+    {
         let mut ret = Removed::Remain;
         let remove_target = self.offset_mut(target_row);
         if remove_target.height > 0 {

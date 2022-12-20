@@ -9,7 +9,7 @@ pub struct AvltrieeRangeIter<'a, T> {
     local_index: isize,
     triee: &'a Avltriee<T>,
 }
-impl<'a, T: Clone + Default> Iterator for AvltrieeRangeIter<'a, T> {
+impl<'a, T> Iterator for AvltrieeRangeIter<'a, T> {
     type Item = AvlTrieeIterResult<'a, T>;
     fn next(&mut self) -> Option<Self::Item> {
         if self.now == 0 {
@@ -42,7 +42,7 @@ impl<'a, T: Clone + Default> Iterator for AvltrieeRangeIter<'a, T> {
         }
     }
 }
-impl<'a, T: Clone + Default> AvltrieeRangeIter<'a, T> {
+impl<'a, T> AvltrieeRangeIter<'a, T> {
     pub fn new_with_value(
         triee: &'a Avltriee<T>,
         value_min: &T,
