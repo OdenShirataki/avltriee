@@ -304,10 +304,12 @@ impl<T> Avltriee<T> {
                     }
                 }
             } else {
-                let mut parent = self.offset_mut(remove_target.parent);
+                let parent_row = remove_target.parent;
+                let mut parent = self.offset_mut(parent_row);
                 if parent.same == target_row {
                     //同じ値がある。前後をつなげる
                     parent.same = remove_target.same;
+                    self.offset_mut(parent.same).parent = parent_row;
                 } else {
                     ret = Removed::Last(remove_target.value().clone());
                     if remove_target.left == 0 && remove_target.right == 0 {
@@ -317,21 +319,21 @@ impl<T> Avltriee<T> {
                         } else if parent.left == target_row {
                             parent.left = 0;
                         }
-                        self.balance(remove_target.parent);
+                        self.balance(parent_row);
                     } else if remove_target.left == 0 {
                         //左が空いている。右ノードを親に接ぐ
                         Self::join_intermediate(parent, target_row, remove_target.right);
                         if remove_target.right != 0 {
-                            self.offset_mut(remove_target.right).parent = remove_target.parent;
+                            self.offset_mut(remove_target.right).parent = parent_row;
                         }
-                        self.balance(remove_target.parent);
+                        self.balance(parent_row);
                     } else if remove_target.right == 0 {
                         //右が空いている。左ノードを親に接ぐ
                         Self::join_intermediate(parent, target_row, remove_target.left);
                         if remove_target.left != 0 {
-                            self.offset_mut(remove_target.left).parent = remove_target.parent;
+                            self.offset_mut(remove_target.left).parent = parent_row;
                         }
-                        self.balance(remove_target.parent);
+                        self.balance(parent_row);
                     } else {
                         //削除対象は中間ノード
                         let (left_max_row, left_max_parent_row) =
