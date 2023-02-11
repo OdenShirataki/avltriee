@@ -314,12 +314,17 @@ impl<T> Avltriee<T> {
                     ret = Removed::Last(remove_target.value().clone());
                     if remove_target.left == 0 && remove_target.right == 0 {
                         //削除対象が末端の場合
+                        let same = remove_target.same;
                         if parent.right == target_row {
-                            parent.right = 0;
+                            parent.right = same;
                         } else if parent.left == target_row {
-                            parent.left = 0;
+                            parent.left = same;
                         }
-                        self.balance(parent_row);
+                        if same != 0 {
+                            self.offset_mut(same).parent = parent_row;
+                        } else {
+                            self.balance(parent_row);
+                        }
                     } else if remove_target.left == 0 {
                         //左が空いている。右ノードを親に接ぐ
                         Self::join_intermediate(parent, target_row, remove_target.right);
