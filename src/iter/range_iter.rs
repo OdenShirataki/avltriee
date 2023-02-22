@@ -66,10 +66,20 @@ impl<'a, T> AvltrieeRangeIter<'a, T> {
         T: Ord,
     {
         let (_, max_row) = triee.search(value_max);
+        let min_row = unsafe { triee.min(triee.root() as u32) };
+        let same_branch = if let Some(min) = unsafe { triee.node(min_row) } {
+            if min.same != 0 {
+                min_row
+            } else {
+                0
+            }
+        } else {
+            0
+        };
         AvltrieeRangeIter {
-            now: unsafe { triee.min(triee.root() as u32) },
+            now: min_row,
             end_row: max_row,
-            same_branch: 0,
+            same_branch,
             local_index: 0,
             triee,
         }
