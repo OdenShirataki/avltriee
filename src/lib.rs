@@ -618,7 +618,11 @@ impl<T> Avltriee<T> {
                 };
                 if sr != 0 {
                     if let Some(i) = self.retroactive(sr) {
-                        Some((i, 0))
+                        Some(if self.offset(i).same == 0 {
+                            (self.min(i), 0)
+                        } else {
+                            (i, i)
+                        })
                     } else {
                         None
                     }
@@ -697,7 +701,7 @@ impl<T> Avltriee<T> {
         let node = self.offset(c);
         let parent_node = self.offset(node.parent);
         if node.same != 0 {
-            if parent_node.left == c || parent_node.right == c {
+            if parent_node.left == c || parent_node.right == c || node.parent == 0 {
                 Some((node.same, c))
             } else {
                 Some((node.same, same_branch))

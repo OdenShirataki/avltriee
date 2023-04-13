@@ -6,6 +6,7 @@ pub use iter::AvltrieeIter;
 mod range_iter;
 pub use range_iter::AvltrieeRangeIter;
 
+#[derive(PartialEq)]
 pub enum Order {
     Asc,
     Desc,

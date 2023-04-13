@@ -12,11 +12,18 @@ pub struct AvltrieeIter<'a, T> {
 
 impl<'a, T> AvltrieeIter<'a, T> {
     pub fn new(triee: &'a Avltriee<T>, order: super::Order) -> AvltrieeIter<'a, T> {
-        let root = unsafe { triee.min(triee.root() as u32) };
-        let mut same_branch=0;
+        let tree_root = triee.root();
+        let root = unsafe {
+            if order == super::Order::Desc {
+                triee.max(tree_root as u32)
+            } else {
+                triee.min(tree_root as u32)
+            }
+        };
+        let mut same_branch = 0;
         if let Some(node) = unsafe { triee.node(root) } {
-            if node.same!=0{
-                same_branch=root;
+            if node.same != 0 {
+                same_branch = root;
             }
         }
         match order {
