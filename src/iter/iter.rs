@@ -1,6 +1,7 @@
 use crate::Avltriee;
 
 use super::AvlTrieeIterResult;
+use super::Order;
 
 pub struct AvltrieeIter<'a, T> {
     now: u32,
@@ -11,32 +12,25 @@ pub struct AvltrieeIter<'a, T> {
 }
 
 impl<'a, T> AvltrieeIter<'a, T> {
-    pub fn new(triee: &'a Avltriee<T>, order: super::Order) -> AvltrieeIter<'a, T> {
-        let tree_root = triee.root();
-        let root = unsafe {
-            if order == super::Order::Desc {
-                triee.max(tree_root as u32)
-            } else {
-                triee.min(tree_root as u32)
+    pub fn new(triee: &'a Avltriee<T>, order: Order) -> AvltrieeIter<'a, T> {
+        let root = triee.root() as u32;
+        let now = unsafe {
+            match order {
+                Order::Asc => triee.min(root),
+                Order::Desc => triee.max(root),
             }
         };
-        let mut same_branch = 0;
-        if let Some(node) = unsafe { triee.node(root) } {
-            if node.same != 0 {
-                same_branch = root;
-            }
-        }
         match order {
-            super::Order::Asc => AvltrieeIter {
-                now: root,
-                same_branch,
+            Order::Asc => AvltrieeIter {
+                now,
+                same_branch: 0,
                 local_index: 0,
                 triee,
                 next_func: Avltriee::<T>::next,
             },
-            super::Order::Desc => AvltrieeIter {
-                now: root,
-                same_branch,
+            Order::Desc => AvltrieeIter {
+                now,
+                same_branch: 0,
                 local_index: 0,
                 triee,
                 next_func: Avltriee::<T>::next_desc,

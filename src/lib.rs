@@ -101,16 +101,6 @@ impl<T> Avltriee<T> {
             self.balance(origin);
         }
     }
-
-    unsafe fn same_last(&self, row: u32) -> u32 {
-        let mut r = row;
-        let mut same = self.offset(r);
-        while same.same != 0 {
-            r = same.same;
-            same = self.offset(r);
-        }
-        r
-    }
     pub unsafe fn update_same(&mut self, vertex_row: u32, new_row: u32)
     where
         T: Clone,
@@ -531,10 +521,10 @@ impl<T> Avltriee<T> {
         let mut r = Vec::new();
         let mut t = same_root;
         loop {
-            let node = self.offset(t);
-            if node.same != 0 {
-                r.push(node.same.into());
-                t = node.same;
+            let same = self.offset(t).same;
+            if same != 0 {
+                r.push(same.into());
+                t = same;
             } else {
                 break;
             }
@@ -542,8 +532,7 @@ impl<T> Avltriee<T> {
         r
     }
     unsafe fn max(&self, t: u32) -> u32 {
-        let node = self.offset(t);
-        let r = node.right;
+        let r = self.offset(t).right;
         if r == 0 {
             t
         } else {
@@ -551,8 +540,7 @@ impl<T> Avltriee<T> {
         }
     }
     unsafe fn min(&self, t: u32) -> u32 {
-        let node = self.offset(t);
-        let l = node.left;
+        let l = self.offset(t).left;
         if l == 0 {
             t
         } else {
@@ -560,199 +548,80 @@ impl<T> Avltriee<T> {
         }
     }
     unsafe fn retroactive(&self, c: u32) -> Option<u32> {
-        let t = self.offset(c);
-        let parent = t.parent;
-        if parent == 0 {
-            if t.right == 0 || t.same == 0 {
-                None
-            } else {
-                Some(t.right)
+        let parent = self.offset(c).parent;
+        let parent_node = self.offset(parent);
+        if parent_node.right == c {
+            if let Some(p) = self.retroactive(parent) {
+                if p != c {
+                    return Some(p);
+                }
             }
         } else {
-            let parent_node = self.offset(parent);
-            if parent_node.right == c {
-                if let Some(p) = self.retroactive(parent) {
-                    if p != c {
-                        Some(p)
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            } else {
-                Some(parent)
-            }
+            return Some(parent);
         }
-    }
-    unsafe fn same_root(&self, row: u32) -> u32 {
-        let mut r = row;
-        loop {
-            let same = self.offset(r);
-            let parent_node = self.offset(same.parent);
-            if parent_node.right == r {
-                break;
-            }
-            r = same.parent;
-            if parent_node.parent == 0 {
-                break;
-            }
-        }
-        r
+        None
     }
     pub(crate) unsafe fn next(&self, c: u32, same_branch: u32) -> Option<(u32, u32)> {
-        let node = self.offset(c);
-        let parent_node = self.offset(node.parent);
+        let mut current = c;
+        let mut node = self.offset(current);
+
         if node.same != 0 {
-            if parent_node.left == c || parent_node.right == c {
-                Some((node.same, c))
-            } else {
-                Some((node.same, same_branch))
-            }
+            return Some((node.same, if same_branch == 0 { c } else { same_branch }));
         } else {
-            if parent_node.same == c {
-                let sr = if same_branch != 0 {
-                    same_branch
-                } else {
-                    self.same_root(node.parent)
-                };
-                if sr != 0 {
-                    if let Some(i) = self.retroactive(sr) {
-                        Some(if self.offset(i).same == 0 {
-                            (self.min(i), 0)
-                        } else {
-                            (i, i)
-                        })
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            } else if parent_node.left == c {
-                //対象ノードが親の左の場合
-                if node.right != 0 {
-                    //自身の右にノードがある場合は右ノードのminを返す
-                    Some((self.min(node.right), same_branch))
-                } else {
-                    //自身の右ノードが無い場合、親と同じ値の最後のデータを返す
-                    if parent_node.same == 0 {
-                        Some((node.parent, same_branch))
-                    } else {
-                        Some((self.same_last(node.parent), same_branch))
-                    }
-                }
-            } else if parent_node.right == c {
-                //自身が右の場合
-                if node.right != 0 {
-                    //右ノードがあれば右の最小を返す
-                    Some((self.min(node.right), same_branch))
-                } else {
-                    //右ノードが無い場合、はノードの終端。
-                    if parent_node.parent == 0 {
-                        None
-                    } else {
-                        if let Some(i) = self.retroactive(node.parent) {
-                            Some((i, same_branch))
-                        } else {
-                            None
-                        }
-                    }
-                }
-            } else {
-                //自身がrootの場合、ここに来る場合がある
-                if node.right != 0 {
-                    //右ノードの最小値を返す
-                    Some((self.min(node.right), same_branch))
-                } else {
-                    None //右も左も親も無い場合は自身が唯一のデータなので次は無い
+            if same_branch != 0 {
+                current = same_branch;
+                node = self.offset(same_branch);
+            }
+            let parent = node.parent;
+            if node.right != 0 {
+                return Some((self.min(node.right), 0));
+            } else if parent != 0 {
+                if self.offset(parent).left == current {
+                    return Some((parent, 0));
+                } else if let Some(i) = self.retroactive(parent) {
+                    return Some((i, 0));
                 }
             }
         }
+        None
     }
 
     unsafe fn retroactive_desc(&self, c: u32) -> Option<u32> {
-        let t = self.offset(c);
-        let parent = t.parent;
-        if parent == 0 {
-            if t.left == 0 || t.same == 0 {
-                None
-            } else {
-                Some(t.left)
+        let parent = self.offset(c).parent;
+        let parent_node = self.offset(parent);
+        if parent_node.left == c {
+            if let Some(p) = self.retroactive_desc(parent) {
+                if p != c {
+                    return Some(p);
+                }
             }
         } else {
-            let parent_node = self.offset(parent);
-            if parent_node.left == c {
-                if let Some(p) = self.retroactive_desc(parent) {
-                    if p != c {
-                        Some(p)
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            } else {
-                Some(parent)
-            }
+            return Some(parent);
         }
+        None
     }
     pub(crate) unsafe fn next_desc(&self, c: u32, same_branch: u32) -> Option<(u32, u32)> {
-        let node = self.offset(c);
-        let parent_node = self.offset(node.parent);
+        let mut current = c;
+        let mut node = self.offset(current);
+
         if node.same != 0 {
-            if parent_node.left == c || parent_node.right == c || node.parent == 0 {
-                Some((node.same, c))
-            } else {
-                Some((node.same, same_branch))
-            }
+            return Some((node.same, if same_branch == 0 { c } else { same_branch }));
         } else {
-            if parent_node.same == c {
-                let sr = if same_branch != 0 {
-                    same_branch
-                } else {
-                    self.same_root(node.parent)
-                };
-                if sr != 0 {
-                    if let Some(i) = self.retroactive_desc(sr) {
-                        Some((i, 0))
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            } else if parent_node.right == c {
-                if node.left != 0 {
-                    Some((self.max(node.left), same_branch))
-                } else {
-                    if parent_node.same == 0 {
-                        Some((node.parent, same_branch))
-                    } else {
-                        Some((self.same_last(node.parent), same_branch))
-                    }
-                }
-            } else if parent_node.left == c {
-                if node.left != 0 {
-                    Some((self.max(node.left), same_branch))
-                } else {
-                    if parent_node.parent == 0 {
-                        None
-                    } else {
-                        if let Some(i) = self.retroactive_desc(node.parent) {
-                            Some((i, same_branch))
-                        } else {
-                            None
-                        }
-                    }
-                }
-            } else {
-                if node.left != 0 {
-                    Some((self.max(node.left), same_branch))
-                } else {
-                    None
+            if same_branch != 0 {
+                current = same_branch;
+                node = self.offset(same_branch);
+            }
+            let parent = node.parent;
+            if node.left != 0 {
+                return Some((self.max(node.left), 0));
+            } else if parent != 0 {
+                if self.offset(parent).right == current {
+                    return Some((parent, 0));
+                } else if let Some(i) = self.retroactive_desc(parent) {
+                    return Some((i, 0));
                 }
             }
         }
+        None
     }
 }
