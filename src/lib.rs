@@ -6,7 +6,7 @@ use std::{
 mod iter;
 pub use iter::{AvltrieeIter, AvltrieeRangeIter};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AvltrieeNode<T> {
     parent: u32,
     left: u32,

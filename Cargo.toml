@@ -1,6 +1,6 @@
 [package]
 name = "avltriee"
-version = "0.31.0"
+version = "0.31.1"
 edition = "2021"
 
 authors = ["Oden Shirataki <oden.srtk@gmail.com>"]
@@ -14,4 +14,5 @@ categories = ["algorithms"]
 
 license = "MIT/Apache-2.0"
 
-[dependencies]
+[dev-dependencies]
+rand = "0.8"
