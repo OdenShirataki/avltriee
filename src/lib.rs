@@ -212,8 +212,6 @@ impl<T> Avltriee<T> {
             parent.right = child_row;
         } else if parent.left == remove_target_row {
             parent.left = child_row;
-        } else {
-            panic!("crash and burn");
         }
     }
     unsafe fn remove_intermediate(&mut self, remove_target: &mut AvltrieeNode<T>) -> (u32, u32) {
@@ -223,7 +221,6 @@ impl<T> Avltriee<T> {
         let mut left_max_parent = self.offset_mut(left_max_parent_row);
 
         if remove_target.left != left_max_row {
-            //左最大値の親が削除対象の場合はこの処理は不要
             left_max_parent.right = left_max.left;
             if left_max_parent.right != 0 {
                 self.offset_mut(left_max_parent.right).parent = left_max_parent_row;
@@ -242,95 +239,87 @@ impl<T> Avltriee<T> {
 
         (left_max_row, left_max_parent_row)
     }
+
     pub unsafe fn remove(&mut self, target_row: u32) -> Removed<T>
     where
         T: Default + Clone,
     {
         let mut ret = Removed::Remain;
         let remove_target = self.offset_mut(target_row);
-        if remove_target.height > 0 {
-            if remove_target.parent == 0 {
-                //rootを削除する場合
-                if remove_target.same != 0 {
-                    //同じ値のものが存在する場合、それをrootに昇格
-                    let same_row = remove_target.same;
-                    let same = self.offset_mut(same_row);
-                    same.parent = 0;
-                    same.left = remove_target.left;
-                    same.right = remove_target.right;
-                    same.height = remove_target.height;
-                    if same.left != 0 {
-                        self.offset_mut(same.left).parent = same_row;
-                    }
-                    if same.right != 0 {
-                        self.offset_mut(same.right).parent = same_row;
-                    }
-                    **self.root = same_row;
-                } else {
-                    ret = Removed::Last(remove_target.value().clone());
-                    if remove_target.left == 0 && remove_target.right == 0 {
-                        //唯一のデータが消失する
-                        **self.root = 0;
-                    } else if remove_target.left == 0 {
-                        //左が空いている。右ノードをrootに
-                        **self.root = remove_target.right;
-                        self.offset_mut(remove_target.right).parent = 0;
-                        self.balance(remove_target.right);
-                    } else if remove_target.right == 0 {
-                        //右が空いている。左ノードをrootに
-                        **self.root = remove_target.left;
-                        self.offset_mut(remove_target.left).parent = 0;
-                        self.balance(remove_target.left);
-                    } else {
-                        let (left_max_row, left_max_parent_row) =
-                            self.remove_intermediate(remove_target);
-                        **self.root = left_max_row;
-                        if left_max_parent_row == target_row {
-                            self.offset_mut(left_max_parent_row).parent = left_max_row;
-                            self.balance(left_max_row);
-                        } else {
-                            self.balance(left_max_parent_row);
-                        }
-                    }
+        let height = remove_target.height;
+        if height > 0 {
+            let row_parent = remove_target.parent;
+            let row_same = remove_target.same;
+            let mut parent = self.offset_mut(row_parent);
+            if row_parent != 0 && parent.same == target_row {
+                parent.same = row_same;
+                if row_same!=0{
+                    self.offset_mut(row_same).parent = row_parent;
                 }
             } else {
-                let parent_row = remove_target.parent;
-                let mut parent = self.offset_mut(parent_row);
-                if parent.same == target_row {
-                    //同じ値がある。前後をつなげる
-                    parent.same = remove_target.same;
-                    self.offset_mut(parent.same).parent = parent_row;
+                let row_left = remove_target.left;
+                let row_right = remove_target.right;
+                if row_same != 0 {
+                    let same = self.offset_mut(row_same);
+                    same.parent = row_parent;
+                    same.left = row_left;
+                    same.right = row_right;
+                    same.height = height;
+                    if same.left != 0 {
+                        self.offset_mut(same.left).parent = row_same;
+                    }
+                    if same.right != 0 {
+                        self.offset_mut(same.right).parent = row_same;
+                    }
+                    if row_parent == 0 {
+                        **self.root = row_same;
+                    } else {
+                        Self::join_intermediate(
+                            &mut self.offset_mut(same.parent),
+                            target_row,
+                            row_same,
+                        );
+                    }
+                } else if row_parent == 0 {
+                    ret = Removed::Last(remove_target.value().clone());
+                    if row_left == 0 && row_right == 0 {
+                        **self.root = 0;
+                    } else {
+                        let balance_row = if row_left == 0 {
+                            **self.root = row_right;
+                            self.offset_mut(row_right).parent = 0;
+                            row_right
+                        } else if row_right == 0 {
+                            **self.root = row_left;
+                            self.offset_mut(row_left).parent = 0;
+                            row_left
+                        } else {
+                            let (left_max_row, left_max_parent_row) =
+                                self.remove_intermediate(remove_target);
+                            **self.root = left_max_row;
+                            if left_max_parent_row == target_row {
+                                self.offset_mut(left_max_parent_row).parent = left_max_row;
+                                left_max_row
+                            } else {
+                                left_max_parent_row
+                            }
+                        };
+                        self.balance(balance_row);
+                    }
                 } else {
                     ret = Removed::Last(remove_target.value().clone());
-                    if remove_target.left == 0 && remove_target.right == 0 {
-                        //削除対象が末端の場合
-                        let same = remove_target.same;
-                        if parent.right == target_row {
-                            parent.right = same;
-                        } else if parent.left == target_row {
-                            parent.left = same;
-                        }
-                        if same != 0 {
-                            self.offset_mut(same).parent = parent_row;
-                        } else {
-                            self.balance(parent_row);
-                        }
-                    } else if remove_target.left == 0 {
-                        //左が空いている。右ノードを親に接ぐ
-                        Self::join_intermediate(parent, target_row, remove_target.right);
-                        if remove_target.right != 0 {
-                            self.offset_mut(remove_target.right).parent = parent_row;
-                        }
-                        self.balance(parent_row);
-                    } else if remove_target.right == 0 {
-                        //右が空いている。左ノードを親に接ぐ
-                        Self::join_intermediate(parent, target_row, remove_target.left);
-                        if remove_target.left != 0 {
-                            self.offset_mut(remove_target.left).parent = parent_row;
-                        }
-                        self.balance(parent_row);
+                    let balance_row = if row_left == 0 && row_right == 0 {
+                        Self::join_intermediate(&mut parent, target_row, row_same);
+                        row_parent
+                    } else if row_left == 0 {
+                        Self::join_intermediate(parent, target_row, row_right);
+                        self.offset_mut(row_right).parent = row_parent;
+                        row_parent
+                    } else if row_right == 0 {
+                        Self::join_intermediate(parent, target_row, row_left);
+                        self.offset_mut(row_left).parent = row_parent;
+                        row_parent
                     } else {
-                        //削除対象は中間ノード
                         let (left_max_row, left_max_parent_row) =
                             self.remove_intermediate(remove_target);
                         if parent.right == target_row {
@@ -339,11 +328,12 @@ impl<T> Avltriee<T> {
                             parent.left = left_max_row;
                         }
                         if left_max_parent_row == target_row {
-                            self.balance(left_max_row);
+                            left_max_row
                         } else {
-                            self.balance(left_max_parent_row);
+                            left_max_parent_row
                         }
-                    }
+                    };
+                    self.balance(balance_row);
                 }
             }
             remove_target.reset();
