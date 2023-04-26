@@ -5,10 +5,9 @@ use avltriee::AvltrieeNode;
 
 #[test]
 fn test2() {
-    let mut root = 0;
     let mut list: Vec<AvltrieeNode<i64>> = (0..=10).map(|_| AvltrieeNode::new(0, 0, 0)).collect();
     let rl = &mut list;
-    let mut t = Avltriee::new(&mut root, rl.as_mut_ptr());
+    let mut t = Avltriee::new(rl.as_mut_ptr());
 
     let mut deleted: HashSet<u32> = HashSet::new();
 

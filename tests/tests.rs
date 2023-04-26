@@ -11,12 +11,10 @@ fn test_iter() {
     use avltriee::AvltrieeNode;
     use rand::distributions::{Distribution, Uniform};
 
-    let mut root = 0;
     let mut list: Vec<AvltrieeNode<i64>> = (0..=TEST_LENGTH)
         .map(|_| AvltrieeNode::new(0, 0, 0))
         .collect();
-    let rl = &mut list;
-    let mut t = Avltriee::new(&mut root, rl.as_mut_ptr());
+    let mut t = Avltriee::new(list.as_mut_ptr());
 
     let mut rng = rand::thread_rng();
     let die = Uniform::from(TEST_VALUE_RANGE_MIN..=TEST_VALUE_RANGE_MAX);
@@ -28,13 +26,6 @@ fn test_iter() {
             t.update(i, num);
         }
     }
-    /*
-    for i in 1..=TEST_LENGTH {
-        let num = die.sample(&mut rng);
-        unsafe {
-            t.update(i, num);
-        }
-    }*/
 
     let mut deleted: HashSet<u32> = HashSet::new();
     let a = Uniform::from(1..=TEST_LENGTH);
@@ -60,12 +51,10 @@ fn test_desc_iter() {
     use avltriee::AvltrieeNode;
     use rand::distributions::{Distribution, Uniform};
 
-    let mut root = 0;
     let mut list: Vec<AvltrieeNode<i64>> = (0..TEST_LENGTH)
         .map(|_| AvltrieeNode::new(0, 0, 0))
         .collect();
-    let rl = &mut list;
-    let mut t = Avltriee::new(&mut root, rl.as_mut_ptr());
+    let mut t = Avltriee::new(list.as_mut_ptr());
 
     let mut rng = rand::thread_rng();
     let die = Uniform::from(TEST_VALUE_RANGE_MIN..=TEST_VALUE_RANGE_MAX);

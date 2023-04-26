@@ -6,41 +6,8 @@ use std::{
 mod iter;
 pub use iter::{AvltrieeIter, AvltrieeRangeIter};
 
-#[derive(Clone, Debug)]
-pub struct AvltrieeNode<T> {
-    parent: u32,
-    left: u32,
-    right: u32,
-    same: u32,
-    height: u8,
-    value: T,
-}
-impl<T> AvltrieeNode<T> {
-    pub fn new(row: u32, parent: u32, value: T) -> AvltrieeNode<T> {
-        AvltrieeNode {
-            height: if row == 0 { 0 } else { 1 },
-            parent,
-            left: 0,
-            right: 0,
-            same: 0,
-            value,
-        }
-    }
-    pub fn reset(&mut self)
-    where
-        T: Default,
-    {
-        self.height = 0;
-        self.parent = 0;
-        self.left = 0;
-        self.right = 0;
-        self.same = 0;
-        self.value = T::default();
-    }
-    pub fn value(&self) -> &T {
-        &self.value
-    }
-}
+mod node;
+pub use node::AvltrieeNode;
 
 pub enum Removed<T> {
     Last(T),
@@ -49,41 +16,36 @@ pub enum Removed<T> {
 }
 
 pub struct Avltriee<T> {
-    root: ManuallyDrop<Box<u32>>,
     node_list: ManuallyDrop<Box<AvltrieeNode<T>>>,
 }
 impl<T> Avltriee<T> {
-    pub fn new(root: *mut u32, node_list: *mut AvltrieeNode<T>) -> Avltriee<T> {
+    pub fn new(node_list: *mut AvltrieeNode<T>) -> Avltriee<T> {
         Avltriee {
-            root: ManuallyDrop::new(unsafe { Box::from_raw(root) }),
             node_list: ManuallyDrop::new(unsafe { Box::from_raw(node_list) }),
         }
     }
-    pub unsafe fn update(&mut self, row: u32, new_data: T)
+    pub unsafe fn update(&mut self, row: u32, data: T)
     where
         T: Ord + Clone + Default,
     {
-        if let Some(n) = self.node(row) {
-            if n.value().cmp(&new_data) != Ordering::Equal {
-                //データが変更なしの場合は何もしない
-                self.remove(row); //変更の場合、一旦消してから登録しなおす
-                self.update_with_search(row, new_data);
+        if if let Some(n) = self.node(row) {
+            if n.value().cmp(&data) != Ordering::Equal {
+                self.remove(row);
+                true
+            } else {
+                false
             }
         } else {
-            self.update_with_search(row, new_data);
-        }
-    }
-    unsafe fn update_with_search(&mut self, row: u32, data: T)
-    where
-        T: Ord + Clone,
-    {
-        let (ord, found_row) = self.search(&data);
-        if ord == Ordering::Equal && found_row != 0 {
-            self.update_same(found_row, row);
-        } else {
-            self.update_node(found_row, row, data, ord);
-            if **self.root == 0 {
-                **self.root = row;
+            true
+        } {
+            let (ord, found_row) = self.search(&data);
+            if ord == Ordering::Equal && found_row != 0 {
+                self.update_same(found_row, row);
+            } else {
+                self.update_node(found_row, row, data, ord);
+                if self.root() == 0 {
+                    self.set_root(row);
+                }
             }
         }
     }
@@ -92,7 +54,6 @@ impl<T> Avltriee<T> {
         *self.offset_mut(target_row) = AvltrieeNode::new(target_row, origin, data);
         if origin > 0 {
             let p = self.offset_mut(origin);
-            //親ノードのL/R更新。比較結果が小さい場合は左、大きい場合は右
             if ord == Ordering::Less {
                 p.left = target_row;
             } else {
@@ -109,7 +70,7 @@ impl<T> Avltriee<T> {
         let mut new_vertex = self.offset_mut(new_row);
         *new_vertex = vertex.clone();
         if new_vertex.parent == 0 {
-            **self.root = new_row;
+            self.set_root(new_row);
         } else {
             let mut parent = self.offset_mut(new_vertex.parent);
             if parent.left == vertex_row {
@@ -159,14 +120,30 @@ impl<T> Avltriee<T> {
     {
         AvltrieeRangeIter::new_with_value(&self, min_value, max_value)
     }
-    pub fn iter_by_row_from_to(&self, begin: u32, end: u32) -> AvltrieeRangeIter<T> {
-        AvltrieeRangeIter::new(&self, begin, end)
+    pub fn iter_by_row_from_to(&self, from: u32, to: u32) -> AvltrieeRangeIter<T> {
+        AvltrieeRangeIter::new(
+            &self,
+            if let Some(_) = unsafe { self.node(from) } {
+                from
+            } else {
+                0
+            },
+            to,
+        )
     }
-    pub fn iter_by_row_from(&self, begin: u32) -> AvltrieeIter<T> {
-        AvltrieeIter::begin_at(&self, begin, iter::Order::Asc)
+    pub fn iter_by_row_from(&self, from: u32) -> AvltrieeIter<T> {
+        AvltrieeIter::begin_at(
+            &self,
+            if let Some(_) = unsafe { self.node(from) } {
+                from
+            } else {
+                0
+            },
+            iter::Order::Asc,
+        )
     }
     pub fn iter_by_row_to(&self, end: u32) -> AvltrieeRangeIter<T> {
-        AvltrieeRangeIter::new(&self, unsafe { self.min(**self.root) }, end)
+        AvltrieeRangeIter::new(&self, unsafe { self.min(self.root()) }, end)
     }
     pub unsafe fn node<'a>(&self, row: u32) -> Option<&'a AvltrieeNode<T>> {
         let node = self.offset(row);
@@ -183,28 +160,25 @@ impl<T> Avltriee<T> {
             None
         }
     }
+    fn set_root(&mut self, row: u32) {
+        self.node_list.parent = row;
+    }
     pub fn root(&self) -> u32 {
-        **self.root
+        self.node_list.parent
     }
     pub fn init_node(&mut self, data: T, root: u32)
     where
         T: Default,
     {
-        unsafe {
-            *self.offset_mut(0) = AvltrieeNode::new(0, 0, T::default()); //0ノード
-            *self.offset_mut(root) = AvltrieeNode::new(1, 0, data); //初回追加分
-        }
-        **self.root = root;
+        **self.node_list = AvltrieeNode::new(0, root, T::default());
+        *unsafe { self.offset_mut(root) } = AvltrieeNode::new(1, 0, data);
     }
 
-    fn node_list_mut(&mut self) -> *mut AvltrieeNode<T> {
-        &mut **self.node_list
-    }
     pub(crate) unsafe fn offset<'a>(&self, offset: u32) -> &'a AvltrieeNode<T> {
         &*(&**self.node_list as *const AvltrieeNode<T>).offset(offset as isize)
     }
     pub(crate) unsafe fn offset_mut<'a>(&mut self, offset: u32) -> &'a mut AvltrieeNode<T> {
-        &mut *self.node_list_mut().offset(offset as isize)
+        &mut *(&mut **self.node_list as *mut AvltrieeNode<T>).offset(offset as isize)
     }
 
     fn join_intermediate(parent: &mut AvltrieeNode<T>, remove_target_row: u32, child_row: u32) {
@@ -253,7 +227,7 @@ impl<T> Avltriee<T> {
             let mut parent = self.offset_mut(row_parent);
             if row_parent != 0 && parent.same == target_row {
                 parent.same = row_same;
-                if row_same!=0{
+                if row_same != 0 {
                     self.offset_mut(row_same).parent = row_parent;
                 }
             } else {
@@ -272,7 +246,7 @@ impl<T> Avltriee<T> {
                         self.offset_mut(same.right).parent = row_same;
                     }
                     if row_parent == 0 {
-                        **self.root = row_same;
+                        self.set_root(row_same);
                     } else {
                         Self::join_intermediate(
                             &mut self.offset_mut(same.parent),
@@ -283,20 +257,20 @@ impl<T> Avltriee<T> {
                 } else if row_parent == 0 {
                     ret = Removed::Last(remove_target.value().clone());
                     if row_left == 0 && row_right == 0 {
-                        **self.root = 0;
+                        self.set_root(0);
                     } else {
                         let balance_row = if row_left == 0 {
-                            **self.root = row_right;
+                            self.set_root(row_right);
                             self.offset_mut(row_right).parent = 0;
                             row_right
                         } else if row_right == 0 {
-                            **self.root = row_left;
+                            self.set_root(row_left);
                             self.offset_mut(row_left).parent = 0;
                             row_left
                         } else {
                             let (left_max_row, left_max_parent_row) =
                                 self.remove_intermediate(remove_target);
-                            **self.root = left_max_row;
+                            self.set_root(left_max_row);
                             if left_max_parent_row == target_row {
                                 self.offset_mut(left_max_parent_row).parent = left_max_row;
                                 left_max_row
@@ -376,7 +350,7 @@ impl<T> Avltriee<T> {
                 vertex.parent = new_vertex_row;
                 new_vertex.parent = parent_row;
                 if parent_row == 0 {
-                    **self.root = new_vertex_row;
+                    self.set_root(new_vertex_row);
                 } else {
                     let parent = self.offset_mut(parent_row);
                     if parent.left == vertex_row {
@@ -439,20 +413,16 @@ impl<T> Avltriee<T> {
             vertex.height = std::cmp::max(left.height, right.height) + 1;
             vertex_row = parent_row;
             if vertex_row == 0 {
-                //頂点まで遡及完了した場合は抜ける
                 break;
             }
         }
     }
-    /*
-    与えられた値を検索する。
-    最終的には左右どちらかが空いているノードが返される事になる
-     */
+
     pub fn search(&self, value: &T) -> (Ordering, u32)
     where
         T: Ord,
     {
-        let mut origin = **self.root;
+        let mut origin = self.root();
         let mut ord = Ordering::Equal;
 
         while origin != 0 {
@@ -482,7 +452,7 @@ impl<T> Avltriee<T> {
     where
         F: Fn(&T) -> Ordering,
     {
-        let mut origin = **self.root;
+        let mut origin = self.root();
         let mut ord = Ordering::Equal;
         while origin != 0 {
             let p = unsafe { self.offset(origin) };
