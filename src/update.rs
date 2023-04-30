@@ -1,7 +1,6 @@
 use std::cmp::Ordering;
 
-use super::Avltriee;
-use super::AvltrieeNode;
+use super::{Avltriee, AvltrieeNode, Found};
 
 pub enum Removed<T> {
     Last(T),
@@ -10,20 +9,17 @@ pub enum Removed<T> {
 }
 
 impl<T> Avltriee<T> {
-    pub fn init_node(&mut self, data: T, root: u32)
-    where
-        T: Default,
-    {
-        **self.node_list = AvltrieeNode::new(0, root, T::default());
+    pub fn init_node(&mut self, data: T, root: u32) {
+        (**self.node_list).parent = root;
         *unsafe { self.offset_mut(root) } = AvltrieeNode::new(1, 0, data);
     }
 
     pub unsafe fn update(&mut self, row: u32, data: T)
     where
-        T: Ord + Clone + Default,
+        T: Ord + Clone,
     {
         if if let Some(n) = self.node(row) {
-            if n.value().cmp(&data) != Ordering::Equal {
+            if n.value.cmp(&data) != Ordering::Equal {
                 self.remove(row);
                 true
             } else {
@@ -32,11 +28,11 @@ impl<T> Avltriee<T> {
         } else {
             true
         } {
-            let (ord, found_row) = self.search(&data);
-            if ord == Ordering::Equal && found_row != 0 {
-                self.update_same(found_row, row);
+            let found = self.search(&data);
+            if found.ord == Ordering::Equal && found.row != 0 {
+                self.update_same(row, found.row);
             } else {
-                self.update_node(found_row, row, data, ord);
+                self.update_node(row, data, found);
                 if self.root() == 0 {
                     self.set_root(row);
                 }
@@ -44,19 +40,19 @@ impl<T> Avltriee<T> {
         }
     }
 
-    pub unsafe fn update_node(&mut self, origin: u32, target_row: u32, data: T, ord: Ordering) {
-        *self.offset_mut(target_row) = AvltrieeNode::new(target_row, origin, data);
-        if origin > 0 {
-            let p = self.offset_mut(origin);
-            if ord == Ordering::Less {
-                p.left = target_row;
+    pub unsafe fn update_node(&mut self, row: u32, data: T, found: Found) {
+        *self.offset_mut(row) = AvltrieeNode::new(row, found.row, data);
+        if found.row > 0 {
+            let p = self.offset_mut(found.row);
+            if found.ord == Ordering::Less {
+                p.left = row;
             } else {
-                p.right = target_row;
+                p.right = row;
             }
-            self.balance(origin);
+            self.balance(found.row);
         }
     }
-    pub unsafe fn update_same(&mut self, vertex_row: u32, new_row: u32)
+    pub unsafe fn update_same(&mut self, new_row: u32, vertex_row: u32)
     where
         T: Clone,
     {
@@ -87,7 +83,7 @@ impl<T> Avltriee<T> {
 
     pub unsafe fn remove(&mut self, target_row: u32) -> Removed<T>
     where
-        T: Default + Clone,
+        T: Clone,
     {
         let mut ret = Removed::Remain;
         let remove_target = self.offset_mut(target_row);
@@ -126,7 +122,7 @@ impl<T> Avltriee<T> {
                         );
                     }
                 } else if row_parent == 0 {
-                    ret = Removed::Last(remove_target.value().clone());
+                    ret = Removed::Last(remove_target.value.clone());
                     if row_left == 0 && row_right == 0 {
                         self.set_root(0);
                     } else {
@@ -152,7 +148,7 @@ impl<T> Avltriee<T> {
                         self.balance(balance_row);
                     }
                 } else {
-                    ret = Removed::Last(remove_target.value().clone());
+                    ret = Removed::Last(remove_target.value.clone());
                     let balance_row = if row_left == 0 && row_right == 0 {
                         Self::join_intermediate(&mut parent, target_row, row_same);
                         row_parent
@@ -192,11 +188,10 @@ impl<T> Avltriee<T> {
 
     unsafe fn calc_height(&mut self, vertex_row: u32) {
         let mut vertex = self.offset_mut(vertex_row);
-
-        let left = self.offset(vertex.left);
-        let right = self.offset(vertex.right);
-
-        vertex.height = std::cmp::max(left.height, right.height) + 1;
+        vertex.height = std::cmp::max(
+            self.offset(vertex.left).height,
+            self.offset(vertex.right).height,
+        ) + 1;
     }
 
     unsafe fn balance(&mut self, vertex_row: u32) {

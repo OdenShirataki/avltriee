@@ -18,18 +18,12 @@ impl<T> AvltrieeNode<T> {
             value,
         }
     }
-    pub fn reset(&mut self)
-    where
-        T: Default,
-    {
+
+    pub(super) fn reset(&mut self) {
         self.height = 0;
         self.parent = 0;
         self.left = 0;
         self.right = 0;
         self.same = 0;
-        self.value = T::default();
-    }
-    pub fn value(&self) -> &T {
-        &self.value
     }
 }

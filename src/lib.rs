@@ -12,6 +12,19 @@ pub use node::AvltrieeNode;
 mod update;
 pub use update::Removed;
 
+pub struct Found {
+    row: u32,
+    ord: Ordering,
+}
+impl Found {
+    pub fn row(&self) -> u32 {
+        self.row
+    }
+    pub fn ord(&self) -> Ordering {
+        self.ord
+    }
+}
+
 pub struct Avltriee<T> {
     node_list: ManuallyDrop<Box<AvltrieeNode<T>>>,
 }
@@ -33,7 +46,7 @@ impl<T> Avltriee<T> {
 
     pub unsafe fn value<'a>(&self, row: u32) -> Option<&'a T> {
         if let Some(v) = self.node(row) {
-            Some(&v.value())
+            Some(&v.value)
         } else {
             None
         }
@@ -43,22 +56,22 @@ impl<T> Avltriee<T> {
         self.node_list.parent
     }
 
-    pub fn search(&self, value: &T) -> (Ordering, u32)
+    pub fn search(&self, value: &T) -> Found
     where
         T: Ord,
     {
-        let mut origin = self.root();
+        let mut row = self.root();
         let mut ord = Ordering::Equal;
 
-        while origin != 0 {
-            let p = unsafe { self.offset(origin) };
-            ord = value.cmp(&p.value());
+        while row != 0 {
+            let p = unsafe { self.offset(row) };
+            ord = value.cmp(&p.value);
             match ord {
                 Ordering::Less => {
                     if p.left == 0 {
                         break;
                     }
-                    origin = p.left;
+                    row = p.left;
                 }
                 Ordering::Equal => {
                     break;
@@ -67,28 +80,28 @@ impl<T> Avltriee<T> {
                     if p.right == 0 {
                         break;
                     }
-                    origin = p.right;
+                    row = p.right;
                 }
             }
         }
-        (ord, origin)
+        Found { row, ord }
     }
 
-    pub fn search_cb<F>(&self, ord_cb: F) -> (Ordering, u32)
+    pub fn search_cb<F>(&self, ord_cb: F) -> Found
     where
         F: Fn(&T) -> Ordering,
     {
-        let mut origin = self.root();
+        let mut row = self.root();
         let mut ord = Ordering::Equal;
-        while origin != 0 {
-            let p = unsafe { self.offset(origin) };
-            ord = ord_cb(&p.value());
+        while row != 0 {
+            let p = unsafe { self.offset(row) };
+            ord = ord_cb(&p.value);
             match ord {
                 Ordering::Less => {
                     if p.left == 0 {
                         break;
                     }
-                    origin = p.left;
+                    row = p.left;
                 }
                 Ordering::Equal => {
                     break;
@@ -97,11 +110,11 @@ impl<T> Avltriee<T> {
                     if p.right == 0 {
                         break;
                     }
-                    origin = p.right;
+                    row = p.right;
                 }
             }
         }
-        (ord, origin)
+        Found { row, ord }
     }
 
     pub unsafe fn sames(&self, same_root: u32) -> Vec<u32> {

@@ -26,7 +26,7 @@ impl<'a, T> AvlTrieeIterResult<'a, T> {
         self.row
     }
     pub fn value(&self) -> &'a T {
-        self.node.value()
+        &self.node.value
     }
 }
 

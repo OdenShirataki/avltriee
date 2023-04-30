@@ -60,9 +60,9 @@ impl<'a, T> AvltrieeRangeIter<'a, T> {
         T: Ord,
     {
         let row = {
-            let (ord, row) = triee.search(value);
-            if ord == Ordering::Equal {
-                row
+            let found = triee.search(value);
+            if found.ord == Ordering::Equal {
+                found.row
             } else {
                 0
             }
@@ -91,9 +91,7 @@ impl<'a, T> AvltrieeRangeIter<'a, T> {
             if now == 0 {
                 Self::empty(triee)
             } else {
-                if unsafe {
-                    triee.node(now).unwrap().value() > triee.node(max_row).unwrap().value()
-                } {
+                if unsafe { triee.node(now).unwrap().value > triee.node(max_row).unwrap().value } {
                     Self::empty(triee)
                 } else {
                     AvltrieeRangeIter {
@@ -154,25 +152,25 @@ impl<'a, T> AvltrieeRangeIter<'a, T> {
     where
         T: Ord,
     {
-        let (ord, row) = triee.search(value);
-        if ord == Ordering::Greater {
-            let node = unsafe { triee.node(row) }.unwrap();
+        let found = triee.search(value);
+        if found.ord == Ordering::Greater {
+            let node = unsafe { triee.node(found.row) }.unwrap();
             if node.right != 0 {
                 node.right
             } else {
                 node.parent
             }
         } else {
-            row
+            found.row
         }
     }
     fn row_under(triee: &'a Avltriee<T>, value: &'a T) -> u32
     where
         T: Ord,
     {
-        let (ord, row) = triee.search(value);
-        if ord != Ordering::Less {
-            row
+        let found = triee.search(value);
+        if found.ord != Ordering::Less {
+            found.row
         } else {
             0
         }
