@@ -70,3 +70,47 @@ fn test_desc_iter() {
         println!("{}:{}:{}", i.index(), i.row(), i.value());
     }
 }
+
+#[test]
+fn test_iter_by_value() {
+    use avltriee::Avltriee;
+    use avltriee::AvltrieeNode;
+    use rand::distributions::{Distribution, Uniform};
+
+    let len=10;
+    let mut list: Vec<AvltrieeNode<i64>> = (0..=len)
+        .map(|_| AvltrieeNode::new(0, 0, 0))
+        .collect();
+    let mut t = Avltriee::new(list.as_mut_ptr());
+
+    let mut rng = rand::thread_rng();
+    let die = Uniform::from(0..=20);
+
+    for i in 1..=len {
+        let num = die.sample(&mut rng);
+        println!("update:{}", num);
+        unsafe {
+            t.update(i, num);
+        }
+    }
+
+    println!("iter_by_value(5)");
+    for i in t.iter_by_value(&5) {
+        println!("{}:{}:{}", i.index(), i.row(), i.value());
+    }
+    println!("iter_by_value_from_to(3-5)");
+    for i in t.iter_by_value_from_to(&3,&5) {
+        println!("{}:{}:{}", i.index(), i.row(), i.value());
+    }
+
+    println!("iter_by_value_from(5)");
+    for i in t.iter_by_value_from(&5) {
+        println!("{}:{}:{}", i.index(), i.row(), i.value());
+    }
+    println!("iter_by_value_to(5)");
+    for i in t.iter_by_value_to(&5) {
+        println!("{}:{}:{}", i.index(), i.row(), i.value());
+    }
+
+    
+}

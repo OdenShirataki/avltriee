@@ -37,22 +37,6 @@ impl<'a, T> AvltrieeIter<'a, T> {
             },
         }
     }
-    pub fn begin_at(
-        triee: &'a Avltriee<T>,
-        begin: u32,
-        order: super::Order,
-    ) -> AvltrieeIter<'a, T> {
-        AvltrieeIter {
-            now: begin,
-            same_branch: 0,
-            local_index: 0,
-            triee,
-            next_func: match order {
-                super::Order::Asc => Avltriee::<T>::next,
-                super::Order::Desc => Avltriee::<T>::next_desc,
-            },
-        }
-    }
 }
 
 impl<'a, T> Iterator for AvltrieeIter<'a, T> {

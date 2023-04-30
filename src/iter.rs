@@ -37,53 +37,39 @@ impl<T> Avltriee<T> {
     pub fn desc_iter(&self) -> AvltrieeIter<T> {
         AvltrieeIter::new(&self, Order::Desc)
     }
-    pub fn iter_by_value_from(&self, min_value: &T) -> AvltrieeIter<T>
+
+    pub fn iter_by_value<'a>(&'a self, value: &'a T) -> AvltrieeRangeIter<T>
     where
         T: Ord,
     {
-        let (_, row) = self.search(min_value);
-        AvltrieeIter::begin_at(&self, row, Order::Asc)
+        AvltrieeRangeIter::new_with_value(&self, value)
     }
-    pub fn iter_by_value_to<'a>(&'a self, max_value: &'a T) -> AvltrieeRangeIter<T>
+    pub fn iter_by_value_from<'a>(&'a self, from: &'a T) -> AvltrieeRangeIter<T>
     where
         T: Ord,
     {
-        AvltrieeRangeIter::new_with_value_max(&self, max_value)
+        AvltrieeRangeIter::new_with_value_from(&self, from)
     }
-    pub fn iter_by_value_from_to<'a>(
-        &'a self,
-        min_value: &'a T,
-        max_value: &'a T,
-    ) -> AvltrieeRangeIter<T>
+    pub fn iter_by_value_to<'a>(&'a self, to: &'a T) -> AvltrieeRangeIter<T>
     where
         T: Ord,
     {
-        AvltrieeRangeIter::new_with_value(&self, min_value, max_value)
+        AvltrieeRangeIter::new_with_value_to(&self, to)
+    }
+    pub fn iter_by_value_from_to<'a>(&'a self, from: &'a T, to: &'a T) -> AvltrieeRangeIter<T>
+    where
+        T: Ord,
+    {
+        AvltrieeRangeIter::new_with_value_from_to(&self, from, to)
     }
     pub fn iter_by_row_from_to(&self, from: u32, to: u32) -> AvltrieeRangeIter<T> {
-        AvltrieeRangeIter::new(
-            &self,
-            if let Some(_) = unsafe { self.node(from) } {
-                from
-            } else {
-                0
-            },
-            to,
-        )
+        AvltrieeRangeIter::new(&self, from, to)
     }
-    pub fn iter_by_row_from(&self, from: u32) -> AvltrieeIter<T> {
-        AvltrieeIter::begin_at(
-            &self,
-            if let Some(_) = unsafe { self.node(from) } {
-                from
-            } else {
-                0
-            },
-            Order::Asc,
-        )
+    pub fn iter_by_row_from(&self, from: u32) -> AvltrieeRangeIter<T> {
+        AvltrieeRangeIter::new(&self, from, unsafe { self.max(self.root()) })
     }
-    pub fn iter_by_row_to(&self, end: u32) -> AvltrieeRangeIter<T> {
-        AvltrieeRangeIter::new(&self, unsafe { self.min(self.root()) }, end)
+    pub fn iter_by_row_to(&self, to: u32) -> AvltrieeRangeIter<T> {
+        AvltrieeRangeIter::new(&self, unsafe { self.min(self.root()) }, to)
     }
 
     unsafe fn next(&self, c: u32, same_branch: u32) -> Option<(u32, u32)> {
