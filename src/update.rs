@@ -32,7 +32,7 @@ impl<T> Avltriee<T> {
             if found.ord == Ordering::Equal && found.row != 0 {
                 self.update_same(row, found.row);
             } else {
-                self.update_node(row, data, found);
+                self.update_unique(row, data, found);
                 if self.root() == 0 {
                     self.set_root(row);
                 }
@@ -40,7 +40,7 @@ impl<T> Avltriee<T> {
         }
     }
 
-    pub unsafe fn update_node(&mut self, row: u32, data: T, found: Found) {
+    pub unsafe fn update_unique(&mut self, row: u32, data: T, found: Found) {
         *self.offset_mut(row) = AvltrieeNode::new(row, found.row, data);
         if found.row > 0 {
             let p = self.offset_mut(found.row);
