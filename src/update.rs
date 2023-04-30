@@ -2,8 +2,8 @@ use std::cmp::Ordering;
 
 use super::{Avltriee, AvltrieeNode, Found};
 
-pub enum Removed<T> {
-    Last(T),
+pub enum Removed {
+    Last,
     Remain,
     None,
 }
@@ -81,10 +81,7 @@ impl<T> Avltriee<T> {
         vertex.right = 0;
     }
 
-    pub unsafe fn remove(&mut self, target_row: u32) -> Removed<T>
-    where
-        T: Clone,
-    {
+    pub unsafe fn remove(&mut self, target_row: u32) -> Removed {
         let mut ret = Removed::Remain;
         let remove_target = self.offset_mut(target_row);
         let height = remove_target.height;
@@ -122,7 +119,7 @@ impl<T> Avltriee<T> {
                         );
                     }
                 } else if row_parent == 0 {
-                    ret = Removed::Last(remove_target.value.clone());
+                    ret = Removed::Last;
                     if row_left == 0 && row_right == 0 {
                         self.set_root(0);
                     } else {
@@ -148,7 +145,7 @@ impl<T> Avltriee<T> {
                         self.balance(balance_row);
                     }
                 } else {
-                    ret = Removed::Last(remove_target.value.clone());
+                    ret = Removed::Last;
                     let balance_row = if row_left == 0 && row_right == 0 {
                         Self::join_intermediate(&mut parent, target_row, row_same);
                         row_parent

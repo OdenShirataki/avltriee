@@ -12,18 +12,8 @@ pub use node::AvltrieeNode;
 mod update;
 pub use update::Removed;
 
-pub struct Found {
-    row: u32,
-    ord: Ordering,
-}
-impl Found {
-    pub fn row(&self) -> u32 {
-        self.row
-    }
-    pub fn ord(&self) -> Ordering {
-        self.ord
-    }
-}
+mod found;
+pub use found::Found;
 
 pub struct Avltriee<T> {
     node_list: ManuallyDrop<Box<AvltrieeNode<T>>>,
@@ -50,6 +40,9 @@ impl<T> Avltriee<T> {
         } else {
             None
         }
+    }
+    pub unsafe fn value_unchecked<'a>(&self, row: u32) -> &'a T {
+        &self.offset(row).value
     }
 
     pub fn root(&self) -> u32 {
