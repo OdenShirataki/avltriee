@@ -18,12 +18,4 @@ impl<T> AvltrieeNode<T> {
             value,
         }
     }
-
-    pub(super) fn reset(&mut self) {
-        self.height = 0;
-        self.parent = 0;
-        self.left = 0;
-        self.right = 0;
-        self.same = 0;
-    }
 }

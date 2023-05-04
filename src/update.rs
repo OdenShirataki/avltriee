@@ -174,7 +174,7 @@ impl<T> Avltriee<T> {
                     self.balance(balance_row);
                 }
             }
-            remove_target.reset();
+            remove_target.height = 0;
         }
         ret
     }
