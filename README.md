@@ -48,13 +48,13 @@ for i in triee.iter() {
 for i in triee.desc_iter() {
     println!("{}:{}:{}", i.index(), i.row(), i.value());
 }
-for i in t.iter_by_value_from(10) {
+for i in t.iter_value_from(&10) {
     println!("{}:{}:{}", i.index(), i.row(), i.value());
 }
-for i in t.iter_by_value_to(500) {
+for i in t.iter_value_to(&500) {
     println!("{}:{}:{}", i.index(), i.row(), i.value());
 }
-for i in t.iter_by_value_from_to(300,999) {
+for i in t.iter_value_range(&300,&999) {
     println!("{}:{}:{}", i.index(), i.row(), i.value());
 }
 ```
@@ -65,8 +65,6 @@ triee.remove(1);
 
 ### search
 ```rust
-let (ord,row) = triee.search(100);
-
-triee.search_cb(|s| -> Ordering { /*hoge.cmp(s)*/ })
+let (ord,row) = triee.search(|v|v.cmp(&100));
 ```
 

@@ -12,7 +12,7 @@ pub struct AvltrieeIter<'a, T> {
 }
 
 impl<'a, T> AvltrieeIter<'a, T> {
-    pub fn new(triee: &'a Avltriee<T>, order: Order) -> AvltrieeIter<'a, T> {
+    pub(super) fn new(triee: &'a Avltriee<T>, order: Order) -> AvltrieeIter<'a, T> {
         let root = triee.root() as u32;
         let now = unsafe {
             match order {

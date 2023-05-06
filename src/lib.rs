@@ -1,7 +1,4 @@
-use std::{
-    cmp::{Ord, Ordering},
-    mem::ManuallyDrop,
-};
+use std::{cmp::Ordering, mem::ManuallyDrop, ops::Range};
 
 mod iter;
 pub use iter::{AvltrieeIter, AvltrieeRangeIter};
@@ -49,80 +46,241 @@ impl<T> Avltriee<T> {
         self.node_list.parent
     }
 
-    pub fn search(&self, value: &T) -> Found
-    where
-        T: Ord,
-    {
-        let mut row = self.root();
-        let mut ord = Ordering::Equal;
-
-        while row != 0 {
-            let p = unsafe { self.offset(row) };
-            ord = value.cmp(&p.value);
-            match ord {
-                Ordering::Less => {
-                    if p.left == 0 {
-                        break;
-                    }
-                    row = p.left;
-                }
-                Ordering::Equal => {
-                    break;
-                }
-                Ordering::Greater => {
-                    if p.right == 0 {
-                        break;
-                    }
-                    row = p.right;
-                }
-            }
-        }
-        Found { row, ord }
-    }
-
-    pub fn search_cb<F>(&self, ord_cb: F) -> Found
+    pub fn search<F>(&self, compare: F) -> Found
     where
         F: Fn(&T) -> Ordering,
     {
         let mut row = self.root();
         let mut ord = Ordering::Equal;
         while row != 0 {
-            let p = unsafe { self.offset(row) };
-            ord = ord_cb(&p.value);
+            let node = unsafe { self.offset(row) };
+            ord = compare(&node.value);
             match ord {
-                Ordering::Less => {
-                    if p.left == 0 {
+                Ordering::Greater => {
+                    if node.left == 0 {
                         break;
                     }
-                    row = p.left;
+                    row = node.left;
                 }
                 Ordering::Equal => {
                     break;
                 }
-                Ordering::Greater => {
-                    if p.right == 0 {
+                Ordering::Less => {
+                    if node.right == 0 {
                         break;
                     }
-                    row = p.right;
+                    row = node.right;
                 }
             }
         }
         Found { row, ord }
     }
 
-    pub unsafe fn sames(&self, same_root: u32) -> Vec<u32> {
-        let mut r = Vec::new();
-        let mut t = same_root;
-        loop {
-            let same = self.offset(t).same;
-            if same != 0 {
-                r.push(same.into());
-                t = same;
-            } else {
-                break;
+    pub fn search_eq<F>(&self, compare: F) -> u32
+    where
+        F: Fn(&T) -> Ordering,
+    {
+        let found = self.search(compare);
+        if found.ord == Ordering::Equal {
+            found.row
+        } else {
+            0
+        }
+    }
+    pub fn search_gt<F>(&self, compare: F) -> u32
+    where
+        F: Fn(&T) -> Ordering,
+    {
+        let mut row = self.root();
+        let mut keep = 0;
+        while row != 0 {
+            let node = unsafe { self.offset(row) };
+            match compare(&node.value) {
+                Ordering::Greater => {
+                    if node.left == 0 {
+                        return row;
+                    }
+                    keep = row;
+                    row = node.left;
+                }
+                Ordering::Equal => {
+                    return if node.right != 0 {
+                        unsafe { self.min(node.right) }
+                    } else {
+                        if unsafe { self.offset(node.parent) }.left == row {
+                            node.parent
+                        } else {
+                            keep
+                        }
+                    };
+                }
+                Ordering::Less => {
+                    if node.right == 0 {
+                        break;
+                    }
+                    row = node.right;
+                }
             }
         }
-        r
+        keep
+    }
+    pub fn search_ge<F>(&self, compare: F) -> u32
+    where
+        F: Fn(&T) -> Ordering,
+    {
+        let mut row = self.root();
+        let mut keep = 0;
+        while row != 0 {
+            let node = unsafe { self.offset(row) };
+            match compare(&node.value) {
+                Ordering::Greater => {
+                    if node.left == 0 {
+                        return row;
+                    }
+                    keep = row;
+                    row = node.left;
+                }
+                Ordering::Equal => {
+                    return row;
+                }
+                Ordering::Less => {
+                    if node.right == 0 {
+                        break;
+                    }
+                    row = node.right;
+                }
+            }
+        }
+        keep
+    }
+    pub fn search_lt<F>(&self, compare: F) -> u32
+    where
+        F: Fn(&T) -> Ordering,
+    {
+        let mut row = self.root();
+        let mut keep = 0;
+        while row != 0 {
+            let node = unsafe { self.offset(row) };
+            match compare(&node.value) {
+                Ordering::Greater => {
+                    if node.left == 0 {
+                        break;
+                    }
+                    row = node.left;
+                }
+                Ordering::Equal => {
+                    return if node.left != 0 {
+                        unsafe { self.max(node.left) }
+                    } else {
+                        if unsafe { self.offset(node.parent) }.right == row {
+                            node.parent
+                        } else {
+                            keep
+                        }
+                    };
+                }
+                Ordering::Less => {
+                    if node.right == 0 {
+                        return row;
+                    }
+                    keep = row;
+                    row = node.right;
+                }
+            }
+        }
+        keep
+    }
+    pub fn search_le<F>(&self, compare: F) -> u32
+    where
+        F: Fn(&T) -> Ordering,
+    {
+        let mut row = self.root();
+        let mut keep = 0;
+        while row != 0 {
+            let node = unsafe { self.offset(row) };
+            match compare(&node.value) {
+                Ordering::Greater => {
+                    if node.left == 0 {
+                        break;
+                    }
+                    row = node.left;
+                }
+                Ordering::Equal => {
+                    return row;
+                }
+                Ordering::Less => {
+                    if node.right == 0 {
+                        return row;
+                    }
+                    keep = row;
+                    row = node.right;
+                }
+            }
+        }
+        keep
+    }
+    pub fn search_range<S, E>(&self, compare_ge: S, compare_le: E) -> Option<Range<u32>>
+    where
+        S: Fn(&T) -> Ordering,
+        E: Fn(&T) -> Ordering,
+    {
+        let mut row = self.root();
+        let mut start = 0;
+        while row != 0 {
+            let node = unsafe { self.offset(row) };
+            let ord = compare_ge(&node.value);
+            match ord {
+                Ordering::Greater => {
+                    start = row;
+                    if node.left == 0 {
+                        break;
+                    }
+                    row = node.left;
+                }
+                Ordering::Equal => {
+                    start = row;
+                    break;
+                }
+                Ordering::Less => {
+                    if node.right == 0 {
+                        break;
+                    }
+                    row = node.right;
+                }
+            }
+        }
+        if start == 0 || compare_le(&unsafe { self.offset(start) }.value) == Ordering::Greater {
+            return None;
+        }
+
+        row = self.root();
+        let mut end = 0;
+        while row != 0 {
+            let node = unsafe { self.offset(row) };
+            match compare_le(&node.value) {
+                Ordering::Greater => {
+                    if node.left == 0 {
+                        break;
+                    }
+                    row = node.left;
+                }
+                Ordering::Equal => {
+                    end = row;
+                    break;
+                }
+                Ordering::Less => {
+                    end = row;
+                    if node.right == 0 {
+                        break;
+                    }
+                    row = node.right;
+                }
+            }
+        }
+        if end == 0 {
+            return None;
+        }
+        Some(Range { start, end })
     }
 
     unsafe fn offset<'a>(&self, offset: u32) -> &'a AvltrieeNode<T> {

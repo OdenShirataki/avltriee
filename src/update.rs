@@ -28,7 +28,7 @@ impl<T> Avltriee<T> {
         } else {
             true
         } {
-            let found = self.search(&data);
+            let found = self.search(|v| v.cmp(&data));
             if found.ord == Ordering::Equal && found.row != 0 {
                 self.update_same(row, found.row);
             } else {
@@ -44,7 +44,7 @@ impl<T> Avltriee<T> {
         *self.offset_mut(row) = AvltrieeNode::new(row, found.row, data);
         if found.row > 0 {
             let p = self.offset_mut(found.row);
-            if found.ord == Ordering::Less {
+            if found.ord == Ordering::Greater {
                 p.left = row;
             } else {
                 p.right = row;

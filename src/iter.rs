@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use super::Avltriee;
 use super::AvltrieeNode;
 
@@ -38,38 +40,37 @@ impl<T> Avltriee<T> {
         AvltrieeIter::new(&self, Order::Desc)
     }
 
-    pub fn iter_by_value<'a>(&'a self, value: &'a T) -> AvltrieeRangeIter<T>
+    pub fn iter_by<'a, F>(&'a self, search: F) -> AvltrieeRangeIter<T>
     where
-        T: Ord,
+        F: Fn(&T) -> Ordering,
     {
-        AvltrieeRangeIter::new_with_value(&self, value)
+        AvltrieeRangeIter::by(&self, self.search_eq(search))
     }
-    pub fn iter_by_value_from<'a>(&'a self, from: &'a T) -> AvltrieeRangeIter<T>
+
+    pub fn iter_from<'a, F>(&'a self, search: F) -> AvltrieeRangeIter<T>
     where
-        T: Ord,
+        F: Fn(&T) -> Ordering,
     {
-        AvltrieeRangeIter::new_with_value_from(&self, from)
+        AvltrieeRangeIter::from(&self, self.search_ge(search))
     }
-    pub fn iter_by_value_to<'a>(&'a self, to: &'a T) -> AvltrieeRangeIter<T>
+
+    pub fn iter_to<'a, F>(&'a self, search_from: F) -> AvltrieeRangeIter<T>
     where
-        T: Ord,
+        F: Fn(&T) -> Ordering,
     {
-        AvltrieeRangeIter::new_with_value_to(&self, to)
+        AvltrieeRangeIter::to(&self, self.search_le(search_from))
     }
-    pub fn iter_by_value_from_to<'a>(&'a self, from: &'a T, to: &'a T) -> AvltrieeRangeIter<T>
+
+    pub fn iter_range<'a, S, E>(&'a self, start: S, end: E) -> AvltrieeRangeIter<T>
     where
-        T: Ord,
+        S: Fn(&T) -> Ordering,
+        E: Fn(&T) -> Ordering,
     {
-        AvltrieeRangeIter::new_with_value_from_to(&self, from, to)
-    }
-    pub fn iter_by_row_from_to(&self, from: u32, to: u32) -> AvltrieeRangeIter<T> {
-        AvltrieeRangeIter::new(&self, from, to)
-    }
-    pub fn iter_by_row_from(&self, from: u32) -> AvltrieeRangeIter<T> {
-        AvltrieeRangeIter::new(&self, from, unsafe { self.max(self.root()) })
-    }
-    pub fn iter_by_row_to(&self, to: u32) -> AvltrieeRangeIter<T> {
-        AvltrieeRangeIter::new(&self, unsafe { self.min(self.root()) }, to)
+        if let Some(range) = self.search_range(start, end) {
+            AvltrieeRangeIter::new(self, range.start, range.end)
+        } else {
+            AvltrieeRangeIter::empty(self)
+        }
     }
 
     unsafe fn next(&self, c: u32, same_branch: u32) -> Option<(u32, u32)> {
