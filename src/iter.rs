@@ -3,14 +3,8 @@ use std::cmp::Ordering;
 use super::Avltriee;
 use super::AvltrieeNode;
 
-mod iter;
-pub use iter::AvltrieeIter;
-
-mod range_iter;
-pub use range_iter::AvltrieeRangeIter;
-
 #[derive(PartialEq)]
-pub enum Order {
+enum Order {
     Asc,
     Desc,
 }
@@ -32,45 +26,181 @@ impl<'a, T> AvlTrieeIterResult<'a, T> {
     }
 }
 
+pub struct AvltrieeIter<'a, T> {
+    now: u32,
+    end_row: u32,
+    same_branch: u32,
+    local_index: isize,
+    triee: &'a Avltriee<T>,
+    next_func: unsafe fn(&Avltriee<T>, u32, u32) -> Option<(u32, u32)>,
+}
+impl<'a, T> AvltrieeIter<'a, T> {
+    fn new(triee: &'a Avltriee<T>, now: u32, end_row: u32, order: Order) -> AvltrieeIter<'a, T> {
+        match order {
+            Order::Asc => AvltrieeIter {
+                now,
+                end_row,
+                same_branch: 0,
+                local_index: 0,
+                triee,
+                next_func: Avltriee::<T>::next,
+            },
+            Order::Desc => AvltrieeIter {
+                now: end_row,
+                end_row: now,
+                same_branch: 0,
+                local_index: 0,
+                triee,
+                next_func: Avltriee::<T>::next_desc,
+            },
+        }
+    }
+}
+
+impl<'a, T> Iterator for AvltrieeIter<'a, T> {
+    type Item = AvlTrieeIterResult<'a, T>;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.now == 0 {
+            None
+        } else {
+            self.local_index += 1;
+            let c = self.now;
+            if c == self.end_row {
+                let same = unsafe { self.triee.offset(c) }.same;
+                if same != 0 {
+                    self.end_row = same;
+                }
+                self.now = same;
+            } else {
+                match unsafe {
+                    let next_func = self.next_func;
+                    next_func(self.triee, self.now, self.same_branch)
+                } {
+                    Some((i, b)) => {
+                        self.now = i;
+                        self.same_branch = b;
+                    }
+                    _ => {
+                        self.now = 0;
+                    }
+                }
+            }
+            Some(AvlTrieeIterResult {
+                index: self.local_index,
+                row: c,
+                node: unsafe { &self.triee.offset(c) },
+            })
+        }
+    }
+}
+
 impl<T> Avltriee<T> {
     pub fn iter(&self) -> AvltrieeIter<T> {
-        AvltrieeIter::new(&self, Order::Asc)
+        unsafe {
+            AvltrieeIter::new(
+                &self,
+                self.min(self.root()),
+                self.max(self.root()),
+                Order::Asc,
+            )
+        }
     }
     pub fn desc_iter(&self) -> AvltrieeIter<T> {
-        AvltrieeIter::new(&self, Order::Desc)
+        unsafe {
+            AvltrieeIter::new(
+                &self,
+                self.min(self.root()),
+                self.max(self.root()),
+                Order::Desc,
+            )
+        }
     }
 
-    pub fn iter_by<'a, F>(&'a self, search: F) -> AvltrieeRangeIter<T>
+    pub fn iter_by<'a, F>(&'a self, search: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
     {
-        AvltrieeRangeIter::by(&self, self.search_eq(search))
+        let row = self.search_eq(search);
+        AvltrieeIter::new(&self, row, row, Order::Asc)
     }
 
-    pub fn iter_from<'a, F>(&'a self, search: F) -> AvltrieeRangeIter<T>
+    fn iter_from_inner<'a, F>(&'a self, search: F, order: Order) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
     {
-        AvltrieeRangeIter::from(&self, self.search_ge(search))
+        let now = self.search_ge(search);
+        AvltrieeIter::new(
+            self,
+            now,
+            if now == 0 {
+                0
+            } else {
+                unsafe { self.max(self.root()) }
+            },
+            order,
+        )
     }
-
-    pub fn iter_to<'a, F>(&'a self, search_from: F) -> AvltrieeRangeIter<T>
+    pub fn iter_from<'a, F>(&'a self, search: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
     {
-        AvltrieeRangeIter::to(&self, self.search_le(search_from))
+        self.iter_from_inner(search, Order::Asc)
+    }
+    pub fn desc_iter_from<'a, F>(&'a self, search: F) -> AvltrieeIter<T>
+    where
+        F: Fn(&T) -> Ordering,
+    {
+        self.iter_from_inner(search, Order::Desc)
     }
 
-    pub fn iter_range<'a, S, E>(&'a self, start: S, end: E) -> AvltrieeRangeIter<T>
+    fn iter_to_inner<'a, F>(&'a self, search_from: F, order: Order) -> AvltrieeIter<T>
+    where
+        F: Fn(&T) -> Ordering,
+    {
+        let end_row = self.search_le(search_from);
+        if end_row == 0 {
+            AvltrieeIter::new(self, 0, 0, order)
+        } else {
+            AvltrieeIter::new(self, unsafe { self.min(self.root()) }, end_row, order)
+        }
+    }
+    pub fn iter_to<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T>
+    where
+        F: Fn(&T) -> Ordering,
+    {
+        self.iter_to_inner(search_from, Order::Asc)
+    }
+    pub fn desc_iter_to<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T>
+    where
+        F: Fn(&T) -> Ordering,
+    {
+        self.iter_to_inner(search_from, Order::Desc)
+    }
+
+    fn iter_range_inner<'a, S, E>(&'a self, start: S, end: E, order: Order) -> AvltrieeIter<T>
     where
         S: Fn(&T) -> Ordering,
         E: Fn(&T) -> Ordering,
     {
         if let Some(range) = self.search_range(start, end) {
-            AvltrieeRangeIter::new(self, range.start, range.end)
+            AvltrieeIter::new(self, range.start, range.end, order)
         } else {
-            AvltrieeRangeIter::empty(self)
+            AvltrieeIter::new(self, 0, 0, order)
         }
+    }
+    pub fn iter_range<'a, S, E>(&'a self, start: S, end: E) -> AvltrieeIter<T>
+    where
+        S: Fn(&T) -> Ordering,
+        E: Fn(&T) -> Ordering,
+    {
+        self.iter_range_inner(start, end, Order::Asc)
+    }
+    pub fn desc_iter_range<'a, S, E>(&'a self, start: S, end: E) -> AvltrieeIter<T>
+    where
+        S: Fn(&T) -> Ordering,
+        E: Fn(&T) -> Ordering,
+    {
+        self.iter_range_inner(start, end, Order::Desc)
     }
 
     unsafe fn next(&self, c: u32, same_branch: u32) -> Option<(u32, u32)> {

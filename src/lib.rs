@@ -1,7 +1,7 @@
 use std::{cmp::Ordering, mem::ManuallyDrop, ops::Range};
 
 mod iter;
-pub use iter::{AvltrieeIter, AvltrieeRangeIter};
+pub use iter::AvltrieeIter;
 
 mod node;
 pub use node::AvltrieeNode;
