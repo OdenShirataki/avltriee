@@ -48,13 +48,13 @@ for i in triee.iter() {
 for i in triee.desc_iter() {
     println!("{}:{}:{}", i.index(), i.row(), i.value());
 }
-for i in t.iter_value_from(&10) {
+for i in t.iter_from(|v|v.cmp(&10)) {
     println!("{}:{}:{}", i.index(), i.row(), i.value());
 }
-for i in t.iter_value_to(&500) {
+for i in t.iter_to(|v|v.cmp(&500)) {
     println!("{}:{}:{}", i.index(), i.row(), i.value());
 }
-for i in t.iter_value_range(&300,&999) {
+for i in t.iter_range(|v|v.cmp(&300),|v|v.cmp(&999)) {
     println!("{}:{}:{}", i.index(), i.row(), i.value());
 }
 ```
