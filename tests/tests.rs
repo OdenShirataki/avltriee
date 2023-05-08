@@ -34,7 +34,7 @@ fn test_iter() {
         println!("delete:{}", i);
         deleted.insert(i);
         unsafe {
-            t.remove(i);
+            t.delete(i);
         }
     }
 

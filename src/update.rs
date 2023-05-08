@@ -1,12 +1,8 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, mem::size_of};
+
+use libc::c_void;
 
 use super::{Avltriee, AvltrieeNode, Found};
-
-pub enum Removed {
-    Last,
-    Remain,
-    None,
-}
 
 impl<T> Avltriee<T> {
     pub fn init_node(&mut self, data: T, root: u32) {
@@ -16,11 +12,11 @@ impl<T> Avltriee<T> {
 
     pub unsafe fn update(&mut self, row: u32, data: T)
     where
-        T: Ord + Clone,
+        T: Ord,
     {
         if if let Some(n) = self.node(row) {
             if n.value.cmp(&data) != Ordering::Equal {
-                self.remove(row);
+                self.delete(row);
                 true
             } else {
                 false
@@ -52,13 +48,14 @@ impl<T> Avltriee<T> {
             self.balance(found.row);
         }
     }
-    pub unsafe fn update_same(&mut self, new_row: u32, vertex_row: u32)
-    where
-        T: Clone,
-    {
+    pub unsafe fn update_same(&mut self, new_row: u32, vertex_row: u32) {
         let mut vertex = self.offset_mut(vertex_row);
         let mut new_vertex = self.offset_mut(new_row);
-        *new_vertex = vertex.clone();
+        libc::memcpy(
+            new_vertex as *mut AvltrieeNode<T> as *mut c_void,
+            vertex as *const AvltrieeNode<T> as *const c_void,
+            size_of::<AvltrieeNode<T>>(),
+        );
         if new_vertex.parent == 0 {
             self.set_root(new_row);
         } else {
@@ -81,8 +78,7 @@ impl<T> Avltriee<T> {
         vertex.right = 0;
     }
 
-    pub unsafe fn remove(&mut self, target_row: u32) -> Removed {
-        let mut ret = Removed::Remain;
+    pub unsafe fn delete(&mut self, target_row: u32) {
         let remove_target = self.offset_mut(target_row);
         let height = remove_target.height;
         if height > 0 {
@@ -119,7 +115,6 @@ impl<T> Avltriee<T> {
                         );
                     }
                 } else if row_parent == 0 {
-                    ret = Removed::Last;
                     if row_left == 0 && row_right == 0 {
                         self.set_root(0);
                     } else {
@@ -145,7 +140,6 @@ impl<T> Avltriee<T> {
                         self.balance(balance_row);
                     }
                 } else {
-                    ret = Removed::Last;
                     let balance_row = if row_left == 0 && row_right == 0 {
                         Self::join_intermediate(&mut parent, target_row, row_same);
                         row_parent
@@ -176,7 +170,6 @@ impl<T> Avltriee<T> {
             }
             remove_target.height = 0;
         }
-        ret
     }
 
     fn set_root(&mut self, row: u32) {

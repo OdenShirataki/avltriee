@@ -7,7 +7,6 @@ mod node;
 pub use node::AvltrieeNode;
 
 mod update;
-pub use update::Removed;
 
 mod found;
 pub use found::Found;
@@ -46,7 +45,7 @@ impl<T> Avltriee<T> {
         self.node_list.parent
     }
 
-    pub fn search<F>(&self, compare: F) -> Found
+    pub fn search<F>(&self, cmp: F) -> Found
     where
         F: Fn(&T) -> Ordering,
     {
@@ -54,7 +53,7 @@ impl<T> Avltriee<T> {
         let mut ord = Ordering::Equal;
         while row != 0 {
             let node = unsafe { self.offset(row) };
-            ord = compare(&node.value);
+            ord = cmp(&node.value);
             match ord {
                 Ordering::Greater => {
                     if node.left == 0 {
@@ -74,6 +73,11 @@ impl<T> Avltriee<T> {
             }
         }
         Found { row, ord }
+    }
+
+    pub unsafe fn has_same(&self, row: u32) -> bool {
+        let node = self.offset(row);
+        node.same != 0 || self.offset(node.parent).same == row
     }
 
     unsafe fn offset<'a>(&self, offset: u32) -> &'a AvltrieeNode<T> {

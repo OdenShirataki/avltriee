@@ -27,13 +27,12 @@ fn test2() {
 
         let del = vec![7, 2, 3, 3, 7, 9, 10, 8, 8, 2];
         for i in del {
-            println!("delete:{}",i);
+            println!("delete:{}", i);
             deleted.insert(i);
-            t.remove(i);
+            t.delete(i);
             output(&t, &deleted);
-            println!("{:?}",deleted);
+            println!("{:?}", deleted);
         }
-        
     }
 
     fn output(t: &Avltriee<i64>, deleted: &HashSet<u32>) {

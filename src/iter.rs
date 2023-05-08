@@ -10,12 +10,12 @@ enum Order {
     Desc,
 }
 
-pub struct AvlTrieeIterResult<'a, T> {
+pub struct AvlTrieeIterItem<'a, T> {
     index: isize,
     row: u32,
     node: &'a AvltrieeNode<T>,
 }
-impl<'a, T> AvlTrieeIterResult<'a, T> {
+impl<'a, T> AvlTrieeIterItem<'a, T> {
     pub fn index(&self) -> isize {
         self.index
     }
@@ -59,7 +59,7 @@ impl<'a, T> AvltrieeIter<'a, T> {
 }
 
 impl<'a, T> Iterator for AvltrieeIter<'a, T> {
-    type Item = AvlTrieeIterResult<'a, T>;
+    type Item = AvlTrieeIterItem<'a, T>;
     fn next(&mut self) -> Option<Self::Item> {
         if self.now == 0 {
             None
@@ -86,7 +86,7 @@ impl<'a, T> Iterator for AvltrieeIter<'a, T> {
                     }
                 }
             }
-            Some(AvlTrieeIterResult {
+            Some(AvlTrieeIterItem {
                 index: self.local_index,
                 row: c,
                 node: unsafe { &self.triee.offset(c) },

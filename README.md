@@ -58,9 +58,9 @@ for i in t.iter_range(|v|v.cmp(&300),|v|v.cmp(&999)) {
     println!("{}:{}:{}", i.index(), i.row(), i.value());
 }
 ```
-### remove
+### delete
 ```rust
-triee.remove(1);
+triee.delete(1);
 ```
 
 ### search
