@@ -27,16 +27,16 @@ let mut triee = Avltriee::new(buffer.as_mut_ptr());
 
 ```rust
 unsafe {
-    triee.update(1, 100); //insert
+    triee.update_auto(1, 100); //insert
 }
 unsafe {
-    triee.update(2, 345); //insert
+    triee.update_auto(2, 345); //insert
 }
 unsafe {
-    triee.update(3, 789); //insert
+    triee.update_auto(3, 789); //insert
 }
 unsafe {
-    triee.update(2, 1234); //update exists row
+    triee.update_auto(2, 1234); //update exists row
 }
 ```
 ### iterator
@@ -65,6 +65,10 @@ triee.delete(1);
 
 ### search
 ```rust
-let (ord,row) = triee.search(|v|v.cmp(&100));
+let (ord,row) = triee.search(&100);
+
+or 
+
+let (ord,row) = triee.search_nord(|v|v.cmp(&100));
 ```
 

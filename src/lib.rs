@@ -45,7 +45,13 @@ impl<T> Avltriee<T> {
         self.node_list.parent
     }
 
-    pub fn search<F>(&self, cmp: F) -> Found
+    pub fn search(&self, value: &T) -> Found
+    where
+        T: Ord,
+    {
+        self.search_nord(|v| v.cmp(value))
+    }
+    pub fn search_nord<F>(&self, cmp: F) -> Found
     where
         F: Fn(&T) -> Ordering,
     {

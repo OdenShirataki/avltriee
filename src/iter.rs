@@ -117,11 +117,11 @@ impl<T> Avltriee<T> {
         }
     }
 
-    pub fn iter_by<'a, F>(&'a self, compare: F) -> AvltrieeIter<T>
+    pub fn iter_by<'a, F>(&'a self, cmp: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
     {
-        let found = self.search(compare);
+        let found = self.search_nord(cmp);
         let row = if found.ord == Ordering::Equal {
             found.row
         } else {

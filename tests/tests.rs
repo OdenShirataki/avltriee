@@ -23,7 +23,7 @@ fn test_iter() {
         let num = die.sample(&mut rng);
         println!("update:{}", num);
         unsafe {
-            t.update(i, num);
+            t.update_auto(i, num);
         }
     }
 
@@ -62,7 +62,7 @@ fn test_desc_iter() {
     for i in 1..TEST_LENGTH {
         let num = die.sample(&mut rng);
         unsafe {
-            t.update(i, num);
+            t.update_auto(i, num);
         }
     }
 
@@ -88,7 +88,7 @@ fn test_iter_by_search() {
         let num = die.sample(&mut rng);
         println!("update:{}", num);
         unsafe {
-            t.update(i, num);
+            t.update_auto(i, num);
         }
     }
 

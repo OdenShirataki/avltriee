@@ -1,81 +1,71 @@
-use std::{cmp::Ordering, mem::size_of};
-
-use libc::c_void;
-
 use super::{Avltriee, AvltrieeNode, Found};
+use std::cmp::Ordering;
 
 impl<T> Avltriee<T> {
-    pub fn init_node(&mut self, data: T, root: u32) {
-        (**self.node_list).parent = root;
-        *unsafe { self.offset_mut(root) } = AvltrieeNode::new(1, 0, data);
-    }
-
-    pub unsafe fn update(&mut self, row: u32, data: T)
+    pub unsafe fn update_auto(&mut self, row: u32, value: T)
     where
-        T: Ord,
+        T: Ord + Clone,
     {
-        if if let Some(n) = self.node(row) {
-            if n.value.cmp(&data) != Ordering::Equal {
+        if let Some(n) = self.node(row) {
+            if n.value.cmp(&value) != Ordering::Equal {
                 self.delete(row);
-                true
             } else {
-                false
+                return; //update value eq exists value
             }
+        }
+        let found = self.search(&value);
+        if found.ord == Ordering::Equal && found.row != 0 {
+            self.update_same(row, found.row);
         } else {
-            true
-        } {
-            let found = self.search(|v| v.cmp(&data));
-            if found.ord == Ordering::Equal && found.row != 0 {
-                self.update_same(row, found.row);
-            } else {
-                self.update_unique(row, data, found);
-                if self.root() == 0 {
-                    self.set_root(row);
-                }
-            }
+            self.update_unique(row, value, found);
         }
     }
 
-    pub unsafe fn update_unique(&mut self, row: u32, data: T, found: Found) {
-        *self.offset_mut(row) = AvltrieeNode::new(row, found.row, data);
-        if found.row > 0 {
-            let p = self.offset_mut(found.row);
-            if found.ord == Ordering::Greater {
-                p.left = row;
-            } else {
-                p.right = row;
+    pub unsafe fn update_unique(&mut self, row: u32, value: T, found: Found) {
+        *self.offset_mut(row) = AvltrieeNode::new(row, found.row, value);
+        if self.root() == 0 {
+            self.set_root(row);
+        } else {
+            if found.row > 0 {
+                let p = self.offset_mut(found.row);
+                if found.ord == Ordering::Greater {
+                    p.left = row;
+                } else {
+                    p.right = row;
+                }
+                self.balance(found.row);
             }
-            self.balance(found.row);
         }
     }
-    pub unsafe fn update_same(&mut self, new_row: u32, vertex_row: u32) {
-        let mut vertex = self.offset_mut(vertex_row);
-        let mut new_vertex = self.offset_mut(new_row);
-        libc::memcpy(
-            new_vertex as *mut AvltrieeNode<T> as *mut c_void,
-            vertex as *const AvltrieeNode<T> as *const c_void,
-            size_of::<AvltrieeNode<T>>(),
-        );
-        if new_vertex.parent == 0 {
-            self.set_root(new_row);
+    pub unsafe fn update_same(&mut self, row: u32, same: u32)
+    where
+        T: Clone,
+    {
+        let mut same_node = self.offset_mut(same);
+        let mut node = self.offset_mut(row);
+
+        *node = same_node.clone();
+
+        if node.parent == 0 {
+            self.set_root(row);
         } else {
-            let mut parent = self.offset_mut(new_vertex.parent);
-            if parent.left == vertex_row {
-                parent.left = new_row;
+            let mut parent = self.offset_mut(node.parent);
+            if parent.left == same {
+                parent.left = row;
             } else {
-                parent.right = new_row;
+                parent.right = row;
             }
         }
-        vertex.parent = new_row;
-        new_vertex.same = vertex_row;
-        if new_vertex.left != 0 {
-            self.offset_mut(new_vertex.left).parent = new_row;
+        same_node.parent = row;
+        node.same = same;
+        if node.left != 0 {
+            self.offset_mut(node.left).parent = row;
         }
-        if new_vertex.right != 0 {
-            self.offset_mut(new_vertex.right).parent = new_row;
+        if node.right != 0 {
+            self.offset_mut(node.right).parent = row;
         }
-        vertex.left = 0;
-        vertex.right = 0;
+        same_node.left = 0;
+        same_node.right = 0;
     }
 
     pub unsafe fn delete(&mut self, target_row: u32) {
