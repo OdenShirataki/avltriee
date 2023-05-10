@@ -1,17 +1,17 @@
-use super::{Avltriee, AvltrieeNode, Found};
 use std::cmp::Ordering;
 
+use super::{Avltriee, AvltrieeNode, Found};
+
 impl<T> Avltriee<T> {
-    pub unsafe fn update_auto(&mut self, row: u32, value: T)
+    pub unsafe fn update(&mut self, row: u32, value: T)
     where
         T: Ord + Clone,
     {
         if let Some(n) = self.node(row) {
-            if n.value.cmp(&value) != Ordering::Equal {
-                self.delete(row);
-            } else {
+            if n.value.cmp(&value) == Ordering::Equal {
                 return; //update value eq exists value
             }
+            self.delete(row);
         }
         let found = self.search(&value);
         if found.ord == Ordering::Equal && found.row != 0 {
@@ -37,7 +37,7 @@ impl<T> Avltriee<T> {
             }
         }
     }
-    pub unsafe fn update_same(&mut self, row: u32, same: u32)
+    pub(crate) unsafe fn update_same(&mut self, row: u32, same: u32)
     where
         T: Clone,
     {
@@ -69,11 +69,11 @@ impl<T> Avltriee<T> {
     }
 
     pub unsafe fn delete(&mut self, target_row: u32) {
-        let remove_target = self.offset_mut(target_row);
-        let height = remove_target.height;
+        let delete_node = self.offset_mut(target_row);
+        let height = delete_node.height;
         if height > 0 {
-            let row_parent = remove_target.parent;
-            let row_same = remove_target.same;
+            let row_parent = delete_node.parent;
+            let row_same = delete_node.same;
             let mut parent = self.offset_mut(row_parent);
             if row_parent != 0 && parent.same == target_row {
                 parent.same = row_same;
@@ -81,8 +81,8 @@ impl<T> Avltriee<T> {
                     self.offset_mut(row_same).parent = row_parent;
                 }
             } else {
-                let row_left = remove_target.left;
-                let row_right = remove_target.right;
+                let row_left = delete_node.left;
+                let row_right = delete_node.right;
                 if row_same != 0 {
                     let same = self.offset_mut(row_same);
                     same.parent = row_parent;
@@ -118,7 +118,7 @@ impl<T> Avltriee<T> {
                             row_left
                         } else {
                             let (left_max_row, left_max_parent_row) =
-                                self.remove_intermediate(remove_target);
+                                self.delete_intermediate(delete_node);
                             self.set_root(left_max_row);
                             if left_max_parent_row == target_row {
                                 self.offset_mut(left_max_parent_row).parent = left_max_row;
@@ -143,7 +143,7 @@ impl<T> Avltriee<T> {
                         row_parent
                     } else {
                         let (left_max_row, left_max_parent_row) =
-                            self.remove_intermediate(remove_target);
+                            self.delete_intermediate(delete_node);
                         if parent.right == target_row {
                             parent.right = left_max_row;
                         } else {
@@ -158,7 +158,7 @@ impl<T> Avltriee<T> {
                     self.balance(balance_row);
                 }
             }
-            remove_target.height = 0;
+            delete_node.height = 0;
         }
     }
 
@@ -166,23 +166,23 @@ impl<T> Avltriee<T> {
         self.node_list.parent = row;
     }
 
-    unsafe fn calc_height(&mut self, vertex_row: u32) {
-        let mut vertex = self.offset_mut(vertex_row);
-        vertex.height = std::cmp::max(
-            self.offset(vertex.left).height,
-            self.offset(vertex.right).height,
+    unsafe fn calc_height(&mut self, row: u32) {
+        let mut node = self.offset_mut(row);
+        node.height = std::cmp::max(
+            self.offset(node.left).height,
+            self.offset(node.right).height,
         ) + 1;
     }
 
-    unsafe fn balance(&mut self, vertex_row: u32) {
-        let mut vertex_row = vertex_row;
+    unsafe fn balance(&mut self, row: u32) {
+        let mut row = row;
         loop {
-            let mut vertex = self.offset_mut(vertex_row);
+            let mut node = self.offset_mut(row);
 
-            let mut parent_row = vertex.parent;
+            let mut parent_row = node.parent;
 
-            let left_row = vertex.left;
-            let right_row = vertex.right;
+            let left_row = node.left;
+            let right_row = node.right;
 
             let mut left = self.offset_mut(left_row);
             let mut right = self.offset_mut(right_row);
@@ -191,79 +191,79 @@ impl<T> Avltriee<T> {
             if diff.abs() >= 2 {
                 let high_is_left = diff > 0;
 
-                let new_vertex_row = if high_is_left {
+                let vertex_row = if high_is_left {
                     self.max(left_row)
                 } else {
                     self.min(right_row)
                 };
-                let new_vertex = self.offset_mut(new_vertex_row);
-                let new_vertex_old_parent = new_vertex.parent;
-                vertex.parent = new_vertex_row;
-                new_vertex.parent = parent_row;
+                let vertex_node = self.offset_mut(vertex_row);
+                let vertex_parent = vertex_node.parent;
+                node.parent = vertex_row;
+                vertex_node.parent = parent_row;
                 if parent_row == 0 {
-                    self.set_root(new_vertex_row);
+                    self.set_root(vertex_row);
                 } else {
                     let parent = self.offset_mut(parent_row);
-                    if parent.left == vertex_row {
-                        parent.left = new_vertex_row;
+                    if parent.left == row {
+                        parent.left = vertex_row;
                     } else {
-                        parent.right = new_vertex_row;
+                        parent.right = vertex_row;
                     }
                 }
                 if high_is_left {
-                    new_vertex.right = vertex_row;
-                    vertex.left = 0;
-                    if new_vertex_row == left_row {
-                        vertex = self.offset_mut(left_row);
-                        left = self.offset_mut(vertex.left);
-                        right = self.offset_mut(vertex_row);
+                    vertex_node.right = row;
+                    node.left = 0;
+                    if vertex_row == left_row {
+                        node = self.offset_mut(left_row);
+                        left = self.offset_mut(node.left);
+                        right = self.offset_mut(row);
 
-                        self.calc_height(vertex.left);
+                        self.calc_height(node.left);
                     } else {
-                        let new_left_row = self.min(new_vertex_row);
+                        let new_left_row = self.min(vertex_row);
                         let new_left = self.offset_mut(new_left_row);
                         new_left.left = left_row;
 
                         left.parent = new_left_row;
-                        self.offset_mut(new_vertex_old_parent).right = 0;
+                        self.offset_mut(vertex_parent).right = 0;
 
                         self.calc_height(left_row);
 
-                        left = self.offset_mut(vertex.left);
+                        left = self.offset_mut(node.left);
 
-                        parent_row = new_vertex_old_parent;
+                        parent_row = vertex_parent;
                     }
-                    self.calc_height(vertex_row);
+                    self.calc_height(row);
                 } else {
-                    new_vertex.left = vertex_row;
-                    vertex.right = 0;
-                    if new_vertex_row == right_row {
-                        vertex = self.offset_mut(right_row);
-                        left = self.offset_mut(vertex_row);
-                        right = self.offset_mut(vertex.right);
+                    vertex_node.left = row;
+                    node.right = 0;
+                    if vertex_row == right_row {
+                        node = self.offset_mut(right_row);
+                        left = self.offset_mut(row);
+                        right = self.offset_mut(node.right);
 
-                        self.calc_height(vertex.right);
+                        self.calc_height(node.right);
                     } else {
-                        let new_right_row = self.max(new_vertex_row);
+                        let new_right_row = self.max(vertex_row);
                         let new_right = self.offset_mut(new_right_row);
                         new_right.right = right_row;
 
                         right.parent = new_right_row;
-                        self.offset_mut(new_vertex_old_parent).left = 0;
+                        self.offset_mut(vertex_parent).left = 0;
 
                         self.calc_height(right_row);
 
-                        right = self.offset_mut(vertex.right);
+                        right = self.offset_mut(node.right);
 
-                        parent_row = new_vertex_old_parent;
+                        parent_row = vertex_parent;
                     }
-                    self.calc_height(vertex_row);
+                    self.calc_height(row);
                 }
             }
 
-            vertex.height = std::cmp::max(left.height, right.height) + 1;
-            vertex_row = parent_row;
-            if vertex_row == 0 {
+            node.height = std::cmp::max(left.height, right.height) + 1;
+            row = parent_row;
+            if row == 0 {
                 break;
             }
         }
@@ -275,27 +275,27 @@ impl<T> Avltriee<T> {
             parent.left = child_row;
         }
     }
-    unsafe fn remove_intermediate(&mut self, remove_target: &mut AvltrieeNode<T>) -> (u32, u32) {
-        let left_max_row = self.max(remove_target.left);
+    unsafe fn delete_intermediate(&mut self, delete_node: &mut AvltrieeNode<T>) -> (u32, u32) {
+        let left_max_row = self.max(delete_node.left);
         let mut left_max = self.offset_mut(left_max_row);
         let left_max_parent_row = left_max.parent;
         let mut left_max_parent = self.offset_mut(left_max_parent_row);
 
-        if remove_target.left != left_max_row {
+        if delete_node.left != left_max_row {
             left_max_parent.right = left_max.left;
             if left_max_parent.right != 0 {
                 self.offset_mut(left_max_parent.right).parent = left_max_parent_row;
             }
-            left_max.left = remove_target.left;
+            left_max.left = delete_node.left;
             if left_max.left != 0 {
                 self.offset_mut(left_max.left).parent = left_max_row;
             }
         }
 
-        left_max.parent = remove_target.parent;
-        left_max.right = remove_target.right;
+        left_max.parent = delete_node.parent;
+        left_max.right = delete_node.right;
 
-        let mut right = self.offset_mut(remove_target.right);
+        let mut right = self.offset_mut(delete_node.right);
         right.parent = left_max_row;
 
         (left_max_row, left_max_parent_row)

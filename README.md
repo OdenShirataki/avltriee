@@ -27,16 +27,16 @@ let mut triee = Avltriee::new(buffer.as_mut_ptr());
 
 ```rust
 unsafe {
-    triee.update_auto(1, 100); //insert
+    triee.update(1, 100); //insert
 }
 unsafe {
-    triee.update_auto(2, 345); //insert
+    triee.update(2, 345); //insert
 }
 unsafe {
-    triee.update_auto(3, 789); //insert
+    triee.update(3, 789); //insert
 }
 unsafe {
-    triee.update_auto(2, 1234); //update exists row
+    triee.update(2, 1234); //update exists row
 }
 ```
 ### iterator

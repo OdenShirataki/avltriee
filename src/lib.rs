@@ -11,6 +11,9 @@ mod update;
 mod found;
 pub use found::Found;
 
+mod uord;
+pub use uord::UOrd;
+
 pub struct Avltriee<T> {
     node_list: ManuallyDrop<Box<AvltrieeNode<T>>>,
 }
@@ -49,9 +52,9 @@ impl<T> Avltriee<T> {
     where
         T: Ord,
     {
-        self.search_nord(|v| v.cmp(value))
+        self.search_uord(|v| v.cmp(value))
     }
-    pub fn search_nord<F>(&self, cmp: F) -> Found
+    pub fn search_uord<F>(&self, cmp: F) -> Found
     where
         F: Fn(&T) -> Ordering,
     {
