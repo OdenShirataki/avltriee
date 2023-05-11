@@ -12,16 +12,16 @@ fn test2() {
     let mut deleted: HashSet<u32> = HashSet::new();
 
     unsafe {
-        t.update(1, 8);
-        t.update(2, 8);
-        t.update(3, 5);
-        t.update(4, 10);
-        t.update(5, 6);
-        t.update(6, 3);
-        t.update(7, 10);
-        t.update(8, 8);
-        t.update(9, 3);
-        t.update(10, 5);
+        t.update(1, 8).unwrap();
+        t.update(2, 8).unwrap();
+        t.update(3, 5).unwrap();
+        t.update(4, 10).unwrap();
+        t.update(5, 6).unwrap();
+        t.update(6, 3).unwrap();
+        t.update(7, 10).unwrap();
+        t.update(8, 8).unwrap();
+        t.update(9, 3).unwrap();
+        t.update(10, 5).unwrap();
 
         output(&t, &deleted);
 

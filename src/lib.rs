@@ -7,12 +7,21 @@ mod node;
 pub use node::AvltrieeNode;
 
 mod update;
+pub use update::AvltrieeHolder;
 
-mod found;
-pub use found::Found;
-
-mod uord;
-pub use uord::UOrd;
+#[derive(Debug)]
+pub struct Found {
+    row: u32,
+    ord: Ordering,
+}
+impl Found {
+    pub fn row(&self) -> u32 {
+        self.row
+    }
+    pub fn ord(&self) -> Ordering {
+        self.ord
+    }
+}
 
 pub struct Avltriee<T> {
     node_list: ManuallyDrop<Box<AvltrieeNode<T>>>,

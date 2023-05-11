@@ -1,42 +1,95 @@
 use std::cmp::Ordering;
 
+use anyhow::Result;
+
 use super::{Avltriee, AvltrieeNode, Found};
 
+pub trait AvltrieeHolder<T, I> {
+    fn triee(&self) -> &Avltriee<T>;
+    fn triee_mut(&mut self) -> &mut Avltriee<T>;
+    fn cmp(&self, left: &T, right: &I) -> Ordering;
+    fn search(&self, input: &I) -> Found;
+    fn value(&mut self, input: I) -> Result<T>;
+    fn delete(&mut self, row: u32, delete_node: &T) -> Result<()>;
+}
+
+impl<T> AvltrieeHolder<T, T> for Avltriee<T>
+where
+    T: Ord,
+{
+    fn triee(&self) -> &Avltriee<T> {
+        self
+    }
+    fn triee_mut(&mut self) -> &mut Avltriee<T> {
+        self
+    }
+    fn cmp(&self, left: &T, right: &T) -> Ordering {
+        left.cmp(right)
+    }
+    fn search(&self, input: &T) -> Found {
+        self.search(input)
+    }
+    fn value(&mut self, input: T) -> Result<T> {
+        Ok(input)
+    }
+    fn delete(&mut self, row: u32, _: &T) -> Result<()> {
+        unsafe {
+            self.delete(row);
+        }
+        Ok(())
+    }
+}
+
 impl<T> Avltriee<T> {
-    pub unsafe fn update(&mut self, row: u32, value: T)
+    pub unsafe fn update(&mut self, row: u32, value: T) -> Result<()>
     where
         T: Ord + Clone,
     {
-        if let Some(n) = self.node(row) {
-            if n.value.cmp(&value) == Ordering::Equal {
-                return; //update value eq exists value
+        Self::update_holder(self, row, value)
+    }
+
+    pub unsafe fn update_holder<H, I>(holder: &mut H, row: u32, input: I) -> Result<()>
+    where
+        T: Clone,
+        H: AvltrieeHolder<T, I>,
+    {
+        if let Some(n) = holder.triee().node(row) {
+            let value = &n.value;
+            if holder.cmp(value, &input) == Ordering::Equal {
+                return Ok(()); //update value eq exists value
             }
-            self.delete(row);
+            holder.delete(row, value)?;
         }
-        let found = self.search(&value);
+        let found = holder.search(&input);
         if found.ord == Ordering::Equal && found.row != 0 {
-            self.update_same(row, found.row);
+            holder.triee_mut().update_same(row, found.row);
         } else {
-            self.update_unique(row, value, found);
+            let value = holder.value(input)?;
+            holder.triee_mut().insert_unique(row, value, found);
+        }
+        Ok(())
+    }
+
+    pub unsafe fn insert_unique(&mut self, row: u32, value: T, found: Found) {
+        *self.offset_mut(row) = AvltrieeNode::new(row, found.row, value);
+        if found.row == 0 {
+            self.set_root(row);
+        } else {
+            assert!(
+                found.ord != Ordering::Equal,
+                "Avltriee.insert_unique : {:?}",
+                &found
+            );
+            let p = self.offset_mut(found.row);
+            if found.ord == Ordering::Greater {
+                p.left = row;
+            } else {
+                p.right = row;
+            }
+            self.balance(found.row);
         }
     }
 
-    pub unsafe fn update_unique(&mut self, row: u32, value: T, found: Found) {
-        *self.offset_mut(row) = AvltrieeNode::new(row, found.row, value);
-        if self.root() == 0 {
-            self.set_root(row);
-        } else {
-            if found.row > 0 {
-                let p = self.offset_mut(found.row);
-                if found.ord == Ordering::Greater {
-                    p.left = row;
-                } else {
-                    p.right = row;
-                }
-                self.balance(found.row);
-            }
-        }
-    }
     pub(crate) unsafe fn update_same(&mut self, row: u32, same: u32)
     where
         T: Clone,
