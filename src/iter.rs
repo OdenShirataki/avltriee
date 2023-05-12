@@ -121,7 +121,7 @@ impl<T> Avltriee<T> {
     where
         F: Fn(&T) -> Ordering,
     {
-        let found = self.search_uord(cmp);
+        let found = self.search_end(cmp);
         let row = if found.ord == Ordering::Equal {
             found.row
         } else {

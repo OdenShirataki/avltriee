@@ -8,7 +8,7 @@ pub trait AvltrieeHolder<T, I> {
     fn triee(&self) -> &Avltriee<T>;
     fn triee_mut(&mut self) -> &mut Avltriee<T>;
     fn cmp(&self, left: &T, right: &I) -> Ordering;
-    fn search(&self, input: &I) -> Found;
+    fn search_end(&self, input: &I) -> Found;
     fn value(&mut self, input: I) -> Result<T>;
     fn delete(&mut self, row: u32, delete_node: &T) -> Result<()>;
 }
@@ -26,8 +26,8 @@ where
     fn cmp(&self, left: &T, right: &T) -> Ordering {
         left.cmp(right)
     }
-    fn search(&self, input: &T) -> Found {
-        self.search(input)
+    fn search_end(&self, input: &T) -> Found {
+        self.search_end(|v| v.cmp(input))
     }
     fn value(&mut self, input: T) -> Result<T> {
         Ok(input)
@@ -60,7 +60,7 @@ impl<T> Avltriee<T> {
             }
             holder.delete(row, value)?;
         }
-        let found = holder.search(&input);
+        let found = holder.search_end(&input);
         if found.ord == Ordering::Equal && found.row != 0 {
             holder.triee_mut().update_same(row, found.row);
         } else {
