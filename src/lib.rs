@@ -1,5 +1,7 @@
 use std::{cmp::Ordering, mem::ManuallyDrop};
 
+pub use anyhow;
+
 mod iter;
 pub use iter::AvltrieeIter;
 
