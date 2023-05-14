@@ -1,5 +1,4 @@
 use std::cmp::Ordering;
-use std::fmt::Debug;
 
 use anyhow::Result;
 
@@ -44,14 +43,14 @@ where
 impl<T> Avltriee<T> {
     pub unsafe fn update(&mut self, row: u32, value: T) -> Result<()>
     where
-        T: Ord + Clone + Debug,
+        T: Ord + Clone,
     {
         Self::update_holder(self, row, value)
     }
 
     pub unsafe fn update_holder<H, I>(holder: &mut H, row: u32, input: I) -> Result<()>
     where
-        T: Clone + Debug,
+        T: Clone,
         H: AvltrieeHolder<T, I>,
     {
         if let Some(n) = holder.triee().node(row) {
