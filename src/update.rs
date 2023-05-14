@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::fmt::Debug;
 
 use anyhow::Result;
 
@@ -10,7 +11,7 @@ pub trait AvltrieeHolder<T, I> {
     fn cmp(&self, left: &T, right: &I) -> Ordering;
     fn search_end(&self, input: &I) -> Found;
     fn value(&mut self, input: I) -> Result<T>;
-    fn delete(&mut self, row: u32, delete_node: &T) -> Result<()>;
+    fn delete_before_update(&mut self, row: u32, delete_node: &T) -> Result<()>;
 }
 
 impl<T> AvltrieeHolder<T, T> for Avltriee<T>
@@ -32,7 +33,7 @@ where
     fn value(&mut self, input: T) -> Result<T> {
         Ok(input)
     }
-    fn delete(&mut self, row: u32, _: &T) -> Result<()> {
+    fn delete_before_update(&mut self, row: u32, _: &T) -> Result<()> {
         unsafe {
             self.delete(row);
         }
@@ -43,14 +44,14 @@ where
 impl<T> Avltriee<T> {
     pub unsafe fn update(&mut self, row: u32, value: T) -> Result<()>
     where
-        T: Ord + Clone,
+        T: Ord + Clone + Debug,
     {
         Self::update_holder(self, row, value)
     }
 
     pub unsafe fn update_holder<H, I>(holder: &mut H, row: u32, input: I) -> Result<()>
     where
-        T: Clone,
+        T: Clone + Debug,
         H: AvltrieeHolder<T, I>,
     {
         if let Some(n) = holder.triee().node(row) {
@@ -58,7 +59,7 @@ impl<T> Avltriee<T> {
             if holder.cmp(value, &input) == Ordering::Equal {
                 return Ok(()); //update value eq exists value
             }
-            holder.delete(row, value)?;
+            holder.delete_before_update(row, value)?;
         }
         let found = holder.search_end(&input);
         if found.ord == Ordering::Equal && found.row != 0 {
