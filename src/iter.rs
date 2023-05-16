@@ -1,8 +1,6 @@
-use std::cmp::Ordering;
-use std::ops::Range;
+use std::{cmp::Ordering, ops::Range};
 
-use super::Avltriee;
-use super::AvltrieeNode;
+use super::{Avltriee, AvltrieeNode};
 
 #[derive(PartialEq)]
 enum Order {
@@ -23,7 +21,7 @@ impl<'a, T> AvlTrieeIterItem<'a, T> {
         self.row
     }
     pub fn value(&self) -> &'a T {
-        &self.node.value
+        self.node
     }
 }
 
@@ -138,7 +136,7 @@ impl<T> Avltriee<T> {
         let mut keep = 0;
         while row != 0 {
             let node = unsafe { self.offset(row) };
-            match compare(&node.value) {
+            match compare(node) {
                 Ordering::Greater => {
                     if node.left == 0 {
                         return row;
@@ -196,7 +194,7 @@ impl<T> Avltriee<T> {
         let mut keep = 0;
         while row != 0 {
             let node = unsafe { self.offset(row) };
-            match compare(&node.value) {
+            match compare(node) {
                 Ordering::Greater => {
                     if node.left == 0 {
                         return row;
@@ -262,7 +260,7 @@ impl<T> Avltriee<T> {
         let mut keep = 0;
         while row != 0 {
             let node = unsafe { self.offset(row) };
-            match compare(&node.value) {
+            match compare(node) {
                 Ordering::Greater => {
                     if node.left == 0 {
                         break;
@@ -315,7 +313,7 @@ impl<T> Avltriee<T> {
         let mut keep = 0;
         while row != 0 {
             let node = unsafe { self.offset(row) };
-            match compare(&node.value) {
+            match compare(node) {
                 Ordering::Greater => {
                     if node.left == 0 {
                         break;
@@ -377,8 +375,7 @@ impl<T> Avltriee<T> {
         let mut start = 0;
         while row != 0 {
             let node = unsafe { self.offset(row) };
-            let ord = compare_ge(&node.value);
-            match ord {
+            match compare_ge(node) {
                 Ordering::Greater => {
                     start = row;
                     if node.left == 0 {
@@ -398,7 +395,7 @@ impl<T> Avltriee<T> {
                 }
             }
         }
-        if start == 0 || compare_le(&unsafe { self.offset(start) }.value) == Ordering::Greater {
+        if start == 0 || compare_le(unsafe { self.offset(start) }) == Ordering::Greater {
             return None;
         }
 
@@ -406,7 +403,7 @@ impl<T> Avltriee<T> {
         let mut end = 0;
         while row != 0 {
             let node = unsafe { self.offset(row) };
-            match compare_le(&node.value) {
+            match compare_le(node) {
                 Ordering::Greater => {
                     if node.left == 0 {
                         break;

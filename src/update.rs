@@ -53,12 +53,11 @@ impl<T> Avltriee<T> {
         T: Clone,
         H: AvltrieeHolder<T, I>,
     {
-        if let Some(n) = holder.triee().node(row) {
-            let value = &n.value;
-            if holder.cmp(value, &input) == Ordering::Equal {
+        if let Some(node) = holder.triee().node(row) {
+            if holder.cmp(node, &input) == Ordering::Equal {
                 return Ok(()); //update value eq exists value
             }
-            holder.delete_before_update(row, value)?;
+            holder.delete_before_update(row, node)?;
         }
         let found = holder.search_end(&input);
         if found.ord == Ordering::Equal && found.row != 0 {

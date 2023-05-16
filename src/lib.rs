@@ -46,13 +46,13 @@ impl<T> Avltriee<T> {
 
     pub unsafe fn value<'a>(&self, row: u32) -> Option<&'a T> {
         if let Some(v) = self.node(row) {
-            Some(&v.value)
+            Some(v)
         } else {
             None
         }
     }
     pub unsafe fn value_unchecked<'a>(&self, row: u32) -> &'a T {
-        &self.offset(row).value
+        self.offset(row)
     }
 
     pub fn root(&self) -> u32 {
@@ -67,7 +67,7 @@ impl<T> Avltriee<T> {
         let mut ord = Ordering::Equal;
         while row != 0 {
             let node = unsafe { self.offset(row) };
-            ord = cmp(&node.value);
+            ord = cmp(node);
             match ord {
                 Ordering::Greater => {
                     if node.left == 0 {

@@ -5,7 +5,7 @@ pub struct AvltrieeNode<T> {
     pub(super) right: u32,
     pub(super) same: u32,
     pub(super) height: u8,
-    pub(super) value: T,
+    value: T,
 }
 impl<T> AvltrieeNode<T> {
     pub fn new(row: u32, parent: u32, value: T) -> AvltrieeNode<T> {
@@ -17,5 +17,12 @@ impl<T> AvltrieeNode<T> {
             same: 0,
             value,
         }
+    }
+}
+
+impl<T> std::ops::Deref for AvltrieeNode<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.value
     }
 }
