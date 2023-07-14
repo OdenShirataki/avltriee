@@ -93,15 +93,15 @@ impl<T> Avltriee<T> {
     where
         T: Clone,
     {
-        let mut same_node = self.offset_mut(same);
-        let mut node = self.offset_mut(row);
+        let same_node = self.offset_mut(same);
+        let node = self.offset_mut(row);
 
         *node = same_node.clone();
 
         if node.parent == 0 {
             self.set_root(row);
         } else {
-            let mut parent = self.offset_mut(node.parent);
+            let parent = self.offset_mut(node.parent);
             if parent.left == same {
                 parent.left = row;
             } else {
@@ -354,9 +354,9 @@ impl<T> Avltriee<T> {
     }
     unsafe fn delete_intermediate(&mut self, delete_node: &mut AvltrieeNode<T>) -> (u32, u32) {
         let left_max_row = self.max(delete_node.left);
-        let mut left_max = self.offset_mut(left_max_row);
+        let left_max = self.offset_mut(left_max_row);
         let left_max_parent_row = left_max.parent;
-        let mut left_max_parent = self.offset_mut(left_max_parent_row);
+        let left_max_parent = self.offset_mut(left_max_parent_row);
 
         if delete_node.left != left_max_row {
             left_max_parent.right = left_max.left;
@@ -372,7 +372,7 @@ impl<T> Avltriee<T> {
         left_max.parent = delete_node.parent;
         left_max.right = delete_node.right;
 
-        let mut right = self.offset_mut(delete_node.right);
+        let right = self.offset_mut(delete_node.right);
         right.parent = left_max_row;
 
         (left_max_row, left_max_parent_row)
