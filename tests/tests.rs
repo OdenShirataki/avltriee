@@ -51,7 +51,7 @@ fn test_desc_iter() {
     use avltriee::AvltrieeNode;
     use rand::distributions::{Distribution, Uniform};
 
-    let mut list: Vec<AvltrieeNode<i64>> = (0..TEST_LENGTH)
+    let mut list: Vec<AvltrieeNode<i64>> = (0..=TEST_LENGTH)
         .map(|_| AvltrieeNode::new(0, 0, 0))
         .collect();
     let mut t = Avltriee::new(list.as_mut_ptr());
@@ -59,8 +59,9 @@ fn test_desc_iter() {
     let mut rng = rand::thread_rng();
     let die = Uniform::from(TEST_VALUE_RANGE_MIN..=TEST_VALUE_RANGE_MAX);
 
-    for i in 1..TEST_LENGTH {
+    for i in 1..=TEST_LENGTH {
         let num = die.sample(&mut rng);
+        println!("update:{}",i);
         unsafe {
             t.update(i, num).unwrap();
         }

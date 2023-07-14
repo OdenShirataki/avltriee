@@ -85,7 +85,7 @@ impl<T> Avltriee<T> {
             } else {
                 p.right = row;
             }
-            self.balance(found.row);
+            self.balance(true, row);
         }
     }
 
@@ -179,7 +179,7 @@ impl<T> Avltriee<T> {
                                 left_max_parent_row
                             }
                         };
-                        self.balance(balance_row);
+                        self.balance(false, balance_row);
                     }
                 } else {
                     let balance_row = if row_left == 0 && row_right == 0 {
@@ -207,7 +207,7 @@ impl<T> Avltriee<T> {
                             left_max_parent_row
                         }
                     };
-                    self.balance(balance_row);
+                    self.balance(false, balance_row);
                 }
             }
             delete_node.height = 0;
@@ -218,108 +218,133 @@ impl<T> Avltriee<T> {
         self.node_list.parent = row;
     }
 
-    unsafe fn calc_height(&mut self, row: u32) {
-        let mut node = self.offset_mut(row);
+    fn calc_height(&mut self, row: u32) {
+        let node = unsafe { self.offset_mut(row) };
         node.height = std::cmp::max(
-            self.offset(node.left).height,
-            self.offset(node.right).height,
+            unsafe { self.offset(node.left) }.height,
+            unsafe { self.offset(node.right) }.height,
         ) + 1;
     }
 
-    unsafe fn balance(&mut self, row: u32) {
-        let mut row = row;
-        loop {
-            let mut node = self.offset_mut(row);
+    fn balance(&mut self, is_insert: bool, row: u32) {
+        let mut t_row = row;
+        let mut t = unsafe { self.offset(t_row) };
+        while t.parent != 0 {
+            let mut u_row = t.parent;
+            let u = unsafe { self.offset(u_row) };
 
-            let mut parent_row = node.parent;
+            let height_before_balance = u.height;
 
-            let left_row = node.left;
-            let right_row = node.right;
-
-            let mut left = self.offset_mut(left_row);
-            let mut right = self.offset_mut(right_row);
-
-            let diff = left.height as isize - right.height as isize;
-            if diff.abs() >= 2 {
-                let high_is_left = diff > 0;
-
-                let vertex_row = if high_is_left {
-                    self.max(left_row)
-                } else {
-                    self.min(right_row)
-                };
-                let vertex_node = self.offset_mut(vertex_row);
-                let vertex_parent = vertex_node.parent;
-                node.parent = vertex_row;
-                vertex_node.parent = parent_row;
-                if parent_row == 0 {
-                    self.set_root(vertex_row);
-                } else {
-                    let parent = self.offset_mut(parent_row);
-                    if parent.left == row {
-                        parent.left = vertex_row;
+            let left = unsafe { self.offset(u.left) };
+            let right = unsafe { self.offset(u.right) };
+            let bias = left.height as isize - right.height as isize;
+            if (u.left == t_row) == is_insert {
+                if bias == 2 {
+                    u_row = if unsafe { self.offset(left.left) }.height as isize
+                        - unsafe { self.offset(left.right) }.height as isize
+                        >= 0
+                    {
+                        self.rotate_right(u_row)
                     } else {
-                        parent.right = vertex_row;
-                    }
+                        self.rotate_left_right(u_row)
+                    };
+                } else {
+                    self.calc_height(u_row);
                 }
-                if high_is_left {
-                    vertex_node.right = row;
-                    node.left = 0;
-                    if vertex_row == left_row {
-                        node = self.offset_mut(left_row);
-                        left = self.offset_mut(node.left);
-                        right = self.offset_mut(row);
-
-                        self.calc_height(node.left);
+            } else {
+                if bias == -2 {
+                    u_row = if unsafe { self.offset(right.left) }.height as isize
+                        - unsafe { self.offset(right.right) }.height as isize
+                        <= 0
+                    {
+                        self.rotate_left(u_row)
                     } else {
-                        let new_left_row = self.min(vertex_row);
-                        let new_left = self.offset_mut(new_left_row);
-                        new_left.left = left_row;
-
-                        left.parent = new_left_row;
-                        self.offset_mut(vertex_parent).right = 0;
-
-                        self.calc_height(left_row);
-
-                        left = self.offset_mut(node.left);
-
-                        parent_row = vertex_parent;
-                    }
-                    self.calc_height(row);
+                        self.rotate_right_left(u_row)
+                    };
                 } else {
-                    vertex_node.left = row;
-                    node.right = 0;
-                    if vertex_row == right_row {
-                        node = self.offset_mut(right_row);
-                        left = self.offset_mut(row);
-                        right = self.offset_mut(node.right);
-
-                        self.calc_height(node.right);
-                    } else {
-                        let new_right_row = self.max(vertex_row);
-                        let new_right = self.offset_mut(new_right_row);
-                        new_right.right = right_row;
-
-                        right.parent = new_right_row;
-                        self.offset_mut(vertex_parent).left = 0;
-
-                        self.calc_height(right_row);
-
-                        right = self.offset_mut(node.right);
-
-                        parent_row = vertex_parent;
-                    }
-                    self.calc_height(row);
+                    self.calc_height(u_row);
                 }
             }
-
-            node.height = std::cmp::max(left.height, right.height) + 1;
-            row = parent_row;
-            if row == 0 {
+            if height_before_balance == unsafe { self.offset(u_row) }.height {
                 break;
             }
+            t_row = u_row;
+            t = unsafe { self.offset(t_row) };
         }
     }
+
+    fn rotate_left_right(&mut self, row: u32) -> u32 {
+        self.rotate_left(unsafe { self.offset(row) }.left);
+        self.rotate_right(row)
+    }
+    fn rotate_right_left(&mut self, row: u32) -> u32 {
+        self.rotate_right(unsafe { self.offset(row) }.right);
+        self.rotate_left(row)
+    }
+    fn rotate_left(&mut self, row: u32) -> u32 {
+        assert!(row != 0, "row is 0");
+        let v = unsafe { self.offset_mut(row) };
+
+        let right_row = v.right;
+        assert!(right_row != 0, "row is 0");
+        let right = unsafe { self.offset_mut(right_row) };
+
+        v.right = right.left;
+
+        if v.right != 0 {
+            unsafe { self.offset_mut(v.right) }.parent = row;
+        }
+        right.left = row;
+        if v.parent == 0 {
+            self.set_root(right_row);
+        } else {
+            let parent = unsafe { self.offset_mut(v.parent) };
+            if parent.left == row {
+                parent.left = right_row;
+            } else {
+                parent.right = right_row;
+            }
+        }
+        self.calc_height(row);
+        self.calc_height(right_row);
+
+        right.parent = v.parent;
+        v.parent = right_row;
+
+        right_row
+    }
+    fn rotate_right(&mut self, row: u32) -> u32 {
+        assert!(row != 0, "row is 0");
+        let v = unsafe { self.offset_mut(row) };
+
+        let left_row = v.left;
+        assert!(left_row != 0, "row is 0");
+        let left = unsafe { self.offset_mut(left_row) };
+
+        v.left = left.right;
+        if v.left != 0 {
+            unsafe { self.offset_mut(v.left) }.parent = row;
+        }
+        left.right = row;
+        if v.parent == 0 {
+            self.set_root(left_row);
+        } else {
+            let parent = unsafe { self.offset_mut(v.parent) };
+            if parent.left == row {
+                parent.left = left_row;
+            } else {
+                parent.right = left_row;
+            }
+        }
+        self.calc_height(row);
+        self.calc_height(left_row);
+
+        left.parent = v.parent;
+        v.parent = left_row;
+
+        left_row
+    }
+
     fn join_intermediate(parent: &mut AvltrieeNode<T>, remove_target_row: u32, child_row: u32) {
         if parent.right == remove_target_row {
             parent.right = child_row;
