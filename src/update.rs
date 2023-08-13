@@ -1,7 +1,5 @@
 use std::cmp::Ordering;
 
-use anyhow::Result;
-
 use super::{Avltriee, AvltrieeNode, Found};
 
 pub trait AvltrieeHolder<T, I> {
@@ -9,8 +7,8 @@ pub trait AvltrieeHolder<T, I> {
     fn triee_mut(&mut self) -> &mut Avltriee<T>;
     fn cmp(&self, left: &T, right: &I) -> Ordering;
     fn search_end(&self, input: &I) -> Found;
-    fn value(&mut self, input: I) -> Result<T>;
-    fn delete_before_update(&mut self, row: u32, delete_node: &T) -> Result<()>;
+    fn value(&mut self, input: I) -> T;
+    fn delete_before_update(&mut self, row: u32, delete_node: &T);
 }
 
 impl<T> AvltrieeHolder<T, T> for Avltriee<T>
@@ -29,44 +27,42 @@ where
     fn search_end(&self, input: &T) -> Found {
         self.search_end(|v| v.cmp(input))
     }
-    fn value(&mut self, input: T) -> Result<T> {
-        Ok(input)
+    fn value(&mut self, input: T) -> T {
+        input
     }
-    fn delete_before_update(&mut self, row: u32, _: &T) -> Result<()> {
+    fn delete_before_update(&mut self, row: u32, _: &T) {
         unsafe {
             self.delete(row);
         }
-        Ok(())
     }
 }
 
 impl<T> Avltriee<T> {
-    pub unsafe fn update(&mut self, row: u32, value: T) -> Result<()>
+    pub unsafe fn update(&mut self, row: u32, value: T)
     where
         T: Ord + Clone,
     {
         Self::update_holder(self, row, value)
     }
 
-    pub unsafe fn update_holder<H, I>(holder: &mut H, row: u32, input: I) -> Result<()>
+    pub unsafe fn update_holder<H, I>(holder: &mut H, row: u32, input: I)
     where
         T: Clone,
         H: AvltrieeHolder<T, I>,
     {
         if let Some(node) = holder.triee().node(row) {
             if holder.cmp(node, &input) == Ordering::Equal {
-                return Ok(()); //update value eq exists value
+                return; //update value eq exists value
             }
-            holder.delete_before_update(row, node)?;
+            holder.delete_before_update(row, node);
         }
         let found = holder.search_end(&input);
         if found.ord == Ordering::Equal && found.row != 0 {
             holder.triee_mut().update_same(row, found.row);
         } else {
-            let value = holder.value(input)?;
+            let value = holder.value(input);
             holder.triee_mut().insert_unique(row, value, found);
         }
-        Ok(())
     }
 
     pub unsafe fn insert_unique(&mut self, row: u32, value: T, found: Found) {

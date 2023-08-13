@@ -1,15 +1,12 @@
-use std::{cmp::Ordering, mem::ManuallyDrop};
-
-pub use anyhow;
-
 mod iter;
-pub use iter::AvltrieeIter;
-
 mod node;
-pub use node::AvltrieeNode;
-
 mod update;
+
+pub use iter::AvltrieeIter;
+pub use node::AvltrieeNode;
 pub use update::AvltrieeHolder;
+
+use std::{cmp::Ordering, mem::ManuallyDrop};
 
 #[derive(Debug)]
 pub struct Found {
