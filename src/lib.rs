@@ -25,6 +25,7 @@ impl Found {
 pub struct Avltriee<T> {
     node_list: ManuallyDrop<Box<AvltrieeNode<T>>>,
 }
+
 impl<T> Avltriee<T> {
     pub fn new(node_list: *mut AvltrieeNode<T>) -> Avltriee<T> {
         Avltriee {
