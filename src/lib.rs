@@ -100,19 +100,25 @@ impl<T> Avltriee<T> {
     }
 
     unsafe fn min(&self, t: u32) -> u32 {
-        let l = self.offset(t).left;
-        if l == 0 {
-            t
-        } else {
-            self.min(l)
+        let mut t = t;
+        while t != 0 {
+            let l = self.offset(t).left;
+            if l == 0 {
+                break;
+            }
+            t = l;
         }
+        t
     }
     unsafe fn max(&self, t: u32) -> u32 {
-        let r = self.offset(t).right;
-        if r == 0 {
-            t
-        } else {
-            self.max(r)
+        let mut t = t;
+        while t != 0 {
+            let r = self.offset(t).right;
+            if r == 0 {
+                break;
+            }
+            t = r;
         }
+        t
     }
 }
