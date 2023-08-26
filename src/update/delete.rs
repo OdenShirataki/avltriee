@@ -61,63 +61,64 @@ impl<T> Avltriee<T> {
     }
     pub unsafe fn delete(&mut self, target_row: u32) {
         let delete_node = self.offset_mut(target_row);
-        assert!(delete_node.height != 0);
-        let row_parent = delete_node.parent;
-        if row_parent == 0 {
-            if delete_node.same != 0 {
-                self.set_root(delete_node.same);
-                self.delete_same(delete_node);
-            } else {
-                if delete_node.left == 0 {
-                    self.set_root(delete_node.right);
-                    if delete_node.right != 0 {
-                        self.offset_mut(delete_node.right).parent = 0;
-                    }
-                } else if delete_node.right == 0 {
-                    self.set_root(delete_node.left);
-                    self.offset_mut(delete_node.left).parent = 0;
+        if delete_node.height > 0 {
+            let row_parent = delete_node.parent;
+            if row_parent == 0 {
+                if delete_node.same != 0 {
+                    self.set_root(delete_node.same);
+                    self.delete_same(delete_node);
                 } else {
-                    let (new_row, balance_row) = self.delete_intermediate(delete_node);
-                    self.set_root(new_row);
-                    self.offset_mut(new_row).parent = 0;
-                    if balance_row != 0 {
-                        self.calc_height(balance_row);
-                        self.balance(false, balance_row);
+                    if delete_node.left == 0 {
+                        self.set_root(delete_node.right);
+                        if delete_node.right != 0 {
+                            self.offset_mut(delete_node.right).parent = 0;
+                        }
+                    } else if delete_node.right == 0 {
+                        self.set_root(delete_node.left);
+                        self.offset_mut(delete_node.left).parent = 0;
+                    } else {
+                        let (new_row, balance_row) = self.delete_intermediate(delete_node);
+                        self.set_root(new_row);
+                        self.offset_mut(new_row).parent = 0;
+                        if balance_row != 0 {
+                            self.calc_height(balance_row);
+                            self.balance(false, balance_row);
+                        }
                     }
                 }
-            }
-        } else {
-            let mut parent = self.offset_mut(row_parent);
-            if parent.same == target_row {
-                parent.same = delete_node.same;
-                self.delete_same(delete_node);
-            } else if delete_node.same != 0 {
-                Self::join_intermediate(parent, target_row, delete_node.same);
-                self.delete_same(delete_node);
             } else {
-                if delete_node.left == 0 {
-                    Self::join_intermediate(&mut parent, target_row, delete_node.right);
-                    if delete_node.right != 0 {
-                        self.offset_mut(delete_node.right).parent = row_parent;
-                    }
-                    self.balance(false, row_parent);
-                } else if delete_node.right == 0 {
-                    Self::join_intermediate(parent, target_row, delete_node.left);
-                    self.offset_mut(delete_node.left).parent = row_parent;
-                    self.balance(false, row_parent);
+                let mut parent = self.offset_mut(row_parent);
+                if parent.same == target_row {
+                    parent.same = delete_node.same;
+                    self.delete_same(delete_node);
+                } else if delete_node.same != 0 {
+                    Self::join_intermediate(parent, target_row, delete_node.same);
+                    self.delete_same(delete_node);
                 } else {
-                    let (new_row, balance_row) = self.delete_intermediate(delete_node);
-                    Self::join_intermediate(parent, target_row, new_row);
-                    let node = self.offset_mut(new_row);
-                    node.parent = row_parent;
-                    node.height = delete_node.height;
-                    if balance_row != 0 {
-                        self.calc_height(balance_row);
-                        self.balance(false, balance_row);
-                    }
-                };
+                    if delete_node.left == 0 {
+                        Self::join_intermediate(&mut parent, target_row, delete_node.right);
+                        if delete_node.right != 0 {
+                            self.offset_mut(delete_node.right).parent = row_parent;
+                        }
+                        self.balance(false, row_parent);
+                    } else if delete_node.right == 0 {
+                        Self::join_intermediate(parent, target_row, delete_node.left);
+                        self.offset_mut(delete_node.left).parent = row_parent;
+                        self.balance(false, row_parent);
+                    } else {
+                        let (new_row, balance_row) = self.delete_intermediate(delete_node);
+                        Self::join_intermediate(parent, target_row, new_row);
+                        let node = self.offset_mut(new_row);
+                        node.parent = row_parent;
+                        node.height = delete_node.height;
+                        if balance_row != 0 {
+                            self.calc_height(balance_row);
+                            self.balance(false, balance_row);
+                        }
+                    };
+                }
             }
+            delete_node.height = 0;
         }
-        delete_node.height = 0;
     }
 }
