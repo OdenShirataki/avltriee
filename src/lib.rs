@@ -2,11 +2,11 @@ mod iter;
 mod node;
 mod update;
 
-pub use iter::AvltrieeIter;
+pub use iter::{AvlTrieeIterItem, AvltrieeIter};
 pub use node::AvltrieeNode;
 pub use update::AvltrieeHolder;
 
-use std::{cmp::Ordering, mem::ManuallyDrop};
+use std::{cmp::Ordering, mem::ManuallyDrop, ops::Deref};
 
 #[derive(Debug)]
 pub struct Found {
@@ -43,11 +43,7 @@ impl<T> Avltriee<T> {
     }
 
     pub unsafe fn value<'a>(&self, row: u32) -> Option<&'a T> {
-        if let Some(v) = self.node(row) {
-            Some(v)
-        } else {
-            None
-        }
+        self.node(row).map(|x| x.deref())
     }
     pub unsafe fn value_unchecked<'a>(&self, row: u32) -> &'a T {
         self.offset(row)
