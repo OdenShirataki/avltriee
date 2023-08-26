@@ -38,7 +38,7 @@ fn test2() {
     fn output(t: &Avltriee<i64>, deleted: &HashSet<u32>) {
         let mut c = 0;
         for i in t.iter() {
-            println!("{}:{}:{}", i.index(), i.row(), i.value());
+            println!("{}:{}:{}", c, i, unsafe { t.value_unchecked(i) });
             c += 1;
         }
         println!("output:{} {}\n", c, 10 - deleted.len());

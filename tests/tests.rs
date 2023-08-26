@@ -41,7 +41,7 @@ fn test_iter() {
     let mut c = 0;
     for i in t.iter() {
         c += 1;
-        println!("{}:{}:{}", i.index(), i.row(), i.value());
+        println!("{}:{}:{}", c, i, unsafe { t.value_unchecked(i) });
     }
     println!("output:{} {}", c, TEST_LENGTH as usize - deleted.len());
 }
@@ -61,14 +61,14 @@ fn test_desc_iter() {
 
     for i in 1..=TEST_LENGTH {
         let num = die.sample(&mut rng);
-        println!("update:{}",i);
+        println!("update:{}", i);
         unsafe {
             t.update(i, num);
         }
     }
 
     for i in t.desc_iter() {
-        println!("{}:{}:{}", i.index(), i.row(), i.value());
+        println!("{}:{}", i, unsafe { t.value_unchecked(i) });
     }
 }
 
@@ -95,19 +95,19 @@ fn test_iter_by_search() {
 
     println!("iter_by(5)");
     for i in t.iter_by(|v| v.cmp(&5)) {
-        println!("{}:{}:{}", i.index(), i.row(), i.value());
+        println!("{}:{}", i, unsafe { t.value_unchecked(i) });
     }
     println!("iter_range(3-5)");
     for i in t.iter_range(|v| v.cmp(&3), |v| v.cmp(&5)) {
-        println!("{}:{}:{}", i.index(), i.row(), i.value());
+        println!("{}:{}", i, unsafe { t.value_unchecked(i) });
     }
 
     println!("iter_from(5)");
     for i in t.iter_from(|v| v.cmp(&5)) {
-        println!("{}:{}:{}", i.index(), i.row(), i.value());
+        println!("{}:{}", i, unsafe { t.value_unchecked(i) });
     }
     println!("iter_to(5)");
     for i in t.iter_to(|v| v.cmp(&5)) {
-        println!("{}:{}:{}", i.index(), i.row(), i.value());
+        println!("{}:{}", i, unsafe { t.value_unchecked(i) });
     }
 }

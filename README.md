@@ -43,19 +43,19 @@ unsafe {
 
 ```rust
 for i in triee.iter() {
-    println!("{}:{}:{}", i.index(), i.row(), i.value());
+    println!("{}:{}", i, unsafe{ t.value_unchecked(i) });
 }
 for i in triee.desc_iter() {
-    println!("{}:{}:{}", i.index(), i.row(), i.value());
+    println!("{}:{}", i, unsafe{ t.value_unchecked(i) });
 }
 for i in t.iter_from(|v|v.cmp(&10)) {
-    println!("{}:{}:{}", i.index(), i.row(), i.value());
+    println!("{}:{}", i, unsafe{ t.value_unchecked(i) });
 }
 for i in t.iter_to(|v|v.cmp(&500)) {
-    println!("{}:{}:{}", i.index(), i.row(), i.value());
+    println!("{}:{}", i, unsafe{ t.value_unchecked(i) });
 }
 for i in t.iter_range(|v|v.cmp(&300),|v|v.cmp(&999)) {
-    println!("{}:{}:{}", i.index(), i.row(), i.value());
+    println!("{}:{}", i, unsafe{ t.value_unchecked(i) });
 }
 ```
 ### delete

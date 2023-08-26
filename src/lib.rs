@@ -2,7 +2,7 @@ mod iter;
 mod node;
 mod update;
 
-pub use iter::{AvlTrieeIterItem, AvltrieeIter};
+pub use iter::AvltrieeIter;
 pub use node::AvltrieeNode;
 pub use update::AvltrieeHolder;
 
@@ -35,11 +35,7 @@ impl<T> Avltriee<T> {
 
     pub unsafe fn node<'a>(&self, row: u32) -> Option<&'a AvltrieeNode<T>> {
         let node = self.offset(row);
-        if node.height > 0 {
-            Some(node)
-        } else {
-            None
-        }
+        (node.height > 0).then_some(node)
     }
 
     pub unsafe fn value<'a>(&self, row: u32) -> Option<&'a T> {

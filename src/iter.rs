@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, ops::Range};
 
-use super::{Avltriee, AvltrieeNode};
+use super::Avltriee;
 
 #[derive(PartialEq)]
 enum Order {
@@ -8,28 +8,10 @@ enum Order {
     Desc,
 }
 
-pub struct AvlTrieeIterItem<'a, T> {
-    index: isize,
-    row: u32,
-    node: &'a AvltrieeNode<T>,
-}
-impl<'a, T> AvlTrieeIterItem<'a, T> {
-    pub fn index(&self) -> isize {
-        self.index
-    }
-    pub fn row(&self) -> u32 {
-        self.row
-    }
-    pub fn value(&self) -> &'a T {
-        self.node
-    }
-}
-
 pub struct AvltrieeIter<'a, T> {
     now: u32,
     end_row: u32,
     same_branch: u32,
-    local_index: isize,
     triee: &'a Avltriee<T>,
     next_func: unsafe fn(&Avltriee<T>, u32, u32) -> Option<(u32, u32)>,
 }
@@ -40,7 +22,6 @@ impl<'a, T> AvltrieeIter<'a, T> {
                 now,
                 end_row,
                 same_branch: 0,
-                local_index: 0,
                 triee,
                 next_func: Avltriee::<T>::next,
             },
@@ -48,7 +29,6 @@ impl<'a, T> AvltrieeIter<'a, T> {
                 now: end_row,
                 end_row: now,
                 same_branch: 0,
-                local_index: 0,
                 triee,
                 next_func: Avltriee::<T>::next_desc,
             },
@@ -57,12 +37,11 @@ impl<'a, T> AvltrieeIter<'a, T> {
 }
 
 impl<'a, T> Iterator for AvltrieeIter<'a, T> {
-    type Item = AvlTrieeIterItem<'a, T>;
+    type Item = u32;
     fn next(&mut self) -> Option<Self::Item> {
         if self.now == 0 {
             None
         } else {
-            self.local_index += 1;
             let c = self.now;
             if c == self.end_row {
                 let same = unsafe { self.triee.offset(c) }.same;
@@ -71,24 +50,16 @@ impl<'a, T> Iterator for AvltrieeIter<'a, T> {
                 }
                 self.now = same;
             } else {
-                match unsafe {
+                self.now = unsafe {
                     let next_func = self.next_func;
                     next_func(self.triee, self.now, self.same_branch)
-                } {
-                    Some((i, b)) => {
-                        self.now = i;
-                        self.same_branch = b;
-                    }
-                    _ => {
-                        self.now = 0;
-                    }
                 }
+                .map_or(0, |(i, b)| {
+                    self.same_branch = b;
+                    i
+                });
             }
-            Some(AvlTrieeIterItem {
-                index: self.local_index,
-                row: c,
-                node: unsafe { &self.triee.offset(c) },
-            })
+            Some(c)
         }
     }
 }
@@ -347,11 +318,16 @@ impl<T> Avltriee<T> {
         F: Fn(&T) -> Ordering,
     {
         let end_row = self.search_lt(search_from);
-        if end_row == 0 {
-            AvltrieeIter::new(self, 0, 0, order)
-        } else {
-            AvltrieeIter::new(self, unsafe { self.min(self.root()) }, end_row, order)
-        }
+        AvltrieeIter::new(
+            self,
+            if end_row == 0 {
+                0
+            } else {
+                unsafe { self.min(self.root()) }
+            },
+            end_row,
+            order,
+        )
     }
     pub fn iter_under<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T>
     where
@@ -424,9 +400,10 @@ impl<T> Avltriee<T> {
             }
         }
         if end == 0 {
-            return None;
+            None
+        } else {
+            Some(Range { start, end })
         }
-        Some(Range { start, end })
     }
     fn iter_range_inner<'a, S, E>(&'a self, start: S, end: E, order: Order) -> AvltrieeIter<T>
     where
@@ -459,7 +436,7 @@ impl<T> Avltriee<T> {
         let mut node = self.offset(current);
 
         if node.same != 0 {
-            return Some((node.same, if same_branch == 0 { c } else { same_branch }));
+            Some((node.same, if same_branch == 0 { c } else { same_branch }))
         } else {
             if same_branch != 0 {
                 current = same_branch;
@@ -475,21 +452,16 @@ impl<T> Avltriee<T> {
                     return Some((i, 0));
                 }
             }
+            None
         }
-        None
     }
     unsafe fn retroactive(&self, c: u32) -> Option<u32> {
         let parent = self.offset(c).parent;
         if self.offset(parent).right == c {
-            if let Some(p) = self.retroactive(parent) {
-                if p != c {
-                    return Some(p);
-                }
-            }
+            self.retroactive(parent).filter(|p| *p != c)
         } else {
-            return Some(parent);
+            Some(parent)
         }
-        None
     }
 
     unsafe fn next_desc(&self, c: u32, same_branch: u32) -> Option<(u32, u32)> {
@@ -497,7 +469,7 @@ impl<T> Avltriee<T> {
         let mut node = self.offset(current);
 
         if node.same != 0 {
-            return Some((node.same, if same_branch == 0 { c } else { same_branch }));
+            Some((node.same, if same_branch == 0 { c } else { same_branch }))
         } else {
             if same_branch != 0 {
                 current = same_branch;
@@ -513,20 +485,15 @@ impl<T> Avltriee<T> {
                     return Some((i, 0));
                 }
             }
+            None
         }
-        None
     }
     unsafe fn retroactive_desc(&self, c: u32) -> Option<u32> {
         let parent = self.offset(c).parent;
         if self.offset(parent).left == c {
-            if let Some(p) = self.retroactive_desc(parent) {
-                if p != c {
-                    return Some(p);
-                }
-            }
+            self.retroactive_desc(parent).filter(|p| *p != c)
         } else {
-            return Some(parent);
+            Some(parent)
         }
-        None
     }
 }
