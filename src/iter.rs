@@ -257,11 +257,16 @@ impl<T> Avltriee<T> {
         F: Fn(&T) -> Ordering,
     {
         let end_row = self.search_le(search_from);
-        if end_row == 0 {
-            AvltrieeIter::new(self, 0, 0, order)
-        } else {
-            AvltrieeIter::new(self, unsafe { self.min(self.root()) }, end_row, order)
-        }
+        AvltrieeIter::new(
+            self,
+            if end_row == 0 {
+                0
+            } else {
+                unsafe { self.min(self.root()) }
+            },
+            end_row,
+            order,
+        )
     }
     pub fn iter_to<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T>
     where
@@ -434,7 +439,6 @@ impl<T> Avltriee<T> {
     unsafe fn next(&self, c: u32, same_branch: u32) -> Option<(u32, u32)> {
         let mut current = c;
         let mut node = self.offset(current);
-
         if node.same != 0 {
             Some((node.same, if same_branch == 0 { c } else { same_branch }))
         } else {
@@ -444,15 +448,18 @@ impl<T> Avltriee<T> {
             }
             let parent = node.parent;
             if node.right != 0 {
-                return Some((self.min(node.right), 0));
-            } else if parent != 0 {
-                if self.offset(parent).left == current {
-                    return Some((parent, 0));
-                } else if let Some(i) = self.retroactive(parent) {
-                    return Some((i, 0));
-                }
+                Some((self.min(node.right), 0))
+            } else {
+                (parent != 0)
+                    .then(|| {
+                        if self.offset(parent).left == current {
+                            Some((parent, 0))
+                        } else {
+                            self.retroactive(parent).map(|i| (i, 0))
+                        }
+                    })
+                    .and_then(|v| v)
             }
-            None
         }
     }
     unsafe fn retroactive(&self, c: u32) -> Option<u32> {
@@ -467,7 +474,6 @@ impl<T> Avltriee<T> {
     unsafe fn next_desc(&self, c: u32, same_branch: u32) -> Option<(u32, u32)> {
         let mut current = c;
         let mut node = self.offset(current);
-
         if node.same != 0 {
             Some((node.same, if same_branch == 0 { c } else { same_branch }))
         } else {
@@ -477,15 +483,18 @@ impl<T> Avltriee<T> {
             }
             let parent = node.parent;
             if node.left != 0 {
-                return Some((self.max(node.left), 0));
-            } else if parent != 0 {
-                if self.offset(parent).right == current {
-                    return Some((parent, 0));
-                } else if let Some(i) = self.retroactive_desc(parent) {
-                    return Some((i, 0));
-                }
+                Some((self.max(node.left), 0))
+            } else {
+                (parent != 0)
+                    .then(|| {
+                        if self.offset(parent).right == current {
+                            Some((parent, 0))
+                        } else {
+                            self.retroactive_desc(parent).map(|i| (i, 0))
+                        }
+                    })
+                    .and_then(|v| v)
             }
-            None
         }
     }
     unsafe fn retroactive_desc(&self, c: u32) -> Option<u32> {

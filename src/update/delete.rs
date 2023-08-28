@@ -3,21 +3,21 @@ use crate::{Avltriee, AvltrieeNode};
 impl<T> Avltriee<T> {
     #[inline]
     unsafe fn delete_same(&mut self, delete_node: &AvltrieeNode<T>) {
-        if delete_node.same != 0 {
-            let new_node = self.offset_mut(delete_node.same);
+        assert!(delete_node.same!=0);
+        
+        let new_node = self.offset_mut(delete_node.same);
 
-            new_node.parent = delete_node.parent;
-            new_node.height = delete_node.height;
+        new_node.parent = delete_node.parent;
+        new_node.height = delete_node.height;
 
-            new_node.left = delete_node.left;
-            if new_node.left != 0 {
-                self.offset_mut(new_node.left).parent = delete_node.same;
-            }
+        new_node.left = delete_node.left;
+        if new_node.left != 0 {
+            self.offset_mut(new_node.left).parent = delete_node.same;
+        }
 
-            new_node.right = delete_node.right;
-            if new_node.right != 0 {
-                self.offset_mut(new_node.right).parent = delete_node.same;
-            }
+        new_node.right = delete_node.right;
+        if new_node.right != 0 {
+            self.offset_mut(new_node.right).parent = delete_node.same;
         }
     }
 
@@ -90,7 +90,9 @@ impl<T> Avltriee<T> {
                 let mut parent = self.offset_mut(row_parent);
                 if parent.same == target_row {
                     parent.same = delete_node.same;
-                    self.delete_same(delete_node);
+                    if delete_node.same!=0{
+                        self.delete_same(delete_node);
+                    }
                 } else if delete_node.same != 0 {
                     Self::join_intermediate(parent, target_row, delete_node.same);
                     self.delete_same(delete_node);
