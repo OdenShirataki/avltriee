@@ -66,7 +66,23 @@ impl<T> Avltriee<T> {
         }
         let found = holder.search_end(&input);
         if found.ord == Ordering::Equal && found.row != 0 {
-            holder.as_mut().update_same(row, found.row);
+            let same=found.row;
+            let t=holder.as_mut();
+
+            let same_node = t.offset_mut(same);
+            let node = t.offset_mut(row);
+
+            *node = same_node.clone();
+
+            t.change_row(node, same, row);
+
+            same_node.parent = row;
+            node.same = same;
+            t.set_parent(node.left, row);
+            t.set_parent(node.right, row);
+
+            same_node.left = 0;
+            same_node.right = 0;
         } else {
             let value = holder.value(input);
             holder.as_mut().insert_unique(row, value, found);
@@ -91,26 +107,6 @@ impl<T> Avltriee<T> {
             }
             self.balance(row);
         }
-    }
-
-    pub(crate) unsafe fn update_same(&mut self, row: u32, same: u32)
-    where
-        T: Clone,
-    {
-        let same_node = self.offset_mut(same);
-        let node = self.offset_mut(row);
-
-        *node = same_node.clone();
-
-        self.change_row(node, same, row);
-
-        same_node.parent = row;
-        node.same = same;
-        self.set_parent(node.left, row);
-        self.set_parent(node.right, row);
-
-        same_node.left = 0;
-        same_node.right = 0;
     }
 
     fn set_root(&mut self, row: u32) {
@@ -142,7 +138,6 @@ impl<T> Avltriee<T> {
             Self::join_intermediate(self.offset_mut(node.parent), target_row, child_row);
         }
     }
-
     unsafe fn set_parent(&mut self, row: u32, parent: u32) {
         if row != 0 {
             self.offset_mut(row).parent = parent;
