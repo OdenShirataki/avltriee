@@ -1,122 +1,77 @@
-use crate::Avltriee;
+use crate::{Avltriee, AvltrieeNode};
 
 impl<T> Avltriee<T> {
-    pub(crate) fn balance(&mut self, is_insert: bool, row: u32) {
+    pub(crate) unsafe fn balance(&mut self, row: u32) {
         let mut t_row = row;
-        let mut t = unsafe { self.offset(t_row) };
+        let mut t = self.offset(t_row);
         while t.parent != 0 {
             let mut u_row = t.parent;
-            let u = unsafe { self.offset_mut(u_row) };
+            let u = self.offset_mut(u_row);
 
             let height_before_balance = u.height;
 
-            let left = unsafe { self.offset(u.left) };
-            let right = unsafe { self.offset(u.right) };
+            let left = self.offset_mut(u.left);
+            let right = self.offset_mut(u.right);
             let bias = left.height as isize - right.height as isize;
-            if (u.left == t_row) == is_insert {
-                if bias == 2 {
-                    u_row = if unsafe { self.offset(left.left) }.height as isize
-                        - unsafe { self.offset(left.right) }.height as isize
-                        >= 0
-                    {
-                        self.rotate_right(u_row)
-                    } else {
-                        self.rotate_left_right(u_row)
-                    };
-                } else {
-                    self.calc_height_node(u);
+
+            u_row = if bias == 2 {
+                if self.offset(left.left).height < self.offset(left.right).height {
+                    self.rotate_left(left, u.left);
                 }
+                self.rotate_right(u, u_row);
+                u.right
+            } else if bias == -2 {
+                if self.offset(right.left).height > self.offset(right.right).height {
+                    self.rotate_right(right, u.right);
+                }
+                self.rotate_left(u, u_row);
+                u.left
             } else {
-                if bias == -2 {
-                    u_row = if unsafe { self.offset(right.left) }.height as isize
-                        - unsafe { self.offset(right.right) }.height as isize
-                        <= 0
-                    {
-                        self.rotate_left(u_row)
-                    } else {
-                        self.rotate_right_left(u_row)
-                    };
-                } else {
-                    self.calc_height_node(u);
-                }
-            }
+                self.calc_height_node(u);
+                u_row
+            };
+
             if height_before_balance == u.height {
                 break;
             }
             t_row = u_row;
-            t = unsafe { self.offset(t_row) };
+            t = self.offset(t_row);
         }
     }
 
-    fn rotate_left_right(&mut self, row: u32) -> u32 {
-        self.rotate_left(unsafe { self.offset(row) }.left);
-        self.rotate_right(row)
+    unsafe fn rotate_common(
+        &mut self,
+        node: &mut AvltrieeNode<T>,
+        row: u32,
+        child_node: &mut AvltrieeNode<T>,
+        child_row: u32,
+    ) {
+        self.change_row(node, row, child_row);
+
+        self.calc_height(row);
+        self.calc_height(child_row);
+
+        child_node.parent = node.parent;
+        node.parent = child_row;
     }
-    fn rotate_right_left(&mut self, row: u32) -> u32 {
-        self.rotate_right(unsafe { self.offset(row) }.right);
-        self.rotate_left(row)
-    }
-    fn rotate_left(&mut self, row: u32) -> u32 {
-        assert!(row != 0, "row is 0");
-        let v = unsafe { self.offset_mut(row) };
+    unsafe fn rotate_left(&mut self, node: &mut AvltrieeNode<T>, row: u32) {
+        let right_row = node.right;
+        let right = self.offset_mut(right_row);
 
-        let right_row = v.right;
-        assert!(right_row != 0, "row is 0");
-        let right = unsafe { self.offset_mut(right_row) };
-
-        v.right = right.left;
-
-        if v.right != 0 {
-            unsafe { self.offset_mut(v.right) }.parent = row;
-        }
+        node.right = right.left;
+        self.set_parent(node.right, row);
         right.left = row;
-        if v.parent == 0 {
-            self.set_root(right_row);
-        } else {
-            let parent = unsafe { self.offset_mut(v.parent) };
-            if parent.left == row {
-                parent.left = right_row;
-            } else {
-                parent.right = right_row;
-            }
-        }
-        self.calc_height(row);
-        self.calc_height(right_row);
 
-        right.parent = v.parent;
-        v.parent = right_row;
-
-        right_row
+        self.rotate_common(node, row, right, right_row);
     }
-    fn rotate_right(&mut self, row: u32) -> u32 {
-        assert!(row != 0, "row is 0");
-        let v = unsafe { self.offset_mut(row) };
+    unsafe fn rotate_right(&mut self, node: &mut AvltrieeNode<T>, row: u32) {
+        let left_row = node.left;
+        let left = self.offset_mut(left_row);
 
-        let left_row = v.left;
-        assert!(left_row != 0, "row is 0");
-        let left = unsafe { self.offset_mut(left_row) };
-
-        v.left = left.right;
-        if v.left != 0 {
-            unsafe { self.offset_mut(v.left) }.parent = row;
-        }
+        node.left = left.right;
+        self.set_parent(node.left, row);
         left.right = row;
-        if v.parent == 0 {
-            self.set_root(left_row);
-        } else {
-            let parent = unsafe { self.offset_mut(v.parent) };
-            if parent.left == row {
-                parent.left = left_row;
-            } else {
-                parent.right = left_row;
-            }
-        }
-        self.calc_height(row);
-        self.calc_height(left_row);
 
-        left.parent = v.parent;
-        v.parent = left_row;
-
-        left_row
+        self.rotate_common(node, row, left, left_row);
     }
 }

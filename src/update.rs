@@ -89,7 +89,7 @@ impl<T> Avltriee<T> {
             } else {
                 p.right = row;
             }
-            self.balance(true, row);
+            self.balance(row);
         }
     }
 
@@ -102,24 +102,13 @@ impl<T> Avltriee<T> {
 
         *node = same_node.clone();
 
-        if node.parent == 0 {
-            self.set_root(row);
-        } else {
-            let parent = self.offset_mut(node.parent);
-            if parent.left == same {
-                parent.left = row;
-            } else {
-                parent.right = row;
-            }
-        }
+        self.change_row(node, same, row);
+
         same_node.parent = row;
         node.same = same;
-        if node.left != 0 {
-            self.offset_mut(node.left).parent = row;
-        }
-        if node.right != 0 {
-            self.offset_mut(node.right).parent = row;
-        }
+        self.set_parent(node.left, row);
+        self.set_parent(node.right, row);
+
         same_node.left = 0;
         same_node.right = 0;
     }
@@ -128,14 +117,35 @@ impl<T> Avltriee<T> {
         self.node_list.parent = row;
     }
 
-    fn calc_height(&mut self, row: u32) {
-        let mut node = unsafe { &mut self.offset_mut(row) };
-        self.calc_height_node(&mut node);
+    unsafe fn calc_height(&mut self, row: u32) {
+        let node = &mut self.offset_mut(row);
+        self.calc_height_node(node);
     }
-    fn calc_height_node(&mut self, node: &mut AvltrieeNode<T>) {
+    unsafe fn calc_height_node(&mut self, node: &mut AvltrieeNode<T>) {
         node.height = std::cmp::max(
-            unsafe { self.offset(node.left) }.height,
-            unsafe { self.offset(node.right) }.height,
+            self.offset(node.left).height,
+            self.offset(node.right).height,
         ) + 1;
+    }
+
+    fn join_intermediate(parent: &mut AvltrieeNode<T>, target_row: u32, child_row: u32) {
+        if parent.right == target_row {
+            parent.right = child_row;
+        } else if parent.left == target_row {
+            parent.left = child_row;
+        }
+    }
+    unsafe fn change_row(&mut self, node: &mut AvltrieeNode<T>, target_row: u32, child_row: u32) {
+        if node.parent == 0 {
+            self.set_root(child_row);
+        } else {
+            Self::join_intermediate(self.offset_mut(node.parent), target_row, child_row);
+        }
+    }
+
+    unsafe fn set_parent(&mut self, row: u32, parent: u32) {
+        if row != 0 {
+            self.offset_mut(row).parent = parent;
+        }
     }
 }
