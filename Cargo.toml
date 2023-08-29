@@ -1,6 +1,6 @@
 [package]
 name = "avltriee"
-version = "0.50.4"
+version = "0.50.5"
 edition = "2021"
 
 authors = ["Oden Shirataki <oden.srtk@gmail.com>"]
