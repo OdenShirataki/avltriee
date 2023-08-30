@@ -66,8 +66,8 @@ impl<T> Avltriee<T> {
         }
         let found = holder.search_end(&input);
         if found.ord == Ordering::Equal && found.row != 0 {
-            let same=found.row;
-            let t=holder.as_mut();
+            let same = found.row;
+            let t = holder.as_mut();
 
             let same_node = t.offset_mut(same);
             let node = t.offset_mut(row);
@@ -113,15 +113,17 @@ impl<T> Avltriee<T> {
         self.node_list.parent = row;
     }
 
-    unsafe fn calc_height(&mut self, row: u32) {
-        let node = &mut self.offset_mut(row);
+    fn calc_height(&mut self, row: u32) {
+        let node = unsafe { self.offset_mut(row) };
         self.calc_height_node(node);
     }
-    unsafe fn calc_height_node(&mut self, node: &mut AvltrieeNode<T>) {
-        node.height = std::cmp::max(
-            self.offset(node.left).height,
-            self.offset(node.right).height,
-        ) + 1;
+    fn calc_height_node(&mut self, node: &mut AvltrieeNode<T>) {
+        node.height = unsafe {
+            std::cmp::max(
+                self.offset(node.left).height,
+                self.offset(node.right).height,
+            )
+        } + 1;
     }
 
     fn join_intermediate(parent: &mut AvltrieeNode<T>, target_row: u32, child_row: u32) {
@@ -131,16 +133,20 @@ impl<T> Avltriee<T> {
             parent.left = child_row;
         }
     }
-    unsafe fn change_row(&mut self, node: &mut AvltrieeNode<T>, target_row: u32, child_row: u32) {
+    fn change_row(&mut self, node: &mut AvltrieeNode<T>, target_row: u32, child_row: u32) {
         if node.parent == 0 {
             self.set_root(child_row);
         } else {
-            Self::join_intermediate(self.offset_mut(node.parent), target_row, child_row);
+            Self::join_intermediate(
+                unsafe { self.offset_mut(node.parent) },
+                target_row,
+                child_row,
+            );
         }
     }
-    unsafe fn set_parent(&mut self, row: u32, parent: u32) {
+    fn set_parent(&mut self, row: u32, parent: u32) {
         if row != 0 {
-            self.offset_mut(row).parent = parent;
+            unsafe { self.offset_mut(row) }.parent = parent;
         }
     }
 }

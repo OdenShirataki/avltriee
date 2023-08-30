@@ -91,10 +91,10 @@ impl<T> Avltriee<T> {
         &mut *(&mut **self.node_list as *mut AvltrieeNode<T>).offset(offset as isize)
     }
 
-    unsafe fn min(&self, t: u32) -> u32 {
+    fn min(&self, t: u32) -> u32 {
         let mut t = t;
         while t != 0 {
-            let l = self.offset(t).left;
+            let l = unsafe {self.offset(t)}.left;
             if l == 0 {
                 break;
             }
@@ -102,10 +102,10 @@ impl<T> Avltriee<T> {
         }
         t
     }
-    unsafe fn max(&self, t: u32) -> u32 {
+    fn max(&self, t: u32) -> u32 {
         let mut t = t;
         while t != 0 {
-            let r = self.offset(t).right;
+            let r = unsafe {self.offset(t)}.right;
             if r == 0 {
                 break;
             }

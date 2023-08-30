@@ -13,7 +13,7 @@ pub struct AvltrieeIter<'a, T> {
     end_row: u32,
     same_branch: u32,
     triee: &'a Avltriee<T>,
-    next_func: unsafe fn(&Avltriee<T>, u32, u32) -> Option<(u32, u32)>,
+    next_func: fn(&Avltriee<T>, u32, u32) -> Option<(u32, u32)>,
 }
 impl<'a, T> AvltrieeIter<'a, T> {
     fn new(triee: &'a Avltriee<T>, now: u32, end_row: u32, order: Order) -> AvltrieeIter<'a, T> {
@@ -63,24 +63,20 @@ impl<'a, T> Iterator for AvltrieeIter<'a, T> {
 
 impl<T> Avltriee<T> {
     pub fn iter(&self) -> AvltrieeIter<T> {
-        unsafe {
-            AvltrieeIter::new(
-                &self,
-                self.min(self.root()),
-                self.max(self.root()),
-                Order::Asc,
-            )
-        }
+        AvltrieeIter::new(
+            &self,
+            self.min(self.root()),
+            self.max(self.root()),
+            Order::Asc,
+        )
     }
     pub fn desc_iter(&self) -> AvltrieeIter<T> {
-        unsafe {
-            AvltrieeIter::new(
-                &self,
-                self.min(self.root()),
-                self.max(self.root()),
-                Order::Desc,
-            )
-        }
+        AvltrieeIter::new(
+            &self,
+            self.min(self.root()),
+            self.max(self.root()),
+            Order::Desc,
+        )
     }
 
     pub fn iter_by<'a, F>(&'a self, cmp: F) -> AvltrieeIter<T>
@@ -96,14 +92,14 @@ impl<T> Avltriee<T> {
         AvltrieeIter::new(&self, row, row, Order::Asc)
     }
 
-    unsafe fn search_ge<F>(&self, compare: F) -> u32
+    fn search_ge<F>(&self, compare: F) -> u32
     where
         F: Fn(&T) -> Ordering,
     {
         let mut row = self.root();
         let mut keep = 0;
         while row != 0 {
-            let node = self.offset(row);
+            let node = unsafe { self.offset(row) };
             match compare(node) {
                 Ordering::Greater => {
                     if node.left == 0 {
@@ -125,7 +121,7 @@ impl<T> Avltriee<T> {
         }
         keep
     }
-    unsafe fn iter_from_inner<'a, F>(&'a self, search: F, order: Order) -> AvltrieeIter<T>
+    fn iter_from_inner<'a, F>(&'a self, search: F, order: Order) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
     {
@@ -141,23 +137,23 @@ impl<T> Avltriee<T> {
     where
         F: Fn(&T) -> Ordering,
     {
-        unsafe { self.iter_from_inner(search, Order::Asc) }
+        self.iter_from_inner(search, Order::Asc)
     }
     pub fn desc_iter_from<'a, F>(&'a self, search: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
     {
-        unsafe { self.iter_from_inner(search, Order::Desc) }
+        self.iter_from_inner(search, Order::Desc)
     }
 
-    unsafe fn search_gt<F>(&self, compare: F) -> u32
+    fn search_gt<F>(&self, compare: F) -> u32
     where
         F: Fn(&T) -> Ordering,
     {
         let mut row = self.root();
         let mut keep = 0;
         while row != 0 {
-            let node = self.offset(row);
+            let node = unsafe { self.offset(row) };
             match compare(node) {
                 Ordering::Greater => {
                     if node.left == 0 {
@@ -169,12 +165,10 @@ impl<T> Avltriee<T> {
                 Ordering::Equal => {
                     return if node.right != 0 {
                         self.min(node.right)
+                    } else if unsafe { self.offset(node.parent) }.left == row {
+                        node.parent
                     } else {
-                        if self.offset(node.parent).left == row {
-                            node.parent
-                        } else {
-                            keep
-                        }
+                        keep
                     };
                 }
                 Ordering::Less => {
@@ -187,7 +181,7 @@ impl<T> Avltriee<T> {
         }
         keep
     }
-    unsafe fn iter_over_inner<'a, F>(&'a self, search: F, order: Order) -> AvltrieeIter<T>
+    fn iter_over_inner<'a, F>(&'a self, search: F, order: Order) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
     {
@@ -203,23 +197,23 @@ impl<T> Avltriee<T> {
     where
         F: Fn(&T) -> Ordering,
     {
-        unsafe { self.iter_over_inner(search, Order::Asc) }
+        self.iter_over_inner(search, Order::Asc)
     }
     pub fn desc_iter_over<'a, F>(&'a self, search: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
     {
-        unsafe { self.iter_over_inner(search, Order::Desc) }
+        self.iter_over_inner(search, Order::Desc)
     }
 
-    unsafe fn search_le<F>(&self, compare: F) -> u32
+    fn search_le<F>(&self, compare: F) -> u32
     where
         F: Fn(&T) -> Ordering,
     {
         let mut row = self.root();
         let mut keep = 0;
         while row != 0 {
-            let node = self.offset(row);
+            let node = unsafe { self.offset(row) };
             match compare(node) {
                 Ordering::Greater => {
                     if node.left == 0 {
@@ -241,7 +235,7 @@ impl<T> Avltriee<T> {
         }
         keep
     }
-    unsafe fn iter_to_inner<'a, F>(&'a self, search_from: F, order: Order) -> AvltrieeIter<T>
+    fn iter_to_inner<'a, F>(&'a self, search_from: F, order: Order) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
     {
@@ -261,23 +255,23 @@ impl<T> Avltriee<T> {
     where
         F: Fn(&T) -> Ordering,
     {
-        unsafe { self.iter_to_inner(search_from, Order::Asc) }
+        self.iter_to_inner(search_from, Order::Asc)
     }
     pub fn desc_iter_to<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
     {
-        unsafe { self.iter_to_inner(search_from, Order::Desc) }
+        self.iter_to_inner(search_from, Order::Desc)
     }
 
-    unsafe fn search_lt<F>(&self, compare: F) -> u32
+    fn search_lt<F>(&self, compare: F) -> u32
     where
         F: Fn(&T) -> Ordering,
     {
         let mut row = self.root();
         let mut keep = 0;
         while row != 0 {
-            let node = self.offset(row);
+            let node = unsafe { self.offset(row) };
             match compare(node) {
                 Ordering::Greater => {
                     if node.left == 0 {
@@ -288,12 +282,10 @@ impl<T> Avltriee<T> {
                 Ordering::Equal => {
                     return if node.left != 0 {
                         self.max(node.left)
+                    } else if unsafe { self.offset(node.parent) }.right == row {
+                        node.parent
                     } else {
-                        if self.offset(node.parent).right == row {
-                            node.parent
-                        } else {
-                            keep
-                        }
+                        keep
                     };
                 }
                 Ordering::Less => {
@@ -307,7 +299,7 @@ impl<T> Avltriee<T> {
         }
         keep
     }
-    unsafe fn iter_under_inner<'a, F>(&'a self, search_from: F, order: Order) -> AvltrieeIter<T>
+    fn iter_under_inner<'a, F>(&'a self, search_from: F, order: Order) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
     {
@@ -327,16 +319,16 @@ impl<T> Avltriee<T> {
     where
         F: Fn(&T) -> Ordering,
     {
-        unsafe { self.iter_under_inner(search_from, Order::Asc) }
+        self.iter_under_inner(search_from, Order::Asc)
     }
     pub fn desc_iter_under<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
     {
-        unsafe { self.iter_under_inner(search_from, Order::Desc) }
+        self.iter_under_inner(search_from, Order::Desc)
     }
 
-    unsafe fn search_range<S, E>(&self, compare_ge: S, compare_le: E) -> Option<Range<u32>>
+    fn search_range<S, E>(&self, compare_ge: S, compare_le: E) -> Option<Range<u32>>
     where
         S: Fn(&T) -> Ordering,
         E: Fn(&T) -> Ordering,
@@ -344,7 +336,7 @@ impl<T> Avltriee<T> {
         let mut row = self.root();
         let mut start = 0;
         while row != 0 {
-            let node = self.offset(row);
+            let node = unsafe { self.offset(row) };
             match compare_ge(node) {
                 Ordering::Greater => {
                     start = row;
@@ -365,12 +357,12 @@ impl<T> Avltriee<T> {
                 }
             }
         }
-        (start != 0 && compare_le(self.offset(start)) != Ordering::Greater)
+        (start != 0 && compare_le(unsafe { self.offset(start) }) != Ordering::Greater)
             .then(|| {
                 row = self.root();
                 let mut end = 0;
                 while row != 0 {
-                    let node = self.offset(row);
+                    let node = unsafe { self.offset(row) };
                     match compare_le(node) {
                         Ordering::Greater => {
                             if node.left == 0 {
@@ -395,12 +387,7 @@ impl<T> Avltriee<T> {
             })
             .and_then(|v| v)
     }
-    unsafe fn iter_range_inner<'a, S, E>(
-        &'a self,
-        start: S,
-        end: E,
-        order: Order,
-    ) -> AvltrieeIter<T>
+    fn iter_range_inner<'a, S, E>(&'a self, start: S, end: E, order: Order) -> AvltrieeIter<T>
     where
         S: Fn(&T) -> Ordering,
         E: Fn(&T) -> Ordering,
@@ -416,32 +403,33 @@ impl<T> Avltriee<T> {
         S: Fn(&T) -> Ordering,
         E: Fn(&T) -> Ordering,
     {
-        unsafe { self.iter_range_inner(start, end, Order::Asc) }
+        self.iter_range_inner(start, end, Order::Asc)
     }
     pub fn desc_iter_range<'a, S, E>(&'a self, start: S, end: E) -> AvltrieeIter<T>
     where
         S: Fn(&T) -> Ordering,
         E: Fn(&T) -> Ordering,
     {
-        unsafe { self.iter_range_inner(start, end, Order::Desc) }
+        self.iter_range_inner(start, end, Order::Desc)
     }
 
-    unsafe fn next(&self, c: u32, same_branch: u32) -> Option<(u32, u32)> {
+    fn next(&self, c: u32, same_branch: u32) -> Option<(u32, u32)> {
         let mut current = c;
-        let mut node = self.offset(current);
+
+        let mut node = unsafe { self.offset(current) };
         if node.same != 0 {
             Some((node.same, if same_branch == 0 { c } else { same_branch }))
         } else {
             if same_branch != 0 {
                 current = same_branch;
-                node = self.offset(same_branch);
+                node = unsafe { self.offset(same_branch) };
             }
-            let parent = node.parent;
             if node.right != 0 {
                 Some((self.min(node.right), 0))
             } else {
+                let parent = node.parent;
                 (parent != 0)
-                    .then(|| {
+                    .then(|| unsafe {
                         if self.offset(parent).left == current {
                             Some((parent, 0))
                         } else {
@@ -461,22 +449,23 @@ impl<T> Avltriee<T> {
         }
     }
 
-    unsafe fn next_desc(&self, c: u32, same_branch: u32) -> Option<(u32, u32)> {
+    fn next_desc(&self, c: u32, same_branch: u32) -> Option<(u32, u32)> {
         let mut current = c;
-        let mut node = self.offset(current);
+
+        let mut node = unsafe { self.offset(current) };
         if node.same != 0 {
             Some((node.same, if same_branch == 0 { c } else { same_branch }))
         } else {
             if same_branch != 0 {
                 current = same_branch;
-                node = self.offset(same_branch);
+                node = unsafe { self.offset(same_branch) };
             }
-            let parent = node.parent;
             if node.left != 0 {
                 Some((self.max(node.left), 0))
             } else {
+                let parent = node.parent;
                 (parent != 0)
-                    .then(|| {
+                    .then(|| unsafe {
                         if self.offset(parent).right == current {
                             Some((parent, 0))
                         } else {

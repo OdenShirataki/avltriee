@@ -1,8 +1,8 @@
 use crate::{Avltriee, AvltrieeNode};
 
 impl<T> Avltriee<T> {
-    unsafe fn delete_same(&mut self, delete_node: &AvltrieeNode<T>) {
-        let new_node = self.offset_mut(delete_node.same);
+    fn delete_same(&mut self, delete_node: &AvltrieeNode<T>) {
+        let new_node = unsafe { self.offset_mut(delete_node.same) };
 
         new_node.parent = delete_node.parent;
         new_node.height = delete_node.height;
