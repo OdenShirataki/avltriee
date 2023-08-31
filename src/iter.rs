@@ -41,20 +41,18 @@ impl<'a, T> Iterator for AvltrieeIter<'a, T> {
     fn next(&mut self) -> Option<Self::Item> {
         (self.now != 0).then(|| {
             let c = self.now;
-            self.now = unsafe {
-                if c == self.end_row {
-                    let same = self.triee.offset(c).same;
-                    if same != 0 {
-                        self.end_row = same;
-                    }
-                    same
-                } else {
-                    let next_func = self.next_func;
-                    next_func(self.triee, self.now, self.same_branch).map_or(0, |(i, b)| {
-                        self.same_branch = b;
-                        i
-                    })
+            self.now = if c == self.end_row {
+                let same = unsafe { self.triee.offset(c) }.same;
+                if same != 0 {
+                    self.end_row = same;
                 }
+                same
+            } else {
+                let next_func = self.next_func;
+                next_func(self.triee, self.now, self.same_branch).map_or(0, |(i, b)| {
+                    self.same_branch = b;
+                    i
+                })
             };
             c
         })
