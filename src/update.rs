@@ -117,7 +117,7 @@ impl<T> Avltriee<T> {
         let node = unsafe { self.offset_mut(row) };
         self.calc_height_node(node);
     }
-    fn calc_height_node(&mut self, node: &mut AvltrieeNode<T>) {
+    fn calc_height_node(&self, node: &mut AvltrieeNode<T>) {
         node.height = unsafe {
             std::cmp::max(
                 self.offset(node.left).height,

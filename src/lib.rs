@@ -85,16 +85,16 @@ impl<T> Avltriee<T> {
     }
 
     unsafe fn offset<'a>(&self, offset: u32) -> &'a AvltrieeNode<T> {
-        &*(&**self.node_list as *const AvltrieeNode<T>).offset(offset as isize)
+        &*(self.node_list.as_ref() as *const AvltrieeNode<T>).offset(offset as isize)
     }
     unsafe fn offset_mut<'a>(&mut self, offset: u32) -> &'a mut AvltrieeNode<T> {
-        &mut *(&mut **self.node_list as *mut AvltrieeNode<T>).offset(offset as isize)
+        &mut *(self.node_list.as_mut() as *mut AvltrieeNode<T>).offset(offset as isize)
     }
 
     fn min(&self, t: u32) -> u32 {
         let mut t = t;
         while t != 0 {
-            let l = unsafe {self.offset(t)}.left;
+            let l = unsafe { self.offset(t) }.left;
             if l == 0 {
                 break;
             }
@@ -105,7 +105,7 @@ impl<T> Avltriee<T> {
     fn max(&self, t: u32) -> u32 {
         let mut t = t;
         while t != 0 {
-            let r = unsafe {self.offset(t)}.right;
+            let r = unsafe { self.offset(t) }.right;
             if r == 0 {
                 break;
             }
