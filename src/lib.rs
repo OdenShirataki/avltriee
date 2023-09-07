@@ -79,9 +79,9 @@ impl<T> Avltriee<T> {
         Found { row, ord }
     }
 
-    pub unsafe fn has_same(&self, row: u32) -> bool {
+    pub unsafe fn is_unique(&self, row: u32) -> bool {
         let node = self.offset(row);
-        node.same != 0 || self.offset(node.parent).same == row
+        node.same == 0 && self.offset(node.parent).same != row
     }
 
     unsafe fn offset<'a>(&self, offset: u32) -> &'a AvltrieeNode<T> {
