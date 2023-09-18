@@ -14,9 +14,12 @@ pub struct Found {
     ord: Ordering,
 }
 impl Found {
+    #[inline(always)]
     pub fn row(&self) -> u32 {
         self.row
     }
+
+    #[inline(always)]
     pub fn ord(&self) -> Ordering {
         self.ord
     }
@@ -27,28 +30,35 @@ pub struct Avltriee<T> {
 }
 
 impl<T> Avltriee<T> {
+    #[inline(always)]
     pub fn new(node_list: *mut AvltrieeNode<T>) -> Avltriee<T> {
         Avltriee {
             node_list: ManuallyDrop::new(unsafe { Box::from_raw(node_list) }),
         }
     }
 
+    #[inline(always)]
     pub unsafe fn node<'a>(&self, row: u32) -> Option<&'a AvltrieeNode<T>> {
         let node = self.offset(row);
         (node.height > 0).then_some(node)
     }
 
+    #[inline(always)]
     pub unsafe fn value<'a>(&self, row: u32) -> Option<&'a T> {
         self.node(row).map(|x| x.deref())
     }
+
+    #[inline(always)]
     pub unsafe fn value_unchecked<'a>(&self, row: u32) -> &'a T {
         self.offset(row)
     }
 
+    #[inline(always)]
     pub fn root(&self) -> u32 {
         self.node_list.parent
     }
 
+    #[inline(always)]
     pub fn search_end<F>(&self, cmp: F) -> Found
     where
         F: Fn(&T) -> Ordering,
@@ -79,18 +89,23 @@ impl<T> Avltriee<T> {
         Found { row, ord }
     }
 
+    #[inline(always)]
     pub unsafe fn is_unique(&self, row: u32) -> bool {
         let node = self.offset(row);
         node.same == 0 && self.offset(node.parent).same != row
     }
 
+    #[inline(always)]
     unsafe fn offset<'a>(&self, offset: u32) -> &'a AvltrieeNode<T> {
         &*(self.node_list.as_ref() as *const AvltrieeNode<T>).offset(offset as isize)
     }
+
+    #[inline(always)]
     unsafe fn offset_mut<'a>(&mut self, offset: u32) -> &'a mut AvltrieeNode<T> {
         &mut *(self.node_list.as_mut() as *mut AvltrieeNode<T>).offset(offset as isize)
     }
 
+    #[inline(always)]
     fn min(&self, t: u32) -> u32 {
         let mut t = t;
         while t != 0 {
@@ -102,6 +117,8 @@ impl<T> Avltriee<T> {
         }
         t
     }
+
+    #[inline(always)]
     fn max(&self, t: u32) -> u32 {
         let mut t = t;
         while t != 0 {

@@ -16,6 +16,7 @@ pub struct AvltrieeIter<'a, T> {
     next_func: fn(&Avltriee<T>, u32, u32) -> Option<(u32, u32)>,
 }
 impl<'a, T> AvltrieeIter<'a, T> {
+    #[inline(always)]
     fn new(triee: &'a Avltriee<T>, now: u32, end_row: u32, order: Order) -> AvltrieeIter<'a, T> {
         match order {
             Order::Asc => AvltrieeIter {
@@ -38,6 +39,8 @@ impl<'a, T> AvltrieeIter<'a, T> {
 
 impl<'a, T> Iterator for AvltrieeIter<'a, T> {
     type Item = u32;
+
+    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         (self.now != 0).then(|| {
             let c = self.now;
@@ -60,6 +63,7 @@ impl<'a, T> Iterator for AvltrieeIter<'a, T> {
 }
 
 impl<T> Avltriee<T> {
+    #[inline(always)]
     pub fn iter(&self) -> AvltrieeIter<T> {
         AvltrieeIter::new(
             &self,
@@ -68,6 +72,8 @@ impl<T> Avltriee<T> {
             Order::Asc,
         )
     }
+
+    #[inline(always)]
     pub fn desc_iter(&self) -> AvltrieeIter<T> {
         AvltrieeIter::new(
             &self,
@@ -77,6 +83,7 @@ impl<T> Avltriee<T> {
         )
     }
 
+    #[inline(always)]
     pub fn iter_by<'a, F>(&'a self, cmp: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
@@ -90,6 +97,7 @@ impl<T> Avltriee<T> {
         AvltrieeIter::new(&self, row, row, Order::Asc)
     }
 
+    #[inline(always)]
     fn search_ge<F>(&self, compare: F) -> u32
     where
         F: Fn(&T) -> Ordering,
@@ -119,6 +127,8 @@ impl<T> Avltriee<T> {
         }
         keep
     }
+
+    #[inline(always)]
     fn iter_from_inner<'a, F>(&'a self, search: F, order: Order) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
@@ -131,12 +141,15 @@ impl<T> Avltriee<T> {
             order,
         )
     }
+    #[inline(always)]
     pub fn iter_from<'a, F>(&'a self, search: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
     {
         self.iter_from_inner(search, Order::Asc)
     }
+
+    #[inline(always)]
     pub fn desc_iter_from<'a, F>(&'a self, search: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
@@ -144,6 +157,7 @@ impl<T> Avltriee<T> {
         self.iter_from_inner(search, Order::Desc)
     }
 
+    #[inline(always)]
     fn search_gt<F>(&self, compare: F) -> u32
     where
         F: Fn(&T) -> Ordering,
@@ -179,6 +193,8 @@ impl<T> Avltriee<T> {
         }
         keep
     }
+
+    #[inline(always)]
     fn iter_over_inner<'a, F>(&'a self, search: F, order: Order) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
@@ -191,12 +207,16 @@ impl<T> Avltriee<T> {
             order,
         )
     }
+
+    #[inline(always)]
     pub fn iter_over<'a, F>(&'a self, search: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
     {
         self.iter_over_inner(search, Order::Asc)
     }
+
+    #[inline(always)]
     pub fn desc_iter_over<'a, F>(&'a self, search: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
@@ -204,6 +224,7 @@ impl<T> Avltriee<T> {
         self.iter_over_inner(search, Order::Desc)
     }
 
+    #[inline(always)]
     fn search_le<F>(&self, compare: F) -> u32
     where
         F: Fn(&T) -> Ordering,
@@ -233,6 +254,8 @@ impl<T> Avltriee<T> {
         }
         keep
     }
+
+    #[inline(always)]
     fn iter_to_inner<'a, F>(&'a self, search_from: F, order: Order) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
@@ -249,12 +272,15 @@ impl<T> Avltriee<T> {
             order,
         )
     }
+    #[inline(always)]
     pub fn iter_to<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
     {
         self.iter_to_inner(search_from, Order::Asc)
     }
+
+    #[inline(always)]
     pub fn desc_iter_to<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
@@ -262,6 +288,7 @@ impl<T> Avltriee<T> {
         self.iter_to_inner(search_from, Order::Desc)
     }
 
+    #[inline(always)]
     fn search_lt<F>(&self, compare: F) -> u32
     where
         F: Fn(&T) -> Ordering,
@@ -297,6 +324,8 @@ impl<T> Avltriee<T> {
         }
         keep
     }
+
+    #[inline(always)]
     fn iter_under_inner<'a, F>(&'a self, search_from: F, order: Order) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
@@ -313,12 +342,16 @@ impl<T> Avltriee<T> {
             order,
         )
     }
+
+    #[inline(always)]
     pub fn iter_under<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
     {
         self.iter_under_inner(search_from, Order::Asc)
     }
+
+    #[inline(always)]
     pub fn desc_iter_under<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
@@ -326,6 +359,7 @@ impl<T> Avltriee<T> {
         self.iter_under_inner(search_from, Order::Desc)
     }
 
+    #[inline(always)]
     fn search_range<S, E>(&self, compare_ge: S, compare_le: E) -> Option<Range<u32>>
     where
         S: Fn(&T) -> Ordering,
@@ -385,6 +419,8 @@ impl<T> Avltriee<T> {
             })
             .and_then(|v| v)
     }
+
+    #[inline(always)]
     fn iter_range_inner<'a, S, E>(&'a self, start: S, end: E, order: Order) -> AvltrieeIter<T>
     where
         S: Fn(&T) -> Ordering,
@@ -396,6 +432,8 @@ impl<T> Avltriee<T> {
             AvltrieeIter::new(self, 0, 0, order)
         }
     }
+
+    #[inline(always)]
     pub fn iter_range<'a, S, E>(&'a self, start: S, end: E) -> AvltrieeIter<T>
     where
         S: Fn(&T) -> Ordering,
@@ -403,6 +441,8 @@ impl<T> Avltriee<T> {
     {
         self.iter_range_inner(start, end, Order::Asc)
     }
+
+    #[inline(always)]
     pub fn desc_iter_range<'a, S, E>(&'a self, start: S, end: E) -> AvltrieeIter<T>
     where
         S: Fn(&T) -> Ordering,
@@ -411,6 +451,7 @@ impl<T> Avltriee<T> {
         self.iter_range_inner(start, end, Order::Desc)
     }
 
+    #[inline(always)]
     fn next(&self, c: u32, same_branch: u32) -> Option<(u32, u32)> {
         let mut current = c;
 
@@ -438,6 +479,8 @@ impl<T> Avltriee<T> {
             }
         }
     }
+
+    #[inline(always)]
     unsafe fn retroactive(&self, c: u32) -> Option<u32> {
         let parent = self.offset(c).parent;
         if self.offset(parent).right == c {
@@ -447,6 +490,7 @@ impl<T> Avltriee<T> {
         }
     }
 
+    #[inline(always)]
     fn next_desc(&self, c: u32, same_branch: u32) -> Option<(u32, u32)> {
         let mut current = c;
 
@@ -474,6 +518,8 @@ impl<T> Avltriee<T> {
             }
         }
     }
+
+    #[inline(always)]
     unsafe fn retroactive_desc(&self, c: u32) -> Option<u32> {
         let parent = self.offset(c).parent;
         if self.offset(parent).left == c {

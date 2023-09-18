@@ -1,6 +1,7 @@
 use crate::{Avltriee, AvltrieeNode};
 
 impl<T> Avltriee<T> {
+    #[inline(always)]
     fn delete_same(&mut self, delete_node: &AvltrieeNode<T>) {
         let new_node = unsafe { self.offset_mut(delete_node.same) };
 
@@ -14,6 +15,7 @@ impl<T> Avltriee<T> {
         self.set_parent(new_node.right, delete_node.same);
     }
 
+    #[inline(always)]
     unsafe fn delete_intermediate(&mut self, delete_node: &mut AvltrieeNode<T>) -> (u32, u32) {
         let left_max_row = self.max(delete_node.left);
         let left_max = self.offset_mut(left_max_row);
@@ -40,6 +42,8 @@ impl<T> Avltriee<T> {
             (left_max_row, left_max_parent_row)
         }
     }
+
+    #[inline(always)]
     pub unsafe fn delete(&mut self, target_row: u32) {
         let delete_node = self.offset_mut(target_row);
         if delete_node.height > 0 {
@@ -90,6 +94,7 @@ impl<T> Avltriee<T> {
         }
     }
 
+    #[inline(always)]
     unsafe fn calc_height_to_balance(&mut self, node: &mut AvltrieeNode<T>, row: u32, parent: u32) {
         node.parent = parent;
         if row != 0 {

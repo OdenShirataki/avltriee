@@ -30,15 +30,22 @@ impl<T> AvltrieeHolder<T, T> for Avltriee<T>
 where
     T: Ord,
 {
+    #[inline(always)]
     fn cmp(&self, left: &T, right: &T) -> Ordering {
         left.cmp(right)
     }
+
+    #[inline(always)]
     fn search_end(&self, input: &T) -> Found {
         self.search_end(|v| v.cmp(input))
     }
+
+    #[inline(always)]
     fn value(&mut self, input: T) -> T {
         input
     }
+
+    #[inline(always)]
     fn delete_before_update(&mut self, row: u32, _: &T) {
         unsafe {
             self.delete(row);
@@ -47,6 +54,7 @@ where
 }
 
 impl<T> Avltriee<T> {
+    #[inline(always)]
     pub unsafe fn update(&mut self, row: u32, value: T)
     where
         T: Ord + Clone,
@@ -54,6 +62,7 @@ impl<T> Avltriee<T> {
         Self::update_holder(self, row, value)
     }
 
+    #[inline(always)]
     pub unsafe fn update_holder<I>(holder: &mut dyn AvltrieeHolder<T, I>, row: u32, input: I)
     where
         T: Clone,
@@ -89,6 +98,7 @@ impl<T> Avltriee<T> {
         }
     }
 
+    #[inline(always)]
     pub unsafe fn insert_unique(&mut self, row: u32, value: T, found: Found) {
         *self.offset_mut(row) = AvltrieeNode::new(row, found.row, value);
         if found.row == 0 {
@@ -109,14 +119,18 @@ impl<T> Avltriee<T> {
         }
     }
 
+    #[inline(always)]
     fn set_root(&mut self, row: u32) {
         self.node_list.parent = row;
     }
 
+    #[inline(always)]
     fn calc_height(&mut self, row: u32) {
         let node = unsafe { self.offset_mut(row) };
         self.calc_height_node(node);
     }
+
+    #[inline(always)]
     fn calc_height_node(&self, node: &mut AvltrieeNode<T>) {
         node.height = unsafe {
             std::cmp::max(
@@ -126,6 +140,7 @@ impl<T> Avltriee<T> {
         } + 1;
     }
 
+    #[inline(always)]
     fn join_intermediate(parent: &mut AvltrieeNode<T>, target_row: u32, child_row: u32) {
         if parent.right == target_row {
             parent.right = child_row;
@@ -133,6 +148,8 @@ impl<T> Avltriee<T> {
             parent.left = child_row;
         }
     }
+
+    #[inline(always)]
     fn change_row(&mut self, node: &mut AvltrieeNode<T>, target_row: u32, child_row: u32) {
         if node.parent == 0 {
             self.set_root(child_row);
@@ -144,6 +161,8 @@ impl<T> Avltriee<T> {
             );
         }
     }
+
+    #[inline(always)]
     fn set_parent(&mut self, row: u32, parent: u32) {
         if row != 0 {
             unsafe { self.offset_mut(row) }.parent = parent;

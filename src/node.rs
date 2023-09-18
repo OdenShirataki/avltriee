@@ -8,6 +8,7 @@ pub struct AvltrieeNode<T> {
     value: T,
 }
 impl<T> AvltrieeNode<T> {
+    #[inline(always)]
     pub fn new(row: u32, parent: u32, value: T) -> AvltrieeNode<T> {
         AvltrieeNode {
             height: if row == 0 { 0 } else { 1 },
