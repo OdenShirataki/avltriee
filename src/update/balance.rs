@@ -57,6 +57,7 @@ impl<T> Avltriee<T> {
         child_node.parent = node.parent;
         node.parent = child_row;
     }
+
     #[inline(always)]
     fn rotate_left(&mut self, node: &mut AvltrieeNode<T>, row: u32) {
         let right_row = node.right;
@@ -68,6 +69,7 @@ impl<T> Avltriee<T> {
 
         self.rotate_common(node, row, right, right_row);
     }
+
     #[inline(always)]
     fn rotate_right(&mut self, node: &mut AvltrieeNode<T>, row: u32) {
         let left_row = node.left;

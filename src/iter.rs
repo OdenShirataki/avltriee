@@ -272,6 +272,7 @@ impl<T> Avltriee<T> {
             order,
         )
     }
+
     #[inline(always)]
     pub fn iter_to<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T>
     where
