@@ -44,12 +44,12 @@ impl<T> Avltriee<T> {
     }
 
     #[inline(always)]
-    pub unsafe fn value<'a>(&self, row: u32) -> Option<&'a T> {
+    pub unsafe fn value(&self, row: u32) -> Option<&T> {
         self.node(row).map(|x| x.deref())
     }
 
     #[inline(always)]
-    pub unsafe fn value_unchecked<'a>(&self, row: u32) -> &'a T {
+    pub unsafe fn value_unchecked(&self, row: u32) -> &T {
         self.offset(row)
     }
 
