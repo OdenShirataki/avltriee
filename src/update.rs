@@ -1,7 +1,7 @@
 mod balance;
 mod delete;
 
-use std::cmp::Ordering;
+use std::{cmp::Ordering, num::NonZeroU32};
 
 use super::{Avltriee, AvltrieeNode, Found};
 
@@ -23,7 +23,7 @@ where
     fn cmp(&self, left: &T, right: &I) -> Ordering;
     fn search_end(&self, input: &I) -> Found;
     fn value(&mut self, input: I) -> T;
-    fn delete_before_update(&mut self, row: u32, delete_node: &T);
+    fn delete_before_update(&mut self, row: NonZeroU32, delete_node: &T);
 }
 
 impl<T> AvltrieeHolder<T, T> for Avltriee<T>
@@ -46,9 +46,9 @@ where
     }
 
     #[inline(always)]
-    fn delete_before_update(&mut self, row: u32, _: &T) {
+    fn delete_before_update(&mut self, row: NonZeroU32, _: &T) {
         unsafe {
-            self.delete(row);
+            self.delete(row.get());
         }
     }
 }
@@ -59,20 +59,21 @@ impl<T> Avltriee<T> {
     where
         T: Ord + Clone,
     {
-        Self::update_holder(self, row, value)
+        Self::update_holder(self, NonZeroU32::new(row).unwrap(), value)
     }
 
     #[inline(always)]
-    pub unsafe fn update_holder<I>(holder: &mut dyn AvltrieeHolder<T, I>, row: u32, input: I)
+    pub unsafe fn update_holder<I>(holder: &mut dyn AvltrieeHolder<T, I>, row: NonZeroU32, input: I)
     where
         T: Clone,
     {
-        if let Some(node) = holder.as_ref().node(row) {
+        if let Some(node) = holder.as_ref().node(row.get()) {
             if holder.cmp(node, &input) == Ordering::Equal {
                 return; //update value eq exists value
             }
             holder.delete_before_update(row, node);
         }
+        let row = row.get();
         let found = holder.search_end(&input);
         if found.ord == Ordering::Equal && found.row != 0 {
             let same = found.row;
@@ -100,6 +101,7 @@ impl<T> Avltriee<T> {
 
     #[inline(always)]
     pub unsafe fn insert_unique(&mut self, row: u32, value: T, found: Found) {
+        assert!(row > 0);
         *self.offset_mut(row) = AvltrieeNode::new(row, found.row, value);
         if found.row == 0 {
             self.set_root(row);

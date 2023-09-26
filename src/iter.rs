@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, ops::Range};
+use std::{cmp::Ordering, num::NonZeroU32, ops::Range};
 
 use super::Avltriee;
 
@@ -38,7 +38,7 @@ impl<'a, T> AvltrieeIter<'a, T> {
 }
 
 impl<'a, T> Iterator for AvltrieeIter<'a, T> {
-    type Item = u32;
+    type Item = NonZeroU32;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
@@ -57,7 +57,7 @@ impl<'a, T> Iterator for AvltrieeIter<'a, T> {
                     i
                 })
             };
-            c
+            unsafe { NonZeroU32::new_unchecked(c) }
         })
     }
 }

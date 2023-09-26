@@ -6,7 +6,7 @@ pub use iter::AvltrieeIter;
 pub use node::AvltrieeNode;
 pub use update::AvltrieeHolder;
 
-use std::{cmp::Ordering, mem::ManuallyDrop, ops::Deref};
+use std::{cmp::Ordering, mem::ManuallyDrop, ops::Deref, num::NonZeroU32};
 
 #[derive(Debug)]
 pub struct Found {
@@ -49,8 +49,8 @@ impl<T> Avltriee<T> {
     }
 
     #[inline(always)]
-    pub unsafe fn value_unchecked(&self, row: u32) -> &T {
-        self.offset(row)
+    pub unsafe fn value_unchecked(&self, row: NonZeroU32) -> &T {
+        self.offset(row.get())
     }
 
     #[inline(always)]

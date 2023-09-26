@@ -45,6 +45,7 @@ impl<T> Avltriee<T> {
 
     #[inline(always)]
     pub unsafe fn delete(&mut self, target_row: u32) {
+        assert!(target_row > 0);
         let delete_node = self.offset_mut(target_row);
         if delete_node.height > 0 {
             let row_parent = delete_node.parent;
