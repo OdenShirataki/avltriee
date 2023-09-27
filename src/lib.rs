@@ -6,7 +6,7 @@ pub use iter::AvltrieeIter;
 pub use node::AvltrieeNode;
 pub use update::AvltrieeHolder;
 
-use std::{cmp::Ordering, mem::ManuallyDrop, ops::Deref, num::NonZeroU32};
+use std::{cmp::Ordering, mem::ManuallyDrop, num::NonZeroU32, ops::Deref};
 
 #[derive(Debug)]
 pub struct Found {

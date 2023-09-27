@@ -73,23 +73,23 @@ impl<T> Avltriee<T> {
             }
             holder.delete_before_update(row, node);
         }
-        let row = row.get();
+
         let found = holder.search_end(&input);
         if found.ord == Ordering::Equal && found.row != 0 {
             let same = found.row;
             let t = holder.as_mut();
 
             let same_node = t.offset_mut(same);
-            let node = t.offset_mut(row);
+            let node = t.offset_mut(row.get());
 
             *node = same_node.clone();
 
-            t.change_row(node, same, row);
+            t.change_row(node, NonZeroU32::new_unchecked(same), row);
 
-            same_node.parent = row;
+            same_node.parent = row.get();
             node.same = same;
-            t.set_parent(node.left, row);
-            t.set_parent(node.right, row);
+            t.set_parent(node.left, row.get());
+            t.set_parent(node.right, row.get());
 
             same_node.left = 0;
             same_node.right = 0;
@@ -100,11 +100,10 @@ impl<T> Avltriee<T> {
     }
 
     #[inline(always)]
-    pub unsafe fn insert_unique(&mut self, row: u32, value: T, found: Found) {
-        assert!(row > 0);
-        *self.offset_mut(row) = AvltrieeNode::new(row, found.row, value);
+    pub unsafe fn insert_unique(&mut self, row: NonZeroU32, value: T, found: Found) {
+        *self.offset_mut(row.get()) = AvltrieeNode::new(row.get(), found.row, value);
         if found.row == 0 {
-            self.set_root(row);
+            self.set_root(row.get());
         } else {
             assert!(
                 found.ord != Ordering::Equal,
@@ -113,9 +112,9 @@ impl<T> Avltriee<T> {
             );
             let p = self.offset_mut(found.row);
             if found.ord == Ordering::Greater {
-                p.left = row;
+                p.left = row.get();
             } else {
-                p.right = row;
+                p.right = row.get();
             }
             self.balance(row);
         }
@@ -127,8 +126,8 @@ impl<T> Avltriee<T> {
     }
 
     #[inline(always)]
-    fn calc_height(&mut self, row: u32) {
-        let node = unsafe { self.offset_mut(row) };
+    fn calc_height(&mut self, row: NonZeroU32) {
+        let node = unsafe { self.offset_mut(row.get()) };
         self.calc_height_node(node);
     }
 
@@ -143,23 +142,28 @@ impl<T> Avltriee<T> {
     }
 
     #[inline(always)]
-    fn join_intermediate(parent: &mut AvltrieeNode<T>, target_row: u32, child_row: u32) {
-        if parent.right == target_row {
+    fn join_intermediate(parent: &mut AvltrieeNode<T>, target_row: NonZeroU32, child_row: u32) {
+        if parent.right == target_row.get() {
             parent.right = child_row;
-        } else if parent.left == target_row {
+        } else if parent.left == target_row.get() {
             parent.left = child_row;
         }
     }
 
     #[inline(always)]
-    fn change_row(&mut self, node: &mut AvltrieeNode<T>, target_row: u32, child_row: u32) {
+    fn change_row(
+        &mut self,
+        node: &mut AvltrieeNode<T>,
+        target_row: NonZeroU32,
+        child_row: NonZeroU32,
+    ) {
         if node.parent == 0 {
-            self.set_root(child_row);
+            self.set_root(child_row.get());
         } else {
             Self::join_intermediate(
                 unsafe { self.offset_mut(node.parent) },
                 target_row,
-                child_row,
+                child_row.get(),
             );
         }
     }
