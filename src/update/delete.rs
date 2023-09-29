@@ -53,9 +53,8 @@ impl<T> Avltriee<T> {
     }
 
     #[inline(always)]
-    pub unsafe fn delete(&mut self, target_row: u32) {
-        assert!(target_row > 0);
-        let delete_node = self.offset_mut(target_row);
+    pub unsafe fn delete(&mut self, target_row: NonZeroU32) {
+        let delete_node = self.offset_mut(target_row.get());
         if delete_node.height > 0 {
             let row_parent = delete_node.parent;
             if row_parent == 0 {
@@ -78,7 +77,7 @@ impl<T> Avltriee<T> {
                 }
             } else {
                 let mut parent = self.offset_mut(row_parent);
-                if parent.same == target_row {
+                if parent.same == target_row.get() {
                     parent.same = delete_node.same;
                     if delete_node.same != 0 {
                         self.delete_same(delete_node);
@@ -86,33 +85,29 @@ impl<T> Avltriee<T> {
                 } else if delete_node.same != 0 {
                     Self::join_intermediate(
                         parent,
-                        NonZeroU32::new_unchecked(target_row),
-                        delete_node.same,
+                        target_row,
+                        NonZeroU32::new_unchecked(delete_node.same),
                     );
                     self.delete_same(delete_node);
                 } else if delete_node.left == 0 {
                     Self::join_intermediate(
                         &mut parent,
-                        NonZeroU32::new_unchecked(target_row),
-                        delete_node.right,
+                        target_row,
+                        NonZeroU32::new_unchecked(delete_node.right),
                     );
                     self.set_parent(delete_node.right, row_parent);
                     self.balance(NonZeroU32::new_unchecked(row_parent));
                 } else if delete_node.right == 0 {
                     Self::join_intermediate(
                         parent,
-                        NonZeroU32::new_unchecked(target_row),
-                        delete_node.left,
+                        target_row,
+                        NonZeroU32::new_unchecked(delete_node.left),
                     );
                     self.offset_mut(delete_node.left).parent = row_parent;
                     self.balance(NonZeroU32::new_unchecked(row_parent));
                 } else {
                     let (new_row, balance_row) = self.delete_intermediate(delete_node);
-                    Self::join_intermediate(
-                        parent,
-                        NonZeroU32::new_unchecked(target_row),
-                        new_row.get(),
-                    );
+                    Self::join_intermediate(parent, target_row, new_row);
                     let node = self.offset_mut(new_row.get());
                     node.height = delete_node.height;
                     node.parent = row_parent;

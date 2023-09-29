@@ -48,18 +48,18 @@ where
     #[inline(always)]
     fn delete_before_update(&mut self, row: NonZeroU32, _: &T) {
         unsafe {
-            self.delete(row.get());
+            self.delete(row);
         }
     }
 }
 
 impl<T> Avltriee<T> {
     #[inline(always)]
-    pub unsafe fn update(&mut self, row: u32, value: T)
+    pub unsafe fn update(&mut self, row: NonZeroU32, value: T)
     where
         T: Ord + Clone,
     {
-        Self::update_holder(self, NonZeroU32::new(row).unwrap(), value)
+        Self::update_holder(self, row, value)
     }
 
     #[inline(always)]
@@ -67,7 +67,7 @@ impl<T> Avltriee<T> {
     where
         T: Clone,
     {
-        if let Some(node) = holder.as_ref().node(row.get()) {
+        if let Some(node) = holder.as_ref().node(row) {
             if holder.cmp(node, &input) == Ordering::Equal {
                 return; //update value eq exists value
             }
@@ -105,11 +105,6 @@ impl<T> Avltriee<T> {
         if found.row == 0 {
             self.set_root(row.get());
         } else {
-            assert!(
-                found.ord != Ordering::Equal,
-                "Avltriee.insert_unique : {:?}",
-                &found
-            );
             let p = self.offset_mut(found.row);
             if found.ord == Ordering::Greater {
                 p.left = row.get();
@@ -142,11 +137,16 @@ impl<T> Avltriee<T> {
     }
 
     #[inline(always)]
-    fn join_intermediate(parent: &mut AvltrieeNode<T>, target_row: NonZeroU32, child_row: u32) {
-        if parent.right == target_row.get() {
-            parent.right = child_row;
-        } else if parent.left == target_row.get() {
-            parent.left = child_row;
+    fn join_intermediate(
+        parent: &mut AvltrieeNode<T>,
+        target_row: NonZeroU32,
+        child_row: NonZeroU32,
+    ) {
+        let target_row = target_row.get();
+        if parent.right == target_row {
+            parent.right = child_row.get();
+        } else if parent.left == target_row {
+            parent.left = child_row.get();
         }
     }
 
@@ -163,7 +163,7 @@ impl<T> Avltriee<T> {
             Self::join_intermediate(
                 unsafe { self.offset_mut(node.parent) },
                 target_row,
-                child_row.get(),
+                child_row,
             );
         }
     }

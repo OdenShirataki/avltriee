@@ -12,16 +12,16 @@ fn test2() {
     let mut deleted: HashSet<u32> = HashSet::new();
 
     unsafe {
-        t.update(1, 8);
-        t.update(2, 8);
-        t.update(3, 5);
-        t.update(4, 10);
-        t.update(5, 6);
-        t.update(6, 3);
-        t.update(7, 10);
-        t.update(8, 8);
-        t.update(9, 3);
-        t.update(10, 5);
+        t.update(1.try_into().unwrap(), 8);
+        t.update(2.try_into().unwrap(), 8);
+        t.update(3.try_into().unwrap(), 5);
+        t.update(4.try_into().unwrap(), 10);
+        t.update(5.try_into().unwrap(), 6);
+        t.update(6.try_into().unwrap(), 3);
+        t.update(7.try_into().unwrap(), 10);
+        t.update(8.try_into().unwrap(), 8);
+        t.update(9.try_into().unwrap(), 3);
+        t.update(10.try_into().unwrap(), 5);
 
         output(&t, &deleted);
 
@@ -29,7 +29,7 @@ fn test2() {
         for i in del {
             println!("delete:{}", i);
             deleted.insert(i);
-            t.delete(i);
+            t.delete(i.try_into().unwrap());
             output(&t, &deleted);
             println!("{:?}", deleted);
         }

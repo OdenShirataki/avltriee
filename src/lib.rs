@@ -38,13 +38,13 @@ impl<T> Avltriee<T> {
     }
 
     #[inline(always)]
-    pub unsafe fn node<'a>(&self, row: u32) -> Option<&'a AvltrieeNode<T>> {
-        let node = self.offset(row);
+    pub unsafe fn node<'a>(&self, row: NonZeroU32) -> Option<&'a AvltrieeNode<T>> {
+        let node = self.offset(row.get());
         (node.height > 0).then_some(node)
     }
 
     #[inline(always)]
-    pub unsafe fn value(&self, row: u32) -> Option<&T> {
+    pub unsafe fn value(&self, row: NonZeroU32) -> Option<&T> {
         self.node(row).map(|x| x.deref())
     }
 
@@ -90,9 +90,9 @@ impl<T> Avltriee<T> {
     }
 
     #[inline(always)]
-    pub unsafe fn is_unique(&self, row: u32) -> bool {
-        let node = self.offset(row);
-        node.same == 0 && self.offset(node.parent).same != row
+    pub unsafe fn is_unique(&self, row: NonZeroU32) -> bool {
+        let node = self.offset(row.get());
+        node.same == 0 && self.offset(node.parent).same != row.get()
     }
 
     #[inline(always)]

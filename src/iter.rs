@@ -13,7 +13,7 @@ pub struct AvltrieeIter<'a, T> {
     end_row: u32,
     same_branch: u32,
     triee: &'a Avltriee<T>,
-    next_func: fn(&Avltriee<T>, u32, u32) -> Option<(u32, u32)>,
+    next_func: fn(&Avltriee<T>, NonZeroU32, u32) -> Option<(NonZeroU32, u32)>,
 }
 impl<'a, T> AvltrieeIter<'a, T> {
     #[inline(always)]
@@ -52,9 +52,14 @@ impl<'a, T> Iterator for AvltrieeIter<'a, T> {
                 same
             } else {
                 let next_func = self.next_func;
-                next_func(self.triee, self.now, self.same_branch).map_or(0, |(i, b)| {
+                next_func(
+                    self.triee,
+                    unsafe { NonZeroU32::new_unchecked(self.now) },
+                    self.same_branch,
+                )
+                .map_or(0, |(i, b)| {
                     self.same_branch = b;
-                    i
+                    i.get()
                 })
             };
             unsafe { NonZeroU32::new_unchecked(c) }
@@ -361,7 +366,7 @@ impl<T> Avltriee<T> {
     }
 
     #[inline(always)]
-    fn search_range<S, E>(&self, compare_ge: S, compare_le: E) -> Option<Range<u32>>
+    fn search_range<S, E>(&self, compare_ge: S, compare_le: E) -> Option<Range<NonZeroU32>>
     where
         S: Fn(&T) -> Ordering,
         E: Fn(&T) -> Ordering,
@@ -416,7 +421,10 @@ impl<T> Avltriee<T> {
                         }
                     }
                 }
-                (end != 0).then(|| Range { start, end })
+                (end != 0).then(|| Range {
+                    start: NonZeroU32::new(start).unwrap(),
+                    end: NonZeroU32::new(end).unwrap(),
+                })
             })
             .and_then(|v| v)
     }
@@ -428,7 +436,7 @@ impl<T> Avltriee<T> {
         E: Fn(&T) -> Ordering,
     {
         if let Some(range) = self.search_range(start, end) {
-            AvltrieeIter::new(self, range.start, range.end, order)
+            AvltrieeIter::new(self, range.start.get(), range.end.get(), order)
         } else {
             AvltrieeIter::new(self, 0, 0, order)
         }
@@ -453,27 +461,38 @@ impl<T> Avltriee<T> {
     }
 
     #[inline(always)]
-    fn next(&self, c: u32, same_branch: u32) -> Option<(u32, u32)> {
-        let mut current = c;
+    fn next(&self, c: NonZeroU32, same_branch: u32) -> Option<(NonZeroU32, u32)> {
+        let mut current = c.get();
 
         let mut node = unsafe { self.offset(current) };
         if node.same != 0 {
-            Some((node.same, if same_branch == 0 { c } else { same_branch }))
+            Some((
+                unsafe { NonZeroU32::new_unchecked(node.same) },
+                if same_branch == 0 {
+                    c.get()
+                } else {
+                    same_branch
+                },
+            ))
         } else {
             if same_branch != 0 {
                 current = same_branch;
                 node = unsafe { self.offset(same_branch) };
             }
             if node.right != 0 {
-                Some((self.min(node.right), 0))
+                Some((
+                    unsafe { NonZeroU32::new_unchecked(self.min(node.right)) },
+                    0,
+                ))
             } else {
                 let parent = node.parent;
                 (parent != 0)
                     .then(|| unsafe {
                         if self.offset(parent).left == current {
-                            Some((parent, 0))
+                            Some((NonZeroU32::new_unchecked(parent), 0))
                         } else {
-                            self.retroactive(parent).map(|i| (i, 0))
+                            self.retroactive(NonZeroU32::new_unchecked(parent))
+                                .map(|i| (i, 0))
                         }
                     })
                     .and_then(|v| v)
@@ -482,37 +501,46 @@ impl<T> Avltriee<T> {
     }
 
     #[inline(always)]
-    unsafe fn retroactive(&self, c: u32) -> Option<u32> {
-        let parent = self.offset(c).parent;
-        if self.offset(parent).right == c {
-            self.retroactive(parent).filter(|p| *p != c)
+    unsafe fn retroactive(&self, c: NonZeroU32) -> Option<NonZeroU32> {
+        let parent = self.offset(c.get()).parent;
+        if self.offset(parent).right == c.get() {
+            self.retroactive(NonZeroU32::new(parent).unwrap())
+                .filter(|p| p.get() != c.get())
         } else {
-            Some(parent)
+            Some(NonZeroU32::new_unchecked(parent))
         }
     }
 
     #[inline(always)]
-    fn next_desc(&self, c: u32, same_branch: u32) -> Option<(u32, u32)> {
-        let mut current = c;
+    fn next_desc(&self, c: NonZeroU32, same_branch: u32) -> Option<(NonZeroU32, u32)> {
+        let mut current = c.get();
 
         let mut node = unsafe { self.offset(current) };
         if node.same != 0 {
-            Some((node.same, if same_branch == 0 { c } else { same_branch }))
+            Some((
+                unsafe { NonZeroU32::new_unchecked(node.same) },
+                if same_branch == 0 {
+                    c.get()
+                } else {
+                    same_branch
+                },
+            ))
         } else {
             if same_branch != 0 {
                 current = same_branch;
                 node = unsafe { self.offset(same_branch) };
             }
             if node.left != 0 {
-                Some((self.max(node.left), 0))
+                Some((unsafe { NonZeroU32::new_unchecked(self.max(node.left)) }, 0))
             } else {
                 let parent = node.parent;
                 (parent != 0)
                     .then(|| unsafe {
                         if self.offset(parent).right == current {
-                            Some((parent, 0))
+                            Some((NonZeroU32::new_unchecked(parent), 0))
                         } else {
-                            self.retroactive_desc(parent).map(|i| (i, 0))
+                            self.retroactive_desc(NonZeroU32::new_unchecked(parent))
+                                .map(|i| (i, 0))
                         }
                     })
                     .and_then(|v| v)
@@ -521,12 +549,13 @@ impl<T> Avltriee<T> {
     }
 
     #[inline(always)]
-    unsafe fn retroactive_desc(&self, c: u32) -> Option<u32> {
-        let parent = self.offset(c).parent;
-        if self.offset(parent).left == c {
-            self.retroactive_desc(parent).filter(|p| *p != c)
+    unsafe fn retroactive_desc(&self, c: NonZeroU32) -> Option<NonZeroU32> {
+        let parent = self.offset(c.get()).parent;
+        if self.offset(parent).left == c.get() {
+            self.retroactive_desc(NonZeroU32::new(parent).unwrap())
+                .filter(|p| *p != c)
         } else {
-            Some(parent)
+            Some(NonZeroU32::new(parent).unwrap())
         }
     }
 }
