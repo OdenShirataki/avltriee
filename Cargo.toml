@@ -1,6 +1,6 @@
 [package]
 name = "avltriee"
-version = "0.54.0"
+version = "0.55.0"
 edition = "2021"
 
 authors = ["Oden Shirataki <oden.srtk@gmail.com>"]
@@ -13,6 +13,10 @@ keywords = ["avltree","database"]
 categories = ["algorithms"]
 
 license = "MIT/Apache-2.0"
+
+[dependencies]
+async-trait = "0.1"
+futures = "0.3"
 
 [dev-dependencies]
 rand = "0.8"

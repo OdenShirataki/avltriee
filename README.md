@@ -27,16 +27,16 @@ let mut triee = Avltriee::new(buffer.as_mut_ptr());
 
 ```rust
 unsafe {
-    triee.update(1.try_into().unwrap(), 100); //insert
+    triee.update(1.try_into().unwrap(), 100).await; //insert
 }
 unsafe {
-    triee.update(2.try_into().unwrap(), 345); //insert
+    triee.update(2.try_into().unwrap(), 345).await; //insert
 }
 unsafe {
-    triee.update(3.try_into().unwrap(), 789); //insert
+    triee.update(3.try_into().unwrap(), 789).await; //insert
 }
 unsafe {
-    triee.update(2.try_into().unwrap(), 1234); //update exists row
+    triee.update(2.try_into().unwrap(), 1234).await; //update exists row
 }
 ```
 ### iterator

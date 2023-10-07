@@ -3,6 +3,8 @@ mod delete;
 
 use std::{cmp::Ordering, num::NonZeroU32};
 
+use async_trait::async_trait;
+
 use super::{Avltriee, AvltrieeNode, Found};
 
 impl<T> AsRef<Avltriee<T>> for Avltriee<T> {
@@ -16,20 +18,19 @@ impl<T> AsMut<Avltriee<T>> for Avltriee<T> {
     }
 }
 
+#[async_trait]
 pub trait AvltrieeHolder<T, I>
 where
-    Self: AsRef<Avltriee<T>> + AsMut<Avltriee<T>>,
+    Self: Send + Sync + AsRef<Avltriee<T>> + AsMut<Avltriee<T>>,
 {
     fn cmp(&self, left: &T, right: &I) -> Ordering;
     fn search_end(&self, input: &I) -> Found;
     fn value(&mut self, input: I) -> T;
-    fn delete_before_update(&mut self, row: NonZeroU32, delete_node: &T);
+    async fn delete_before_update(&mut self, row: NonZeroU32, delete_node: &T);
 }
 
-impl<T> AvltrieeHolder<T, T> for Avltriee<T>
-where
-    T: Ord,
-{
+#[async_trait]
+impl<T: Send + Sync + Ord> AvltrieeHolder<T, T> for Avltriee<T> {
     #[inline(always)]
     fn cmp(&self, left: &T, right: &T) -> Ordering {
         left.cmp(right)
@@ -45,8 +46,7 @@ where
         input
     }
 
-    #[inline(always)]
-    fn delete_before_update(&mut self, row: NonZeroU32, _: &T) {
+    async fn delete_before_update(&mut self, row: NonZeroU32, _: &T) {
         unsafe {
             self.delete(row);
         }
@@ -54,24 +54,25 @@ where
 }
 
 impl<T> Avltriee<T> {
-    #[inline(always)]
-    pub unsafe fn update(&mut self, row: NonZeroU32, value: T)
+    pub async unsafe fn update(&mut self, row: NonZeroU32, value: T)
     where
-        T: Ord + Clone,
+        T: Send + Sync + Ord + Clone,
     {
-        Self::update_holder(self, row, value)
+        Self::update_holder(self, row, value).await
     }
 
-    #[inline(always)]
-    pub unsafe fn update_holder<I>(holder: &mut dyn AvltrieeHolder<T, I>, row: NonZeroU32, input: I)
-    where
+    pub async unsafe fn update_holder<I>(
+        holder: &mut dyn AvltrieeHolder<T, I>,
+        row: NonZeroU32,
+        input: I,
+    ) where
         T: Clone,
     {
         if let Some(node) = holder.as_ref().node(row) {
             if holder.cmp(node, &input) == Ordering::Equal {
                 return; //update value eq exists value
             }
-            holder.delete_before_update(row, node);
+            holder.delete_before_update(row, node).await;
         }
 
         let found = holder.search_end(&input);
