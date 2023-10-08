@@ -35,9 +35,7 @@ fn test_iter() {
         let i = a.sample(&mut rng);
         println!("delete:{}", i);
         deleted.insert(i);
-        unsafe {
-            t.delete(i.try_into().unwrap());
-        }
+        t.delete(i.try_into().unwrap());
     }
 
     let mut c = 0;
@@ -138,5 +136,5 @@ fn test_insert_10000() {
         }
     });
 
-    println!("OK:{}",1000000);
+    println!("OK:{}", 1000000);
 }

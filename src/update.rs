@@ -47,9 +47,7 @@ impl<T: Send + Sync + Ord> AvltrieeHolder<T, T> for Avltriee<T> {
     }
 
     async fn delete_before_update(&mut self, row: NonZeroU32, _: &T) {
-        unsafe {
-            self.delete(row);
-        }
+        self.delete(row);
     }
 }
 
@@ -58,7 +56,7 @@ impl<T> Avltriee<T> {
     where
         T: Send + Sync + Ord + Clone,
     {
-        Self::update_holder(self, row, value).await
+        Self::update_holder(self, row, value).await;
     }
 
     pub async unsafe fn update_holder<I>(
@@ -80,17 +78,21 @@ impl<T> Avltriee<T> {
             let same = found.row;
             let t = holder.as_mut();
 
+            let row_pime = row.get();
+
+            t.update_max_rows(row_pime);
+
             let same_node = t.offset_mut(same);
-            let node = t.offset_mut(row.get());
+            let node = t.offset_mut(row_pime);
 
             *node = same_node.clone();
 
             t.change_row(node, NonZeroU32::new_unchecked(same), row);
 
-            same_node.parent = row.get();
+            same_node.parent = row_pime;
             node.same = same;
-            t.set_parent(node.left, row.get());
-            t.set_parent(node.right, row.get());
+            t.set_parent(node.left, row_pime);
+            t.set_parent(node.right, row_pime);
 
             same_node.left = 0;
             same_node.right = 0;
@@ -102,23 +104,22 @@ impl<T> Avltriee<T> {
 
     #[inline(always)]
     pub unsafe fn insert_unique(&mut self, row: NonZeroU32, value: T, found: Found) {
-        *self.offset_mut(row.get()) = AvltrieeNode::new(row.get(), found.row, value);
+        let row_prim = row.get();
+
+        self.update_max_rows(row_prim);
+
+        *self.offset_mut(row_prim) = AvltrieeNode::new(row_prim, found.row, value);
         if found.row == 0 {
-            self.set_root(row.get());
+            self.set_root(row_prim);
         } else {
             let p = self.offset_mut(found.row);
             if found.ord == Ordering::Greater {
-                p.left = row.get();
+                p.left = row_prim;
             } else {
-                p.right = row.get();
+                p.right = row_prim;
             }
             self.balance(row);
         }
-    }
-
-    #[inline(always)]
-    fn set_root(&mut self, row: u32) {
-        self.node_list.parent = row;
     }
 
     #[inline(always)]

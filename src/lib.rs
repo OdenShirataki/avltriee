@@ -1,3 +1,4 @@
+mod head;
 mod iter;
 mod node;
 mod update;
@@ -54,11 +55,6 @@ impl<T> Avltriee<T> {
     }
 
     #[inline(always)]
-    pub fn root(&self) -> u32 {
-        self.node_list.parent
-    }
-
-    #[inline(always)]
     pub fn search_end<F>(&self, cmp: F) -> Found
     where
         F: Fn(&T) -> Ordering,
@@ -92,7 +88,7 @@ impl<T> Avltriee<T> {
     #[inline(always)]
     pub unsafe fn is_unique(&self, row: NonZeroU32) -> bool {
         let node = self.offset(row.get());
-        node.same == 0 && self.offset(node.parent).same != row.get()
+        node.same == 0 && (node.parent == 0 || self.offset(node.parent).same != row.get())
     }
 
     #[inline(always)]
