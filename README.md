@@ -65,10 +65,9 @@ triee.delete(1.try_into().unwrap());
 
 ### search
 ```rust
-let (ord,row) = triee.search(&100);
-
-or 
-
-let (ord,row) = triee.search_nord(|v|v.cmp(&100));
+let (ord,row) = triee.search_end(|v|v.cmp(&100));
+if ord==Ordering::Equal{
+    //found 
+}
 ```
 

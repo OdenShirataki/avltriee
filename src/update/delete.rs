@@ -116,7 +116,7 @@ impl<T> Avltriee<T> {
 
                 if target_row.get() == self.max_rows() {
                     let mut current = target_row.get() - 1;
-                    if current >= 1 {
+                    if current > 0 {
                         while let None = unsafe { self.value(NonZeroU32::new_unchecked(current)) } {
                             current -= 1;
                             if current == 0 {
