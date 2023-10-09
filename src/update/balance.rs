@@ -2,7 +2,7 @@ use std::num::NonZeroU32;
 
 use crate::{Avltriee, AvltrieeNode};
 
-impl<T> Avltriee<T> {
+impl<T: Copy> Avltriee<T> {
     #[inline(always)]
     pub(crate) unsafe fn balance(&mut self, row: NonZeroU32) {
         let mut t_row = row.get();

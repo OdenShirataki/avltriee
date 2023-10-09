@@ -7,12 +7,12 @@ use async_trait::async_trait;
 
 use super::{Avltriee, AvltrieeNode, Found};
 
-impl<T> AsRef<Avltriee<T>> for Avltriee<T> {
+impl<T: Copy> AsRef<Avltriee<T>> for Avltriee<T> {
     fn as_ref(&self) -> &Avltriee<T> {
         self
     }
 }
-impl<T> AsMut<Avltriee<T>> for Avltriee<T> {
+impl<T: Copy> AsMut<Avltriee<T>> for Avltriee<T> {
     fn as_mut(&mut self) -> &mut Avltriee<T> {
         self
     }
@@ -22,6 +22,7 @@ impl<T> AsMut<Avltriee<T>> for Avltriee<T> {
 pub trait AvltrieeHolder<T, I>
 where
     Self: Send + Sync + AsRef<Avltriee<T>> + AsMut<Avltriee<T>>,
+    T: Copy,
 {
     fn cmp(&self, left: &T, right: &I) -> Ordering;
     fn search_end(&self, input: &I) -> Found;
@@ -30,7 +31,7 @@ where
 }
 
 #[async_trait]
-impl<T: Send + Sync + Ord> AvltrieeHolder<T, T> for Avltriee<T> {
+impl<T: Send + Sync + Ord + Copy> AvltrieeHolder<T, T> for Avltriee<T> {
     #[inline(always)]
     fn cmp(&self, left: &T, right: &T) -> Ordering {
         left.cmp(right)
@@ -51,7 +52,7 @@ impl<T: Send + Sync + Ord> AvltrieeHolder<T, T> for Avltriee<T> {
     }
 }
 
-impl<T> Avltriee<T> {
+impl<T: Copy> Avltriee<T> {
     pub async unsafe fn update(&mut self, row: NonZeroU32, value: T)
     where
         T: Send + Sync + Ord + Clone,
