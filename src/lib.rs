@@ -26,11 +26,11 @@ impl Found {
     }
 }
 
-pub struct Avltriee<T: Copy> {
+pub struct Avltriee<T> {
     node_list: ManuallyDrop<Box<AvltrieeNode<T>>>,
 }
 
-impl<T: Copy> Avltriee<T> {
+impl<T> Avltriee<T> {
     #[inline(always)]
     pub fn new(node_list: *mut AvltrieeNode<T>) -> Avltriee<T> {
         Avltriee {

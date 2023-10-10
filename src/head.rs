@@ -5,7 +5,7 @@ pub(crate) struct AvltrieeHead {
     max_rows: u32,
 }
 
-impl<T: Copy> Avltriee<T> {
+impl<T> Avltriee<T> {
     pub(crate) fn head(&self) -> &AvltrieeHead {
         unsafe { &*(self.node_list.as_ref() as *const AvltrieeNode<T> as *const AvltrieeHead) }
     }

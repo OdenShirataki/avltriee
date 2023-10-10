@@ -1,5 +1,5 @@
 #[derive(Clone, Debug)]
-pub struct AvltrieeNode<T: Copy> {
+pub struct AvltrieeNode<T> {
     pub(super) parent: u32,
     pub(super) left: u32,
     pub(super) right: u32,
@@ -8,7 +8,7 @@ pub struct AvltrieeNode<T: Copy> {
     value: T,
 }
 
-impl<T: Copy> AvltrieeNode<T> {
+impl<T> AvltrieeNode<T> {
     #[inline(always)]
     pub fn new(row: u32, parent: u32, value: T) -> AvltrieeNode<T> {
         AvltrieeNode {
@@ -22,7 +22,7 @@ impl<T: Copy> AvltrieeNode<T> {
     }
 }
 
-impl<T: Copy> std::ops::Deref for AvltrieeNode<T> {
+impl<T> std::ops::Deref for AvltrieeNode<T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
         &self.value

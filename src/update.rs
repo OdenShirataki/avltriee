@@ -7,23 +7,19 @@ use async_trait::async_trait;
 
 use super::{Avltriee, AvltrieeNode, Found};
 
-impl<T: Copy> AsRef<Avltriee<T>> for Avltriee<T> {
+impl<T> AsRef<Avltriee<T>> for Avltriee<T> {
     fn as_ref(&self) -> &Avltriee<T> {
         self
     }
 }
-impl<T: Copy> AsMut<Avltriee<T>> for Avltriee<T> {
+impl<T> AsMut<Avltriee<T>> for Avltriee<T> {
     fn as_mut(&mut self) -> &mut Avltriee<T> {
         self
     }
 }
 
 #[async_trait]
-pub trait AvltrieeHolder<T, I>
-where
-    Self: Send + Sync + AsRef<Avltriee<T>> + AsMut<Avltriee<T>>,
-    T: Copy,
-{
+pub trait AvltrieeHolder<T, I>: Send + Sync + AsRef<Avltriee<T>> + AsMut<Avltriee<T>> {
     fn cmp(&self, left: &T, right: &I) -> Ordering;
     fn search_end(&self, input: &I) -> Found;
     fn value(&mut self, input: I) -> T;
@@ -31,7 +27,7 @@ where
 }
 
 #[async_trait]
-impl<T: Send + Sync + Ord + Copy> AvltrieeHolder<T, T> for Avltriee<T> {
+impl<T: Send + Sync + Ord> AvltrieeHolder<T, T> for Avltriee<T> {
     #[inline(always)]
     fn cmp(&self, left: &T, right: &T) -> Ordering {
         left.cmp(right)
@@ -52,10 +48,10 @@ impl<T: Send + Sync + Ord + Copy> AvltrieeHolder<T, T> for Avltriee<T> {
     }
 }
 
-impl<T: Copy> Avltriee<T> {
+impl<T> Avltriee<T> {
     pub async unsafe fn update(&mut self, row: NonZeroU32, value: T)
     where
-        T: Send + Sync + Ord + Clone,
+        T: Send + Sync + Ord + Copy,
     {
         Self::update_holder(self, row, value).await;
     }
@@ -65,7 +61,7 @@ impl<T: Copy> Avltriee<T> {
         row: NonZeroU32,
         input: I,
     ) where
-        T: Clone,
+        T: Copy,
     {
         if let Some(node) = holder.as_ref().node(row) {
             if holder.cmp(node, &input) == Ordering::Equal {

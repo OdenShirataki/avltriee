@@ -2,7 +2,7 @@ use std::num::NonZeroU32;
 
 use crate::{Avltriee, AvltrieeNode};
 
-impl<T: Copy> Avltriee<T> {
+impl<T> Avltriee<T> {
     #[inline(always)]
     fn delete_same(&mut self, delete_node: &AvltrieeNode<T>) {
         let new_node = unsafe { self.offset_mut(delete_node.same) };

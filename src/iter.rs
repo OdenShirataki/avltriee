@@ -8,14 +8,14 @@ enum Order {
     Desc,
 }
 
-pub struct AvltrieeIter<'a, T: Copy> {
+pub struct AvltrieeIter<'a, T> {
     now: u32,
     end_row: u32,
     same_branch: u32,
     triee: &'a Avltriee<T>,
     next_func: fn(&Avltriee<T>, NonZeroU32, u32) -> Option<(NonZeroU32, u32)>,
 }
-impl<'a, T: Copy> AvltrieeIter<'a, T> {
+impl<'a, T> AvltrieeIter<'a, T> {
     #[inline(always)]
     fn new(triee: &'a Avltriee<T>, now: u32, end_row: u32, order: Order) -> AvltrieeIter<'a, T> {
         match order {
@@ -37,7 +37,7 @@ impl<'a, T: Copy> AvltrieeIter<'a, T> {
     }
 }
 
-impl<'a, T: Copy> Iterator for AvltrieeIter<'a, T> {
+impl<'a, T> Iterator for AvltrieeIter<'a, T> {
     type Item = NonZeroU32;
 
     #[inline(always)]
@@ -67,7 +67,7 @@ impl<'a, T: Copy> Iterator for AvltrieeIter<'a, T> {
     }
 }
 
-impl<T: Copy> Avltriee<T> {
+impl<T> Avltriee<T> {
     #[inline(always)]
     pub fn iter(&self) -> AvltrieeIter<T> {
         AvltrieeIter::new(
