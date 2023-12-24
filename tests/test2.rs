@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::ptr::NonNull;
 
 use avltriee::Avltriee;
 use avltriee::AvltrieeNode;
@@ -7,7 +8,7 @@ use avltriee::AvltrieeNode;
 fn test2() {
     let mut list: Vec<AvltrieeNode<i64>> = (0..=10).map(|_| AvltrieeNode::new(0, 0, 0)).collect();
     let rl = &mut list;
-    let mut t = Avltriee::new(rl.as_mut_ptr());
+    let mut t = Avltriee::new(unsafe { NonNull::new_unchecked(rl.as_mut_ptr()) });
 
     let mut deleted: HashSet<u32> = HashSet::new();
 

@@ -20,7 +20,7 @@ let length=100;
 let mut buffer: Vec<AvltrieeNode<i64>> = (0..=length)
     .map(|_| AvltrieeNode::new(0, 0, 0))
     .collect();
-let mut triee = Avltriee::new(buffer.as_mut_ptr());
+let mut triee = Avltriee::new(unsafe { NonNull::new_unchecked(buffer.as_mut_ptr())});
 ```
 
 ### insert & update

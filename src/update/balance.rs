@@ -3,7 +3,6 @@ use std::num::NonZeroU32;
 use crate::{Avltriee, AvltrieeNode};
 
 impl<T> Avltriee<T> {
-    #[inline(always)]
     pub(crate) unsafe fn balance(&mut self, row: NonZeroU32) {
         let mut t_row = row.get();
         let mut t = self.offset(t_row);
@@ -43,7 +42,6 @@ impl<T> Avltriee<T> {
         }
     }
 
-    #[inline(always)]
     fn rotate_common(
         &mut self,
         node: &mut AvltrieeNode<T>,
@@ -60,7 +58,6 @@ impl<T> Avltriee<T> {
         node.parent = child_row.get();
     }
 
-    #[inline(always)]
     fn rotate_left(&mut self, node: &mut AvltrieeNode<T>, row: NonZeroU32) {
         let right_row = node.right;
         let right = unsafe { self.offset_mut(right_row) };
@@ -74,7 +71,6 @@ impl<T> Avltriee<T> {
         });
     }
 
-    #[inline(always)]
     fn rotate_right(&mut self, node: &mut AvltrieeNode<T>, row: NonZeroU32) {
         let left_row = node.left;
         let left = unsafe { self.offset_mut(left_row) };

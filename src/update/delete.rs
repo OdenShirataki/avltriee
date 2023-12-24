@@ -3,7 +3,6 @@ use std::num::NonZeroU32;
 use crate::{Avltriee, AvltrieeNode};
 
 impl<T> Avltriee<T> {
-    #[inline(always)]
     fn delete_same(&mut self, delete_node: &AvltrieeNode<T>) {
         let new_node = unsafe { self.offset_mut(delete_node.same) };
 
@@ -17,7 +16,6 @@ impl<T> Avltriee<T> {
         self.set_parent(new_node.right, delete_node.same);
     }
 
-    #[inline(always)]
     unsafe fn delete_intermediate(
         &mut self,
         delete_node: &mut AvltrieeNode<T>,
@@ -52,7 +50,6 @@ impl<T> Avltriee<T> {
         }
     }
 
-    #[inline(always)]
     pub fn delete(&mut self, target_row: NonZeroU32) {
         if target_row.get() <= self.max_rows() {
             let delete_node = unsafe { self.offset_mut(target_row.get()) };

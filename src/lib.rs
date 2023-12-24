@@ -7,7 +7,7 @@ pub use iter::AvltrieeIter;
 pub use node::AvltrieeNode;
 pub use update::AvltrieeHolder;
 
-use std::{cmp::Ordering, mem::ManuallyDrop, num::NonZeroU32, ops::Deref};
+use std::{cmp::Ordering, num::NonZeroU32, ops::Deref, ptr::NonNull};
 
 #[derive(Debug)]
 pub struct Found {
@@ -27,34 +27,27 @@ impl Found {
 }
 
 pub struct Avltriee<T> {
-    node_list: ManuallyDrop<Box<AvltrieeNode<T>>>,
+    node_list: NonNull<AvltrieeNode<T>>,
 }
 
 impl<T> Avltriee<T> {
-    #[inline(always)]
-    pub fn new(node_list: *mut AvltrieeNode<T>) -> Avltriee<T> {
-        Avltriee {
-            node_list: ManuallyDrop::new(unsafe { Box::from_raw(node_list) }),
-        }
+    pub fn new(node_list: NonNull<AvltrieeNode<T>>) -> Avltriee<T> {
+        Avltriee { node_list }
     }
 
-    #[inline(always)]
     pub unsafe fn node<'a>(&self, row: NonZeroU32) -> Option<&'a AvltrieeNode<T>> {
         let node = self.offset(row.get());
         (node.height > 0).then_some(node)
     }
 
-    #[inline(always)]
     pub unsafe fn value(&self, row: NonZeroU32) -> Option<&T> {
         self.node(row).map(|x| x.deref())
     }
 
-    #[inline(always)]
     pub unsafe fn value_unchecked(&self, row: NonZeroU32) -> &T {
         self.offset(row.get())
     }
 
-    #[inline(always)]
     pub fn search_end<F>(&self, cmp: F) -> Found
     where
         F: Fn(&T) -> Ordering,
@@ -85,23 +78,19 @@ impl<T> Avltriee<T> {
         Found { row, ord }
     }
 
-    #[inline(always)]
     pub unsafe fn is_unique(&self, row: NonZeroU32) -> bool {
         let node = self.offset(row.get());
         node.same == 0 && (node.parent == 0 || self.offset(node.parent).same != row.get())
     }
 
-    #[inline(always)]
     unsafe fn offset<'a>(&self, offset: u32) -> &'a AvltrieeNode<T> {
-        &*(self.node_list.as_ref() as *const AvltrieeNode<T>).offset(offset as isize)
+        &*self.node_list.as_ptr().offset(offset as isize)
     }
 
-    #[inline(always)]
     unsafe fn offset_mut<'a>(&mut self, offset: u32) -> &'a mut AvltrieeNode<T> {
-        &mut *(self.node_list.as_mut() as *mut AvltrieeNode<T>).offset(offset as isize)
+        &mut *self.node_list.as_ptr().offset(offset as isize)
     }
 
-    #[inline(always)]
     fn min(&self, t: u32) -> u32 {
         let mut t = t;
         while t != 0 {
@@ -114,7 +103,6 @@ impl<T> Avltriee<T> {
         t
     }
 
-    #[inline(always)]
     fn max(&self, t: u32) -> u32 {
         let mut t = t;
         while t != 0 {

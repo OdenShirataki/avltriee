@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, ptr::NonNull};
 
 #[cfg(test)]
 const TEST_LENGTH: u32 = 100;
@@ -14,7 +14,7 @@ fn test_iter() {
     let mut list: Vec<AvltrieeNode<i64>> = (0..=TEST_LENGTH)
         .map(|_| AvltrieeNode::new(0, 0, 0))
         .collect();
-    let mut t = Avltriee::new(list.as_mut_ptr());
+    let mut t = Avltriee::new(unsafe { NonNull::new_unchecked(list.as_mut_ptr()) });
 
     let mut rng = rand::thread_rng();
     let die = Uniform::from(TEST_VALUE_RANGE_MIN..=TEST_VALUE_RANGE_MAX);
@@ -54,7 +54,7 @@ fn test_desc_iter() {
     let mut list: Vec<AvltrieeNode<i64>> = (0..=TEST_LENGTH)
         .map(|_| AvltrieeNode::new(0, 0, 0))
         .collect();
-    let mut t = Avltriee::new(list.as_mut_ptr());
+    let mut t = Avltriee::new(unsafe { NonNull::new_unchecked(list.as_mut_ptr()) });
 
     let mut rng = rand::thread_rng();
     let die = Uniform::from(TEST_VALUE_RANGE_MIN..=TEST_VALUE_RANGE_MAX);
@@ -82,7 +82,7 @@ fn test_iter_by_search() {
 
     let len = 10;
     let mut list: Vec<AvltrieeNode<i64>> = (0..=len).map(|_| AvltrieeNode::new(0, 0, 0)).collect();
-    let mut t = Avltriee::new(list.as_mut_ptr());
+    let mut t = Avltriee::new(unsafe { NonNull::new_unchecked(list.as_mut_ptr()) });
 
     let mut rng = rand::thread_rng();
     let die = Uniform::from(0..=20);
@@ -126,7 +126,7 @@ fn test_insert_10000() {
     let mut list: Vec<AvltrieeNode<u32>> = (0..=TEST_LENGTH)
         .map(|_| AvltrieeNode::new(0, 0, 0))
         .collect();
-    let mut t = Avltriee::new(list.as_mut_ptr());
+    let mut t = Avltriee::new(unsafe { NonNull::new_unchecked(list.as_mut_ptr()) });
 
     futures::executor::block_on(async {
         for i in 1..=TEST_LENGTH {
