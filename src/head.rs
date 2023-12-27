@@ -2,15 +2,15 @@ use crate::{Avltriee, AvltrieeNode};
 
 pub(crate) struct AvltrieeHead {
     root: u32,
-    max_rows: u32,
+    capacity: u32,
 }
 
 impl<T> Avltriee<T> {
-    pub(crate) fn head(&self) -> &AvltrieeHead {
+    fn head(&self) -> &AvltrieeHead {
         unsafe { &*(self.node_list.as_ref() as *const AvltrieeNode<T> as *const AvltrieeHead) }
     }
 
-    pub(crate) fn head_mut(&mut self) -> &mut AvltrieeHead {
+    fn head_mut(&mut self) -> &mut AvltrieeHead {
         unsafe { &mut *(self.node_list.as_mut() as *mut AvltrieeNode<T> as *mut AvltrieeHead) }
     }
 
@@ -22,17 +22,18 @@ impl<T> Avltriee<T> {
         self.head().root
     }
 
-    pub(crate) fn set_max_rows(&mut self, rows: u32) {
-        self.head_mut().max_rows = rows;
+    pub(crate) fn set_capacity(&mut self, rows: u32) {
+        self.head_mut().capacity = rows;
     }
 
-    pub fn update_max_rows(&mut self, rows: u32) {
-        if self.max_rows() < rows {
-            self.set_max_rows(rows);
+    pub(crate) fn extend_capacity(&mut self, rows: u32) {
+        if self.capacity() < rows {
+            self.set_capacity(rows);
         }
     }
 
-    pub fn max_rows(&self) -> u32 {
-        self.head().max_rows
+    /// Returns capacity.
+    pub fn capacity(&self) -> u32 {
+        self.head().capacity
     }
 }

@@ -50,9 +50,10 @@ impl<T> Avltriee<T> {
         }
     }
 
-    pub fn delete(&mut self, target_row: NonZeroU32) {
-        if target_row.get() <= self.max_rows() {
-            let delete_node = unsafe { self.offset_mut(target_row.get()) };
+    /// Delete the specified row.
+    pub fn delete(&mut self, row: NonZeroU32) {
+        if row.get() <= self.capacity() {
+            let delete_node = unsafe { self.offset_mut(row.get()) };
             if delete_node.height > 0 {
                 let row_parent = delete_node.parent;
                 if row_parent == 0 {
@@ -76,24 +77,24 @@ impl<T> Avltriee<T> {
                     }
                 } else {
                     let mut parent = unsafe { self.offset_mut(row_parent) };
-                    if parent.same == target_row.get() {
+                    if parent.same == row.get() {
                         parent.same = delete_node.same;
                         if delete_node.same != 0 {
                             self.delete_same(delete_node);
                         }
                     } else if delete_node.same != 0 {
-                        Self::join_intermediate(parent, target_row, unsafe {
+                        Self::join_intermediate(parent, row, unsafe {
                             NonZeroU32::new_unchecked(delete_node.same)
                         });
                         self.delete_same(delete_node);
                     } else if delete_node.left == 0 {
-                        Self::join_intermediate(&mut parent, target_row, unsafe {
+                        Self::join_intermediate(&mut parent, row, unsafe {
                             NonZeroU32::new_unchecked(delete_node.right)
                         });
                         self.set_parent(delete_node.right, row_parent);
                         unsafe { self.balance(NonZeroU32::new_unchecked(row_parent)) };
                     } else if delete_node.right == 0 {
-                        Self::join_intermediate(parent, target_row, unsafe {
+                        Self::join_intermediate(parent, row, unsafe {
                             NonZeroU32::new_unchecked(delete_node.left)
                         });
                         unsafe { self.offset_mut(delete_node.left) }.parent = row_parent;
@@ -101,7 +102,7 @@ impl<T> Avltriee<T> {
                     } else {
                         let (new_row, balance_row) =
                             unsafe { self.delete_intermediate(delete_node) };
-                        Self::join_intermediate(parent, target_row, new_row);
+                        Self::join_intermediate(parent, row, new_row);
                         let node = unsafe { self.offset_mut(new_row.get()) };
                         node.height = delete_node.height;
                         node.parent = row_parent;
@@ -111,8 +112,8 @@ impl<T> Avltriee<T> {
                 }
                 delete_node.height = 0;
 
-                if target_row.get() == self.max_rows() {
-                    let mut current = target_row.get() - 1;
+                if row.get() == self.capacity() {
+                    let mut current = row.get() - 1;
                     if current > 0 {
                         while let None = unsafe { self.value(NonZeroU32::new_unchecked(current)) } {
                             current -= 1;
@@ -121,7 +122,7 @@ impl<T> Avltriee<T> {
                             }
                         }
                     }
-                    self.set_max_rows(current);
+                    self.set_capacity(current);
                 }
             }
         }

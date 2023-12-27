@@ -46,14 +46,20 @@ impl<T: Ord> AvltrieeHolder<T, T> for Avltriee<T> {
 }
 
 impl<T> Avltriee<T> {
+    /// Updates the value in the specified row.
+    /// # Safety
+    /// Specifies a row within the allocated memory range.
     pub async unsafe fn update(&mut self, row: NonZeroU32, value: T)
     where
         T: Ord + Copy,
     {
-        Self::update_holder(self, row, value).await;
+        Self::update_with_holder(self, row, value).await;
     }
 
-    pub async unsafe fn update_holder<I>(
+    /// Updates the value of the specified row via trait [AvltrieeHolder].
+    /// # Safety
+    /// Specifies a row within the allocated memory range.
+    pub async unsafe fn update_with_holder<I>(
         holder: &mut dyn AvltrieeHolder<T, I>,
         row: NonZeroU32,
         input: I,
@@ -74,7 +80,7 @@ impl<T> Avltriee<T> {
 
             let row_pime = row.get();
 
-            t.update_max_rows(row_pime);
+            t.extend_capacity(row_pime);
 
             let same_node = t.offset_mut(same);
             let node = t.offset_mut(row_pime);
@@ -92,14 +98,17 @@ impl<T> Avltriee<T> {
             same_node.right = 0;
         } else {
             let value = holder.value(input);
-            holder.as_mut().insert_unique(row, value, found);
+            holder.as_mut().insert_unique_unchecked(row, value, found);
         }
     }
 
-    pub unsafe fn insert_unique(&mut self, row: NonZeroU32, value: T, found: Found) {
+    /// Insert a unique value.
+    /// # Safety
+    /// Specifies a row within the allocated memory range.Values ​​must be unique. There is no error checking if you try to insert a non-unique value. There will be multiple duplicate soot values ​​in the node list.
+    pub unsafe fn insert_unique_unchecked(&mut self, row: NonZeroU32, value: T, found: Found) {
         let row_prim = row.get();
 
-        self.update_max_rows(row_prim);
+        self.extend_capacity(row_prim);
 
         *self.offset_mut(row_prim) = AvltrieeNode::new(row_prim, found.row, value);
         if found.row == 0 {
