@@ -31,23 +31,44 @@ pub struct Avltriee<T> {
 }
 
 impl<T> Avltriee<T> {
+    /// Creates the Avltriee<T>.
+    /// #Examples
+    ///
+    /// ```
+    /// use std::ptr::NonNull;
+    /// use avltriee::{Avltriee,AvltrieeNode};
+    /// let mut list: Vec<AvltrieeNode<i64>> = (0..=100)
+    ///     .map(|_| AvltrieeNode::new(0, 0, 0))
+    ///     .collect();
+    /// let mut t = Avltriee::new(unsafe { NonNull::new_unchecked(list.as_mut_ptr()) });
+    /// ```
     pub fn new(node_list: NonNull<AvltrieeNode<T>>) -> Avltriee<T> {
         Avltriee { node_list }
     }
 
+    /// Returns the node of the specified row.
+    /// # Safety
+    /// Please specify a row within the allocated memory range.
     pub unsafe fn node<'a>(&self, row: NonZeroU32) -> Option<&'a AvltrieeNode<T>> {
         let node = self.offset(row.get());
         (node.height > 0).then_some(node)
     }
 
+    /// Returns the value of the specified row.
+    /// # Safety
+    /// Please specify a row within the allocated memory range.
     pub unsafe fn value(&self, row: NonZeroU32) -> Option<&T> {
         self.node(row).map(|x| x.deref())
     }
 
+    /// Returns the value of the specified row. Does not check for the existence of row.
+    /// # Safety
+    /// Please specify a row within the allocated memory range.
     pub unsafe fn value_unchecked(&self, row: NonZeroU32) -> &T {
         self.offset(row.get())
     }
 
+    /// Finds the end of node from the specified value. Exact match double returns [Ordering::Equal].
     pub fn search_end<F>(&self, cmp: F) -> Found
     where
         F: Fn(&T) -> Ordering,
@@ -78,6 +99,7 @@ impl<T> Avltriee<T> {
         Found { row, ord }
     }
 
+    /// Checks whether the specified row is a node with a unique value.
     pub unsafe fn is_unique(&self, row: NonZeroU32) -> bool {
         let node = self.offset(row.get());
         node.same == 0 && (node.parent == 0 || self.offset(node.parent).same != row.get())

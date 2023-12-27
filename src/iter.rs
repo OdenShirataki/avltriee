@@ -66,6 +66,7 @@ impl<'a, T> Iterator for AvltrieeIter<'a, T> {
 }
 
 impl<T> Avltriee<T> {
+    /// Generate an iterator.
     pub fn iter(&self) -> AvltrieeIter<T> {
         AvltrieeIter::new(
             &self,
@@ -75,6 +76,7 @@ impl<T> Avltriee<T> {
         )
     }
 
+    /// Generate an iterator. Iterates in descending order.
     pub fn desc_iter(&self) -> AvltrieeIter<T> {
         AvltrieeIter::new(
             &self,
@@ -84,6 +86,7 @@ impl<T> Avltriee<T> {
         )
     }
 
+    /// Generates an iterator of nodes with the same value as the specified value.
     pub fn iter_by<'a, F>(&'a self, cmp: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
@@ -140,6 +143,7 @@ impl<T> Avltriee<T> {
         )
     }
 
+    /// Generates an iterator with values ​​starting from the specified value.
     pub fn iter_from<'a, F>(&'a self, search: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
@@ -147,6 +151,7 @@ impl<T> Avltriee<T> {
         self.iter_from_inner(search, Order::Asc)
     }
 
+    /// Generates an iterator with values ​​starting from the specified value. Iterates in descending order.
     pub fn desc_iter_from<'a, F>(&'a self, search: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
@@ -203,6 +208,7 @@ impl<T> Avltriee<T> {
         )
     }
 
+    /// Generates an iterator of nodes with values ​​greater than the specified value.
     pub fn iter_over<'a, F>(&'a self, search: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
@@ -210,6 +216,7 @@ impl<T> Avltriee<T> {
         self.iter_over_inner(search, Order::Asc)
     }
 
+    /// Generates an iterator of nodes with values ​​greater than the specified value. Iterates in descending order.
     pub fn desc_iter_over<'a, F>(&'a self, search: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
@@ -264,6 +271,7 @@ impl<T> Avltriee<T> {
         )
     }
 
+    /// Generates an iterator of nodes with values ​​less than or equal to the specified value.
     pub fn iter_to<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
@@ -271,6 +279,7 @@ impl<T> Avltriee<T> {
         self.iter_to_inner(search_from, Order::Asc)
     }
 
+    /// Generates an iterator of nodes with values ​​less than or equal to the specified value. Iterates in descending order.
     pub fn desc_iter_to<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
@@ -331,6 +340,7 @@ impl<T> Avltriee<T> {
         )
     }
 
+    /// Generates an iterator of nodes with values ​​less than the specified value.
     pub fn iter_under<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
@@ -338,6 +348,7 @@ impl<T> Avltriee<T> {
         self.iter_under_inner(search_from, Order::Asc)
     }
 
+    /// Generates an iterator of nodes with values ​​less than the specified value. Iterates in descending order.
     pub fn desc_iter_under<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T>
     where
         F: Fn(&T) -> Ordering,
@@ -420,6 +431,7 @@ impl<T> Avltriee<T> {
         }
     }
 
+    /// Generates an iterator of nodes with the specified range of values.
     pub fn iter_range<'a, S, E>(&'a self, start: S, end: E) -> AvltrieeIter<T>
     where
         S: Fn(&T) -> Ordering,
@@ -428,6 +440,7 @@ impl<T> Avltriee<T> {
         self.iter_range_inner(start, end, Order::Asc)
     }
 
+    /// Generates an iterator of nodes with the specified range of values. Iterates in descending order.
     pub fn desc_iter_range<'a, S, E>(&'a self, start: S, end: E) -> AvltrieeIter<T>
     where
         S: Fn(&T) -> Ordering,
