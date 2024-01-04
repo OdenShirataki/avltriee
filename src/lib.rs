@@ -15,12 +15,10 @@ pub struct Found {
     ord: Ordering,
 }
 impl Found {
-    #[inline(always)]
     pub fn row(&self) -> u32 {
         self.row
     }
 
-    #[inline(always)]
     pub fn ord(&self) -> Ordering {
         self.ord
     }
@@ -56,19 +54,19 @@ impl<T> Avltriee<T> {
 
     /// Returns the value of the specified row.
     /// # Safety
-    /// Specifies a row within the allocated memory range..
+    /// Specifies a row within the allocated memory range.
     pub unsafe fn value(&self, row: NonZeroU32) -> Option<&T> {
         self.node(row).map(|x| x.deref())
     }
 
     /// Returns the value of the specified row. Does not check for the existence of row.
     /// # Safety
-    /// Specifies a row within the allocated memory range..
+    /// Specifies a row within the allocated memory range.
     pub unsafe fn value_unchecked(&self, row: NonZeroU32) -> &T {
         self.offset(row.get())
     }
 
-    /// Finds the end of node from the specified value. Exact match double returns [Ordering::Equal].
+    /// Finds the end of a node from the specified value. Returns [Ordering::Equal] for exact match.
     pub fn search_end<F>(&self, cmp: F) -> Found
     where
         F: Fn(&T) -> Ordering,

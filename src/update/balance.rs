@@ -63,7 +63,9 @@ impl<T> Avltriee<T> {
         let right = unsafe { self.offset_mut(right_row) };
 
         node.right = right.left;
-        self.set_parent(node.right, row.get());
+        if let Some(right) = NonZeroU32::new(node.right) {
+            self.set_parent(right, row.get());
+        }
         right.left = row.get();
 
         self.rotate_common(node, row, right, unsafe {
@@ -76,7 +78,9 @@ impl<T> Avltriee<T> {
         let left = unsafe { self.offset_mut(left_row) };
 
         node.left = left.right;
-        self.set_parent(node.left, row.get());
+        if let Some(left) = NonZeroU32::new(node.left) {
+            self.set_parent(left, row.get());
+        }
         left.right = row.get();
 
         self.rotate_common(node, row, left, unsafe {

@@ -51,7 +51,7 @@ impl<T> Avltriee<T> {
     /// Specifies a row within the allocated memory range.
     pub async unsafe fn update(&mut self, row: NonZeroU32, value: T)
     where
-        T: Ord + Copy,
+        T: Ord + Clone,
     {
         Self::update_with_holder(self, row, value).await;
     }
@@ -64,7 +64,7 @@ impl<T> Avltriee<T> {
         row: NonZeroU32,
         input: I,
     ) where
-        T: Copy,
+        T: Clone,
     {
         if let Some(node) = holder.as_ref().node(row) {
             if holder.cmp(node, &input) == Ordering::Equal {
@@ -91,9 +91,12 @@ impl<T> Avltriee<T> {
 
             same_node.parent = row_pime;
             node.same = same;
-            t.set_parent(node.left, row_pime);
-            t.set_parent(node.right, row_pime);
-
+            if let Some(left) = NonZeroU32::new(node.left) {
+                t.set_parent(left, row_pime);
+            }
+            if let Some(right) = NonZeroU32::new(node.right) {
+                t.set_parent(right, row_pime);
+            }
             same_node.left = 0;
             same_node.right = 0;
         } else {
@@ -168,9 +171,7 @@ impl<T> Avltriee<T> {
         }
     }
 
-    fn set_parent(&mut self, row: u32, parent: u32) {
-        if row != 0 {
-            unsafe { self.offset_mut(row) }.parent = parent;
-        }
+    fn set_parent(&mut self, row: NonZeroU32, parent: u32) {
+        unsafe { self.offset_mut(row.get()) }.parent = parent;
     }
 }

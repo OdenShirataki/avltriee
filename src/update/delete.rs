@@ -10,10 +10,14 @@ impl<T> Avltriee<T> {
         new_node.height = delete_node.height;
 
         new_node.left = delete_node.left;
-        self.set_parent(new_node.left, delete_node.same);
+        if let Some(left) = NonZeroU32::new(new_node.left) {
+            self.set_parent(left, delete_node.same);
+        }
 
         new_node.right = delete_node.right;
-        self.set_parent(new_node.right, delete_node.same);
+        if let Some(right) = NonZeroU32::new(new_node.right) {
+            self.set_parent(right, delete_node.same);
+        }
     }
 
     unsafe fn delete_intermediate(
@@ -38,7 +42,9 @@ impl<T> Avltriee<T> {
             let left_max_parent = self.offset_mut(left_max_parent_row);
 
             left_max_parent.right = left_max.left;
-            self.set_parent(left_max_parent.right, left_max_parent_row);
+            if let Some(right) = NonZeroU32::new(left_max_parent.right) {
+                self.set_parent(right, left_max_parent_row);
+            }
 
             left_max.left = delete_node.left;
             self.offset_mut(left_max.left).parent = left_max_row;
@@ -62,7 +68,9 @@ impl<T> Avltriee<T> {
                         self.delete_same(delete_node);
                     } else if delete_node.left == 0 {
                         self.set_root(delete_node.right);
-                        self.set_parent(delete_node.right, 0);
+                        if let Some(right) = NonZeroU32::new(delete_node.right) {
+                            self.set_parent(right, 0);
+                        }
                     } else if delete_node.right == 0 {
                         self.set_root(delete_node.left);
                         unsafe { self.offset_mut(delete_node.left) }.parent = 0;
@@ -91,7 +99,9 @@ impl<T> Avltriee<T> {
                         Self::join_intermediate(&mut parent, row, unsafe {
                             NonZeroU32::new_unchecked(delete_node.right)
                         });
-                        self.set_parent(delete_node.right, row_parent);
+                        if let Some(right) = NonZeroU32::new(delete_node.right) {
+                            self.set_parent(right, row_parent);
+                        }
                         unsafe { self.balance(NonZeroU32::new_unchecked(row_parent)) };
                     } else if delete_node.right == 0 {
                         Self::join_intermediate(parent, row, unsafe {
