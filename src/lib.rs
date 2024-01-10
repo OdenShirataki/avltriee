@@ -1,13 +1,16 @@
+mod allocator;
 mod head;
 mod iter;
 mod node;
 mod update;
 
+pub use allocator::AvltrieeAllocator;
+use allocator::DefaultAvltrieeAllocator;
 pub use iter::AvltrieeIter;
 pub use node::AvltrieeNode;
 pub use update::AvltrieeHolder;
 
-use std::{cmp::Ordering, num::NonZeroU32, ops::Deref, ptr::NonNull};
+use std::{cmp::Ordering, num::NonZeroU32};
 
 #[derive(Debug)]
 pub struct Found {
@@ -25,56 +28,68 @@ impl Found {
 }
 
 pub struct Avltriee<T> {
-    node_list: NonNull<AvltrieeNode<T>>,
+    allocator: Box<dyn AvltrieeAllocator<T>>,
 }
 
 impl<T> Avltriee<T> {
     /// Creates the Avltriee<T>.
-    /// #Examples
-    ///
-    /// ```
-    /// use std::ptr::NonNull;
-    /// use avltriee::{Avltriee,AvltrieeNode};
-    /// let mut list: Vec<AvltrieeNode<i64>> = (0..=100)
-    ///     .map(|_| AvltrieeNode::new(0, 0, 0))
-    ///     .collect();
-    /// let mut t = Avltriee::new(unsafe { NonNull::new_unchecked(list.as_mut_ptr()) });
-    /// ```
-    pub fn new(node_list: NonNull<AvltrieeNode<T>>) -> Avltriee<T> {
-        Avltriee { node_list }
+    pub fn new() -> Self
+    where
+        T: Default + 'static,
+    {
+        Self {
+            allocator: Box::new(DefaultAvltrieeAllocator::new()),
+        }
+    }
+
+    /// Creates the Avltriee<T> with [AvltrieeAllocator].
+    pub fn with_allocator(allocator: Box<dyn AvltrieeAllocator<T>>) -> Self {
+        Self { allocator }
     }
 
     /// Returns the node of the specified row.
-    /// # Safety
-    /// Specifies a row within the allocated memory range.
-    pub unsafe fn node<'a>(&self, row: NonZeroU32) -> Option<&'a AvltrieeNode<T>> {
-        let node = self.offset(row.get());
-        (node.height > 0).then_some(node)
+    pub fn get<'a>(&self, row: NonZeroU32) -> Option<&'a AvltrieeNode<T>> {
+        if let Some(node) = self.allocator.get(row) {
+            if node.height > 0 {
+                Some(unsafe { self.get_unchecked(row) })
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
-    /// Returns the value of the specified row.
-    /// # Safety
-    /// Specifies a row within the allocated memory range.
-    pub unsafe fn value(&self, row: NonZeroU32) -> Option<&T> {
-        self.node(row).map(|x| x.deref())
+    /// Returns the mut node of the specified row.
+    pub fn get_mut<'a>(&mut self, row: NonZeroU32) -> Option<&'a mut AvltrieeNode<T>> {
+        if let Some(node) = self.allocator.get(row) {
+            if node.height > 0 {
+                Some(unsafe { self.get_unchecked_mut(row) })
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
-    /// Returns the value of the specified row. Does not check for the existence of row.
-    /// # Safety
-    /// Specifies a row within the allocated memory range.
-    pub unsafe fn value_unchecked(&self, row: NonZeroU32) -> &T {
-        self.offset(row.get())
+    pub unsafe fn get_unchecked<'a>(&self, row: NonZeroU32) -> &'a AvltrieeNode<T> {
+        &*self.allocator.as_ptr().offset(row.get() as isize)
     }
 
-    /// Finds the end of a node from the specified value. Returns [Ordering::Equal] for exact match.
-    pub fn search_end<F>(&self, cmp: F) -> Found
+    pub unsafe fn get_unchecked_mut<'a>(&mut self, row: NonZeroU32) -> &'a mut AvltrieeNode<T> {
+        &mut *self.allocator.as_mut_ptr().offset(row.get() as isize)
+    }
+
+    /// Finds the edge of a node from the specified value.
+    pub fn search<F>(&self, cmp: F) -> Found
     where
         F: Fn(&T) -> Ordering,
     {
         let mut row = self.root();
         let mut ord = Ordering::Equal;
         while row != 0 {
-            let node = unsafe { self.offset(row) };
+            let node = unsafe { self.get_unchecked(NonZeroU32::new_unchecked(row)) };
             ord = cmp(node);
             match ord {
                 Ordering::Greater => {
@@ -98,25 +113,31 @@ impl<T> Avltriee<T> {
     }
 
     /// Checks whether the specified row is a node with a unique value.
-    /// # Safety
-    /// Specifies a row within the allocated memory range.
-    pub unsafe fn is_unique(&self, row: NonZeroU32) -> bool {
-        let node = self.offset(row.get());
-        node.same == 0 && (node.parent == 0 || self.offset(node.parent).same != row.get())
+    pub fn is_unique(&self, row: NonZeroU32) -> Option<(bool, &AvltrieeNode<T>)> {
+        self.get(row).map(|node| {
+            (
+                node.same == 0
+                    && (node.parent == 0
+                        || unsafe { self.get_unchecked(NonZeroU32::new_unchecked(node.parent)) }
+                            .same
+                            != row.get()),
+                node,
+            )
+        })
     }
 
-    unsafe fn offset<'a>(&self, offset: u32) -> &'a AvltrieeNode<T> {
-        &*self.node_list.as_ptr().offset(offset as isize)
-    }
-
-    unsafe fn offset_mut<'a>(&mut self, offset: u32) -> &'a mut AvltrieeNode<T> {
-        &mut *self.node_list.as_ptr().offset(offset as isize)
+    fn allocate(&mut self, rows: NonZeroU32)
+    where
+        T: Clone + Default,
+    {
+        self.allocator.resize(rows.get());
+        self.set_rows_count(rows.get());
     }
 
     fn min(&self, t: u32) -> u32 {
         let mut t = t;
         while t != 0 {
-            let l = unsafe { self.offset(t) }.left;
+            let l = unsafe { self.get_unchecked(NonZeroU32::new_unchecked(t)) }.left;
             if l == 0 {
                 break;
             }
@@ -128,7 +149,7 @@ impl<T> Avltriee<T> {
     fn max(&self, t: u32) -> u32 {
         let mut t = t;
         while t != 0 {
-            let r = unsafe { self.offset(t) }.right;
+            let r = unsafe { self.get_unchecked(NonZeroU32::new_unchecked(t)) }.right;
             if r == 0 {
                 break;
             }

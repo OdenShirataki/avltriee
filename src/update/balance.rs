@@ -3,31 +3,58 @@ use std::num::NonZeroU32;
 use crate::{Avltriee, AvltrieeNode};
 
 impl<T> Avltriee<T> {
-    pub(crate) unsafe fn balance(&mut self, row: NonZeroU32) {
-        let mut t_row = row.get();
-        let mut t = self.offset(t_row);
+    pub(crate) fn balance(&mut self, row: NonZeroU32) {
+        let mut t: &AvltrieeNode<T> = unsafe { self.get_unchecked(row) };
         while t.parent != 0 {
             let u_row = t.parent;
-            let u = self.offset_mut(u_row);
+            let u = unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(u_row)) };
 
             let height_before_balance = u.height;
 
-            let left = self.offset_mut(u.left);
-            let right = self.offset_mut(u.right);
+            let left = unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(u.left)) };
+            let right = unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(u.right)) };
 
-            t_row = match left.height as isize - right.height as isize {
+            let t_row = match left.height as isize - right.height as isize {
                 2 => {
-                    if self.offset(left.left).height < self.offset(left.right).height {
-                        self.rotate_left(left, NonZeroU32::new_unchecked(u.left));
+                    if if left.left != 0 {
+                        unsafe {
+                            self.get_unchecked(NonZeroU32::new_unchecked(left.left))
+                                .height
+                        }
+                    } else {
+                        0
+                    } < if left.right != 0 {
+                        unsafe {
+                            self.get_unchecked(NonZeroU32::new_unchecked(left.right))
+                                .height
+                        }
+                    } else {
+                        0
+                    } {
+                        self.rotate_left(left, unsafe { NonZeroU32::new_unchecked(u.left) });
                     }
-                    self.rotate_right(u, NonZeroU32::new_unchecked(u_row));
+                    self.rotate_right(u, unsafe { NonZeroU32::new_unchecked(u_row) });
                     u.right
                 }
                 -2 => {
-                    if self.offset(right.left).height > self.offset(right.right).height {
-                        self.rotate_right(right, NonZeroU32::new_unchecked(u.right));
+                    if if right.left != 0 {
+                        unsafe {
+                            self.get_unchecked(NonZeroU32::new_unchecked(right.left))
+                                .height
+                        }
+                    } else {
+                        0
+                    } > if right.right != 0 {
+                        unsafe {
+                            self.get_unchecked(NonZeroU32::new_unchecked(right.right))
+                                .height
+                        }
+                    } else {
+                        0
+                    } {
+                        self.rotate_right(right, unsafe { NonZeroU32::new_unchecked(u.right) });
                     }
-                    self.rotate_left(u, NonZeroU32::new_unchecked(u_row));
+                    self.rotate_left(u, unsafe { NonZeroU32::new_unchecked(u_row) });
                     u.left
                 }
                 _ => {
@@ -38,7 +65,11 @@ impl<T> Avltriee<T> {
             if height_before_balance == u.height {
                 break;
             }
-            t = self.offset(t_row);
+            if let Some(r) = NonZeroU32::new(t_row) {
+                t = unsafe { self.get_unchecked(r) };
+            } else {
+                break;
+            }
         }
     }
 
@@ -60,7 +91,7 @@ impl<T> Avltriee<T> {
 
     fn rotate_left(&mut self, node: &mut AvltrieeNode<T>, row: NonZeroU32) {
         let right_row = node.right;
-        let right = unsafe { self.offset_mut(right_row) };
+        let right = unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(right_row)) };
 
         node.right = right.left;
         if let Some(right) = NonZeroU32::new(node.right) {
@@ -75,7 +106,7 @@ impl<T> Avltriee<T> {
 
     fn rotate_right(&mut self, node: &mut AvltrieeNode<T>, row: NonZeroU32) {
         let left_row = node.left;
-        let left = unsafe { self.offset_mut(left_row) };
+        let left = unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(left_row)) };
 
         node.left = left.right;
         if let Some(left) = NonZeroU32::new(node.left) {

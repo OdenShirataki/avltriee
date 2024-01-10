@@ -13,27 +13,21 @@ No search is required for value reference by specifying a row.
 ### init
 ```rust
 use avltriee::Avltriee;
-use avltriee::AvltrieeNode;
 
-let length=100;
-
-let mut buffer: Vec<AvltrieeNode<i64>> = (0..=length)
-    .map(|_| AvltrieeNode::new(0, 0, 0))
-    .collect();
-let mut triee = Avltriee::new(unsafe { NonNull::new_unchecked(buffer.as_mut_ptr())});
+let mut triee = Avltriee::new();
 ```
 
 ### insert & update
 
 ```rust
 unsafe {
-    triee.update(1.try_into().unwrap(), 100).await; //insert
+    triee.insert(100).await; //or triee.update(1.try_into().unwrap(), 100).await;
 }
 unsafe {
-    triee.update(2.try_into().unwrap(), 345).await; //insert
+    triee.insert(345).await; //or triee.update(2.try_into().unwrap(), 345).await;
 }
 unsafe {
-    triee.update(3.try_into().unwrap(), 789).await; //insert
+    triee.insert(789).await; //or triee.update(3.try_into().unwrap(), 789).await;
 }
 unsafe {
     triee.update(2.try_into().unwrap(), 1234).await; //update exists row
@@ -65,7 +59,7 @@ triee.delete(1.try_into().unwrap());
 
 ### search
 ```rust
-let (ord,row) = triee.search_end(|v|v.cmp(&100));
+let (ord,row) = triee.search(|v|v.cmp(&100));
 if ord==Ordering::Equal{
     //found 
 }

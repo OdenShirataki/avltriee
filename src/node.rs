@@ -1,4 +1,4 @@
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct AvltrieeNode<T> {
     pub(super) parent: u32,
     pub(super) left: u32,
@@ -9,7 +9,7 @@ pub struct AvltrieeNode<T> {
 }
 
 impl<T> AvltrieeNode<T> {
-    pub fn new(row: u32, parent: u32, value: T) -> AvltrieeNode<T> {
+    pub fn new(row: u32, parent: u32, value: T) -> Self {
         AvltrieeNode {
             height: if row == 0 { 0 } else { 1 },
             parent,
