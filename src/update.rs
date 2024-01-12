@@ -83,29 +83,26 @@ impl<T> Avltriee<T> {
 
         let found = holder.search(&input);
         if found.ord == Ordering::Equal && found.row != 0 {
-            let same = found.row;
-            let t = holder.as_mut();
+            let same_row = unsafe { NonZeroU32::new_unchecked(found.row) };
 
-            t.allocate(row);
+            holder.as_mut().allocate(row);
 
-            let same_node = unsafe { t.get_unchecked_mut(NonZeroU32::new_unchecked(same)) };
-            let node = unsafe { t.get_unchecked_mut(row) };
+            let same_node = unsafe { holder.as_mut().get_unchecked_mut(same_row) };
+            let same_left = NonZeroU32::new(same_node.left);
+            let same_right = NonZeroU32::new(same_node.right);
+            let same_parent = same_node.parent;
 
-            *node = same_node.clone();
+            *unsafe { holder.as_mut().get_unchecked_mut(row) } =
+                same_node.same_clone(same_row, row);
 
-            t.change_row(node, unsafe { NonZeroU32::new_unchecked(same) }, row);
+            holder.as_mut().replace_child(same_parent, same_row, row);
 
-            let row_prim = row.get();
-            same_node.parent = row_prim;
-            node.same = same;
-            if let Some(left) = NonZeroU32::new(node.left) {
-                t.set_parent(left, row_prim);
+            if let Some(left) = same_left {
+                unsafe { holder.as_mut().get_unchecked_mut(left) }.parent = row.get();
             }
-            if let Some(right) = NonZeroU32::new(node.right) {
-                t.set_parent(right, row_prim);
+            if let Some(right) = same_right {
+                unsafe { holder.as_mut().get_unchecked_mut(right) }.parent = row.get();
             }
-            same_node.left = 0;
-            same_node.right = 0;
         } else {
             let value = holder.convert_value(input);
             unsafe { holder.as_mut().insert_unique_unchecked(row, value, found) };
@@ -137,44 +134,27 @@ impl<T> Avltriee<T> {
     }
 
     fn calc_height(&mut self, row: NonZeroU32) {
-        let node = unsafe { self.get_unchecked_mut(row) };
-        self.calc_height_node(node);
-    }
-
-    fn calc_height_node(&self, node: &mut AvltrieeNode<T>) {
-        node.height = unsafe {
-            std::cmp::max(
-                if node.left != 0 {
-                    self.get_unchecked(NonZeroU32::new_unchecked(node.left))
-                        .height
-                } else {
-                    0
-                },
-                if node.right != 0 {
-                    self.get_unchecked(NonZeroU32::new_unchecked(node.right))
-                        .height
-                } else {
-                    0
-                },
-            )
-        } + 1;
-    }
-
-    fn change_row(
-        &mut self,
-        node: &mut AvltrieeNode<T>,
-        target_row: NonZeroU32,
-        child_row: NonZeroU32,
-    ) {
-        if node.parent == 0 {
-            self.set_root(child_row.get());
+        let node = unsafe { self.get_unchecked(row) };
+        let left_height = if node.left != 0 {
+            unsafe { self.get_unchecked(NonZeroU32::new_unchecked(node.left)) }.height
         } else {
-            unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(node.parent)) }
-                .join_intermediate(target_row, child_row);
-        }
+            0
+        };
+        let right_height = if node.right != 0 {
+            unsafe { self.get_unchecked(NonZeroU32::new_unchecked(node.right)) }.height
+        } else {
+            0
+        };
+        unsafe { self.get_unchecked_mut(row) }.height =
+            std::cmp::max(left_height, right_height) + 1;
     }
 
-    fn set_parent(&mut self, row: NonZeroU32, parent: u32) {
-        unsafe { self.get_unchecked_mut(row) }.parent = parent;
+    fn replace_child(&mut self, parent: u32, current_child: NonZeroU32, new_child: NonZeroU32) {
+        if parent == 0 {
+            self.set_root(new_child.get());
+        } else {
+            unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(parent)) }
+                .changeling(current_child, new_child);
+        }
     }
 }

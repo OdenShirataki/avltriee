@@ -6,13 +6,16 @@ impl<T> Avltriee<T> {
     pub(crate) fn balance(&mut self, row: NonZeroU32) {
         let mut t: &AvltrieeNode<T> = unsafe { self.get_unchecked(row) };
         while t.parent != 0 {
-            let u_row = t.parent;
-            let u = unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(u_row)) };
+            let u_row = unsafe { NonZeroU32::new_unchecked(t.parent) };
+            let u = unsafe { self.get_unchecked_mut(u_row) };
 
             let height_before_balance = u.height;
 
-            let left = unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(u.left)) };
-            let right = unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(u.right)) };
+            let left_row = unsafe { NonZeroU32::new_unchecked(u.left) };
+            let right_row = unsafe { NonZeroU32::new_unchecked(u.right) };
+
+            let left = unsafe { self.get_unchecked_mut(left_row) };
+            let right = unsafe { self.get_unchecked_mut(right_row) };
 
             let t_row = match left.height as isize - right.height as isize {
                 2 => {
@@ -31,10 +34,10 @@ impl<T> Avltriee<T> {
                     } else {
                         0
                     } {
-                        self.rotate_left(left, unsafe { NonZeroU32::new_unchecked(u.left) });
+                        self.rotate_left(left_row);
                     }
-                    self.rotate_right(u, unsafe { NonZeroU32::new_unchecked(u_row) });
-                    u.right
+                    self.rotate_right(u_row);
+                    right_row.get()
                 }
                 -2 => {
                     if if right.left != 0 {
@@ -52,14 +55,14 @@ impl<T> Avltriee<T> {
                     } else {
                         0
                     } {
-                        self.rotate_right(right, unsafe { NonZeroU32::new_unchecked(u.right) });
+                        self.rotate_right(right_row);
                     }
-                    self.rotate_left(u, unsafe { NonZeroU32::new_unchecked(u_row) });
-                    u.left
+                    self.rotate_left(u_row);
+                    left_row.get()
                 }
                 _ => {
-                    self.calc_height_node(u);
-                    u_row
+                    self.calc_height(u_row);
+                    u_row.get()
                 }
             };
             if height_before_balance == u.height {
@@ -73,49 +76,45 @@ impl<T> Avltriee<T> {
         }
     }
 
-    fn rotate_common(
-        &mut self,
-        node: &mut AvltrieeNode<T>,
-        row: NonZeroU32,
-        child_node: &mut AvltrieeNode<T>,
-        child_row: NonZeroU32,
-    ) {
-        self.change_row(node, row, child_row);
+    fn rotate_common(&mut self, row: NonZeroU32, child_row: NonZeroU32) {
+        let node_parent = unsafe { self.get_unchecked(row) }.parent;
+
+        self.replace_child(node_parent, row, child_row);
 
         self.calc_height(row);
         self.calc_height(child_row);
 
-        child_node.parent = node.parent;
-        node.parent = child_row.get();
+        unsafe { self.get_unchecked_mut(child_row) }.parent = node_parent;
+        unsafe { self.get_unchecked_mut(row) }.parent = child_row.get();
     }
 
-    fn rotate_left(&mut self, node: &mut AvltrieeNode<T>, row: NonZeroU32) {
-        let right_row = node.right;
-        let right = unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(right_row)) };
+    fn rotate_left(&mut self, row: NonZeroU32) {
+        let node = unsafe { self.get_unchecked_mut(row) };
+
+        let right_row = unsafe { NonZeroU32::new_unchecked(node.right) };
+        let right = unsafe { self.get_unchecked_mut(right_row) };
 
         node.right = right.left;
         if let Some(right) = NonZeroU32::new(node.right) {
-            self.set_parent(right, row.get());
+            unsafe { self.get_unchecked_mut(right) }.parent = row.get();
         }
         right.left = row.get();
 
-        self.rotate_common(node, row, right, unsafe {
-            NonZeroU32::new_unchecked(right_row)
-        });
+        self.rotate_common(row, right_row);
     }
 
-    fn rotate_right(&mut self, node: &mut AvltrieeNode<T>, row: NonZeroU32) {
-        let left_row = node.left;
-        let left = unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(left_row)) };
+    fn rotate_right(&mut self, row: NonZeroU32) {
+        let node = unsafe { self.get_unchecked_mut(row) };
+
+        let left_row = unsafe { NonZeroU32::new_unchecked(node.left) };
+        let left = unsafe { self.get_unchecked_mut(left_row) };
 
         node.left = left.right;
         if let Some(left) = NonZeroU32::new(node.left) {
-            self.set_parent(left, row.get());
+            unsafe { self.get_unchecked_mut(left) }.parent = row.get();
         }
         left.right = row.get();
 
-        self.rotate_common(node, row, left, unsafe {
-            NonZeroU32::new_unchecked(left_row)
-        });
+        self.rotate_common(row, left_row);
     }
 }

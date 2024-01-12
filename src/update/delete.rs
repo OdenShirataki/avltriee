@@ -13,17 +13,18 @@ impl<T> Avltriee<T> {
 
         new_node.left = delete_node.left;
         if let Some(left) = NonZeroU32::new(new_node.left) {
-            self.set_parent(left, delete_node.same);
+            unsafe { self.get_unchecked_mut(left) }.parent = delete_node.same;
         }
 
         new_node.right = delete_node.right;
         if let Some(right) = NonZeroU32::new(new_node.right) {
-            self.set_parent(right, delete_node.same);
+            unsafe { self.get_unchecked_mut(right) }.parent = delete_node.same;
         }
     }
 
     fn delete_intermediate(&mut self, delete_row: NonZeroU32) -> (NonZeroU32, NonZeroU32) {
         let delete_node = unsafe { self.get_unchecked_mut(delete_row) };
+
         let left_max_row = unsafe { NonZeroU32::new_unchecked(self.max(delete_node.left)) };
         let left_max = unsafe { self.get_unchecked_mut(left_max_row) };
 
@@ -35,7 +36,7 @@ impl<T> Avltriee<T> {
 
         if delete_node.left == left_max_row.get() {
             left_max.parent = delete_node.parent;
-            self.calc_height_node(left_max);
+            self.calc_height(left_max_row);
             let left_max_row = left_max_row;
             (left_max_row, left_max_row)
         } else {
@@ -46,7 +47,7 @@ impl<T> Avltriee<T> {
 
             left_max_parent.right = left_max.left;
             if let Some(right) = NonZeroU32::new(left_max_parent.right) {
-                self.set_parent(right, left_max_parent_row.get());
+                unsafe { self.get_unchecked_mut(right) }.parent = left_max_parent_row.get();
             }
 
             left_max.left = delete_node.left;
@@ -75,7 +76,7 @@ impl<T> Avltriee<T> {
                     if left == 0 {
                         self.set_root(right);
                         if let Some(right) = NonZeroU32::new(right) {
-                            self.set_parent(right, 0);
+                            unsafe { self.get_unchecked_mut(right) }.parent = 0;
                         }
                     } else if right == 0 {
                         self.set_root(left);
@@ -99,25 +100,25 @@ impl<T> Avltriee<T> {
                         self.delete_same(row);
                     }
                 } else if same != 0 {
-                    parent.join_intermediate(row, unsafe { NonZeroU32::new_unchecked(same) });
+                    parent.changeling(row, unsafe { NonZeroU32::new_unchecked(same) });
                     self.delete_same(row);
                 } else {
                     let left = unsafe { self.get_unchecked(row) }.left;
                     let right = unsafe { self.get_unchecked(row) }.right;
                     if left == 0 {
-                        parent.join_intermediate(row, unsafe { NonZeroU32::new_unchecked(right) });
+                        parent.changeling(row, unsafe { NonZeroU32::new_unchecked(right) });
                         if let Some(right) = NonZeroU32::new(right) {
-                            self.set_parent(right, row_parent);
+                            unsafe { self.get_unchecked_mut(right) }.parent = row_parent;
                         }
                         self.balance(unsafe { NonZeroU32::new_unchecked(row_parent) });
                     } else if right == 0 {
-                        parent.join_intermediate(row, unsafe { NonZeroU32::new_unchecked(left) });
+                        parent.changeling(row, unsafe { NonZeroU32::new_unchecked(left) });
                         unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(left)) }.parent =
                             row_parent;
                         self.balance(unsafe { NonZeroU32::new_unchecked(row_parent) });
                     } else {
                         let (new_row, balance_row) = self.delete_intermediate(row);
-                        parent.join_intermediate(row, new_row);
+                        parent.changeling(row, new_row);
                         let node = unsafe { self.get_unchecked_mut(new_row) };
                         node.height = unsafe { self.get_unchecked(row) }.height;
                         node.parent = row_parent;
