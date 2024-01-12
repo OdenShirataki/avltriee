@@ -48,7 +48,7 @@ impl<T> Avltriee<T> {
     }
 
     /// Returns the node of the specified row.
-    pub fn get<'a>(&self, row: NonZeroU32) -> Option<&'a AvltrieeNode<T>> {
+    pub fn get(&self, row: NonZeroU32) -> Option<&AvltrieeNode<T>> {
         if let Some(node) = self.allocator.get(row) {
             if node.height > 0 {
                 Some(unsafe { self.get_unchecked(row) })
@@ -60,24 +60,11 @@ impl<T> Avltriee<T> {
         }
     }
 
-    /// Returns the mut node of the specified row.
-    pub fn get_mut<'a>(&mut self, row: NonZeroU32) -> Option<&'a mut AvltrieeNode<T>> {
-        if let Some(node) = self.allocator.get(row) {
-            if node.height > 0 {
-                Some(unsafe { self.get_unchecked_mut(row) })
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
-
-    pub unsafe fn get_unchecked<'a>(&self, row: NonZeroU32) -> &'a AvltrieeNode<T> {
+    pub unsafe fn get_unchecked(&self, row: NonZeroU32) -> &AvltrieeNode<T> {
         &*self.allocator.as_ptr().offset(row.get() as isize)
     }
 
-    pub unsafe fn get_unchecked_mut<'a>(&mut self, row: NonZeroU32) -> &'a mut AvltrieeNode<T> {
+    unsafe fn get_unchecked_mut<'a>(&mut self, row: NonZeroU32) -> &'a mut AvltrieeNode<T> {
         &mut *self.allocator.as_mut_ptr().offset(row.get() as isize)
     }
 

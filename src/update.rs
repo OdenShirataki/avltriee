@@ -160,19 +160,6 @@ impl<T> Avltriee<T> {
         } + 1;
     }
 
-    fn join_intermediate(
-        parent: &mut AvltrieeNode<T>,
-        target_row: NonZeroU32,
-        child_row: NonZeroU32,
-    ) {
-        let target_row = target_row.get();
-        if parent.right == target_row {
-            parent.right = child_row.get();
-        } else if parent.left == target_row {
-            parent.left = child_row.get();
-        }
-    }
-
     fn change_row(
         &mut self,
         node: &mut AvltrieeNode<T>,
@@ -182,11 +169,8 @@ impl<T> Avltriee<T> {
         if node.parent == 0 {
             self.set_root(child_row.get());
         } else {
-            Self::join_intermediate(
-                unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(node.parent)) },
-                target_row,
-                child_row,
-            );
+            unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(node.parent)) }
+                .join_intermediate(target_row, child_row);
         }
     }
 

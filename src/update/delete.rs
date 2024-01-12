@@ -1,9 +1,10 @@
 use std::num::NonZeroU32;
 
-use crate::{Avltriee, AvltrieeNode};
+use crate::Avltriee;
 
 impl<T> Avltriee<T> {
-    fn delete_same(&mut self, delete_node: &AvltrieeNode<T>) {
+    fn delete_same(&mut self, delete_row: NonZeroU32) {
+        let delete_node = unsafe { self.get_unchecked_mut(delete_row) };
         let new_node =
             unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(delete_node.same)) };
 
@@ -21,10 +22,8 @@ impl<T> Avltriee<T> {
         }
     }
 
-    fn delete_intermediate(
-        &mut self,
-        delete_node: &mut AvltrieeNode<T>,
-    ) -> (NonZeroU32, NonZeroU32) {
+    fn delete_intermediate(&mut self, delete_row: NonZeroU32) -> (NonZeroU32, NonZeroU32) {
+        let delete_node = unsafe { self.get_unchecked_mut(delete_row) };
         let left_max_row = unsafe { NonZeroU32::new_unchecked(self.max(delete_node.left)) };
         let left_max = unsafe { self.get_unchecked_mut(left_max_row) };
 
@@ -62,72 +61,72 @@ impl<T> Avltriee<T> {
 
     /// Delete the specified row.
     pub fn delete(&mut self, row: NonZeroU32) {
-        if let Some(delete_node) = self.get_mut(row) {
-            let row_parent = delete_node.parent;
+        if self.get(row).is_some() {
+            let node = unsafe { self.get_unchecked(row) };
+            let row_parent = node.parent;
+            let same = node.same;
             if row_parent == 0 {
-                if delete_node.same != 0 {
-                    self.set_root(delete_node.same);
-                    self.delete_same(delete_node);
-                } else if delete_node.left == 0 {
-                    self.set_root(delete_node.right);
-                    if let Some(right) = NonZeroU32::new(delete_node.right) {
-                        self.set_parent(right, 0);
-                    }
-                } else if delete_node.right == 0 {
-                    self.set_root(delete_node.left);
-                    unsafe {
-                        self.get_unchecked_mut(NonZeroU32::new_unchecked(delete_node.left))
-                    }
-                    .parent = 0;
+                if same != 0 {
+                    self.set_root(same);
+                    self.delete_same(row);
                 } else {
-                    let (new_row, balance_row) = self.delete_intermediate(delete_node);
-                    self.set_root(new_row.get());
-                    let node = unsafe { self.get_unchecked_mut(new_row) };
-                    node.parent = 0;
-                    self.calc_height(balance_row);
-                    self.balance(balance_row);
+                    let left = node.left;
+                    let right = node.right;
+                    if left == 0 {
+                        self.set_root(right);
+                        if let Some(right) = NonZeroU32::new(right) {
+                            self.set_parent(right, 0);
+                        }
+                    } else if right == 0 {
+                        self.set_root(left);
+                        unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(left)) }.parent =
+                            0;
+                    } else {
+                        let (new_row, balance_row) = self.delete_intermediate(row);
+                        self.set_root(new_row.get());
+                        let node = unsafe { self.get_unchecked_mut(new_row) };
+                        node.parent = 0;
+                        self.calc_height(balance_row);
+                        self.balance(balance_row);
+                    }
                 }
             } else {
-                let mut parent =
+                let parent =
                     unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(row_parent)) };
                 if parent.same == row.get() {
-                    parent.same = delete_node.same;
-                    if delete_node.same != 0 {
-                        self.delete_same(delete_node);
+                    parent.same = same;
+                    if same != 0 {
+                        self.delete_same(row);
                     }
-                } else if delete_node.same != 0 {
-                    Self::join_intermediate(parent, row, unsafe {
-                        NonZeroU32::new_unchecked(delete_node.same)
-                    });
-                    self.delete_same(delete_node);
-                } else if delete_node.left == 0 {
-                    Self::join_intermediate(&mut parent, row, unsafe {
-                        NonZeroU32::new_unchecked(delete_node.right)
-                    });
-                    if let Some(right) = NonZeroU32::new(delete_node.right) {
-                        self.set_parent(right, row_parent);
-                    }
-                    self.balance(unsafe { NonZeroU32::new_unchecked(row_parent) });
-                } else if delete_node.right == 0 {
-                    Self::join_intermediate(parent, row, unsafe {
-                        NonZeroU32::new_unchecked(delete_node.left)
-                    });
-                    unsafe {
-                        self.get_unchecked_mut(NonZeroU32::new_unchecked(delete_node.left))
-                    }
-                    .parent = row_parent;
-                    self.balance(unsafe { NonZeroU32::new_unchecked(row_parent) });
+                } else if same != 0 {
+                    parent.join_intermediate(row, unsafe { NonZeroU32::new_unchecked(same) });
+                    self.delete_same(row);
                 } else {
-                    let (new_row, balance_row) = self.delete_intermediate(delete_node);
-                    Self::join_intermediate(parent, row, new_row);
-                    let node = unsafe { self.get_unchecked_mut(new_row) };
-                    node.height = delete_node.height;
-                    node.parent = row_parent;
-                    self.calc_height(balance_row);
-                    self.balance(balance_row);
+                    let left = unsafe { self.get_unchecked(row) }.left;
+                    let right = unsafe { self.get_unchecked(row) }.right;
+                    if left == 0 {
+                        parent.join_intermediate(row, unsafe { NonZeroU32::new_unchecked(right) });
+                        if let Some(right) = NonZeroU32::new(right) {
+                            self.set_parent(right, row_parent);
+                        }
+                        self.balance(unsafe { NonZeroU32::new_unchecked(row_parent) });
+                    } else if right == 0 {
+                        parent.join_intermediate(row, unsafe { NonZeroU32::new_unchecked(left) });
+                        unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(left)) }.parent =
+                            row_parent;
+                        self.balance(unsafe { NonZeroU32::new_unchecked(row_parent) });
+                    } else {
+                        let (new_row, balance_row) = self.delete_intermediate(row);
+                        parent.join_intermediate(row, new_row);
+                        let node = unsafe { self.get_unchecked_mut(new_row) };
+                        node.height = unsafe { self.get_unchecked(row) }.height;
+                        node.parent = row_parent;
+                        self.calc_height(balance_row);
+                        self.balance(balance_row);
+                    }
                 }
             }
-            delete_node.height = 0;
+            unsafe { self.get_unchecked_mut(row) }.height = 0;
 
             if row.get() == self.rows_count() {
                 let mut current = row.get() - 1;

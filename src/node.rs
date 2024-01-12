@@ -1,3 +1,5 @@
+use std::num::NonZeroU32;
+
 #[derive(Clone, Debug, Default)]
 pub struct AvltrieeNode<T> {
     pub(super) parent: u32,
@@ -17,6 +19,15 @@ impl<T> AvltrieeNode<T> {
             right: 0,
             same: 0,
             value,
+        }
+    }
+
+    pub(crate) fn join_intermediate(&mut self, target_row: NonZeroU32, child_row: NonZeroU32) {
+        let target_row = target_row.get();
+        if self.right == target_row {
+            self.right = child_row.get();
+        } else if self.left == target_row {
+            self.left = child_row.get();
         }
     }
 }
