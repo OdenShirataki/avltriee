@@ -66,8 +66,7 @@ impl<T> Avltriee<T> {
 
     /// Delete the specified row.
     pub fn delete(&mut self, row: NonZeroU32) {
-        if self.get(row).is_some() {
-            let node = unsafe { self.get_unchecked(row) };
+        if let Some(node) = self.get(row) {
             let row_parent = node.parent;
             let same = node.same;
             if let Some(row_parent) = row_parent {
@@ -78,24 +77,27 @@ impl<T> Avltriee<T> {
                         self.delete_same(row);
                     }
                 } else if let Some(same) = same {
-                    unsafe { self.get_unchecked_mut(row_parent) }.changeling(row, same);
+                    unsafe { self.get_unchecked_mut(row_parent) }.changeling(row, Some(same));
                     self.delete_same(row);
                 } else {
                     let left = unsafe { self.get_unchecked(row) }.left;
                     let right = unsafe { self.get_unchecked(row) }.right;
                     if left.is_none() {
-                        let right = right.unwrap();
                         unsafe { self.get_unchecked_mut(row_parent) }.changeling(row, right);
-                        unsafe { self.get_unchecked_mut(right) }.parent = Some(row_parent);
+                        if let Some(right) = right {
+                            unsafe { self.get_unchecked_mut(right) }.parent = Some(row_parent);
+                        }
                         self.balance(row_parent);
                     } else if right.is_none() {
-                        let left = left.unwrap();
                         unsafe { self.get_unchecked_mut(row_parent) }.changeling(row, left);
-                        unsafe { self.get_unchecked_mut(left) }.parent = Some(row_parent);
+                        if let Some(left) = left {
+                            unsafe { self.get_unchecked_mut(left) }.parent = Some(row_parent);
+                        }
                         self.balance(row_parent);
                     } else {
                         let (new_row, balance_row) = self.delete_intermediate(row);
-                        unsafe { self.get_unchecked_mut(row_parent) }.changeling(row, new_row);
+                        unsafe { self.get_unchecked_mut(row_parent) }
+                            .changeling(row, Some(new_row));
                         let delete_row_height = unsafe { self.get_unchecked(row) }.height;
                         let node = unsafe { self.get_unchecked_mut(new_row) };
                         node.height = delete_row_height;
@@ -128,7 +130,7 @@ impl<T> Avltriee<T> {
                     }
                 }
             }
-            unsafe { self.get_unchecked_mut(row) }.height = 0;
+            unsafe { self.get_unchecked_mut(row) }.height = None;
 
             if row.get() == self.rows_count() {
                 let mut current = row.get() - 1;

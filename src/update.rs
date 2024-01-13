@@ -1,7 +1,10 @@
 mod balance;
 mod delete;
 
-use std::{cmp::Ordering, num::NonZeroU32};
+use std::{
+    cmp::Ordering,
+    num::{NonZeroU32, NonZeroU8},
+};
 
 use async_trait::async_trait;
 
@@ -95,7 +98,9 @@ impl<T> Avltriee<T> {
             *unsafe { holder.as_mut().get_unchecked_mut(row) } =
                 same_node.same_clone(same_row, row);
 
-            holder.as_mut().replace_child(same_parent, same_row, row);
+            holder
+                .as_mut()
+                .replace_child(same_parent, same_row, Some(row));
 
             if let Some(left) = same_left {
                 unsafe { holder.as_mut().get_unchecked_mut(left) }.parent = Some(row);
@@ -134,20 +139,21 @@ impl<T> Avltriee<T> {
         }
     }
 
-    fn reset_height(&mut self, row: NonZeroU32) -> u8 {
+    fn reset_height(&mut self, row: NonZeroU32) -> NonZeroU8 {
         let node = unsafe { self.get_unchecked(row) };
         let left_height = if let Some(left) = node.left {
-            unsafe { self.get_unchecked(left) }.height
+            unsafe { self.get_unchecked(left) }.height.unwrap().get()
         } else {
             0
         };
         let right_height = if let Some(right) = node.right {
-            unsafe { self.get_unchecked(right) }.height
+            unsafe { self.get_unchecked(right) }.height.unwrap().get()
         } else {
             0
         };
-        let height = std::cmp::max(left_height, right_height) + 1;
-        unsafe { self.get_unchecked_mut(row) }.height = height;
+        let height =
+            unsafe { NonZeroU8::new_unchecked(std::cmp::max(left_height, right_height) + 1) };
+        unsafe { self.get_unchecked_mut(row) }.height = Some(height);
         height
     }
 
@@ -155,12 +161,16 @@ impl<T> Avltriee<T> {
         &mut self,
         parent: Option<NonZeroU32>,
         current_child: NonZeroU32,
-        new_child: NonZeroU32,
+        new_child: Option<NonZeroU32>,
     ) {
         if let Some(parent) = parent {
             unsafe { self.get_unchecked_mut(parent) }.changeling(current_child, new_child);
         } else {
-            self.set_root(new_child.get());
+            self.set_root(if let Some(new_child) = new_child {
+                new_child.get()
+            } else {
+                0
+            });
         }
     }
 }

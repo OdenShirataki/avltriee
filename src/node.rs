@@ -1,4 +1,4 @@
-use std::num::NonZeroU32;
+use std::num::{NonZeroU32, NonZeroU8};
 
 #[derive(Clone, Debug, Default)]
 pub struct AvltrieeNode<T> {
@@ -6,14 +6,14 @@ pub struct AvltrieeNode<T> {
     pub(super) left: Option<NonZeroU32>,
     pub(super) right: Option<NonZeroU32>,
     pub(super) same: Option<NonZeroU32>,
-    pub(super) height: u8,
+    pub(super) height: Option<NonZeroU8>,
     value: T,
 }
 
 impl<T> AvltrieeNode<T> {
     pub fn new(row: Option<NonZeroU32>, parent: Option<NonZeroU32>, value: T) -> Self {
         AvltrieeNode {
-            height: if row.is_none() { 0 } else { 1 },
+            height: NonZeroU8::new(if row.is_none() { 0 } else { 1 }),
             parent,
             left: None,
             right: None,
@@ -22,11 +22,11 @@ impl<T> AvltrieeNode<T> {
         }
     }
 
-    pub(crate) fn changeling(&mut self, current_child: NonZeroU32, new_child: NonZeroU32) {
+    pub(crate) fn changeling(&mut self, current_child: NonZeroU32, new_child: Option<NonZeroU32>) {
         if self.right == Some(current_child) {
-            self.right = Some(new_child);
+            self.right = new_child;
         } else if self.left == Some(current_child) {
-            self.left = Some(new_child);
+            self.left = new_child;
         }
     }
 
