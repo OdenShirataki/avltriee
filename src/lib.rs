@@ -64,7 +64,7 @@ impl<T> Avltriee<T> {
         &*self.allocator.as_ptr().offset(row.get() as isize)
     }
 
-    unsafe fn get_unchecked_mut<'a>(&mut self, row: NonZeroU32) -> &'a mut AvltrieeNode<T> {
+    unsafe fn get_unchecked_mut(&mut self, row: NonZeroU32) -> &mut AvltrieeNode<T> {
         &mut *self.allocator.as_mut_ptr().offset(row.get() as isize)
     }
 

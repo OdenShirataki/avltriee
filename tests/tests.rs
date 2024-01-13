@@ -37,7 +37,8 @@ fn test_iter() {
         c += 1;
         println!("{}:{}:{}", c, i, unsafe { t.get_unchecked(i) }.deref());
     }
-    println!("output:{} {}", c, TEST_LENGTH as usize - deleted.len());
+    println!("{}", c);
+    assert!(c == TEST_LENGTH as usize - deleted.len());
 }
 
 #[test]

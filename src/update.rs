@@ -133,7 +133,7 @@ impl<T> Avltriee<T> {
         }
     }
 
-    fn calc_height(&mut self, row: NonZeroU32) {
+    fn reset_height(&mut self, row: NonZeroU32) -> u8 {
         let node = unsafe { self.get_unchecked(row) };
         let left_height = if node.left != 0 {
             unsafe { self.get_unchecked(NonZeroU32::new_unchecked(node.left)) }.height
@@ -145,8 +145,9 @@ impl<T> Avltriee<T> {
         } else {
             0
         };
-        unsafe { self.get_unchecked_mut(row) }.height =
-            std::cmp::max(left_height, right_height) + 1;
+        let height = std::cmp::max(left_height, right_height) + 1;
+        unsafe { self.get_unchecked_mut(row) }.height = height;
+        height
     }
 
     fn replace_child(&mut self, parent: u32, current_child: NonZeroU32, new_child: NonZeroU32) {
