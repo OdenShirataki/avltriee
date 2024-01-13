@@ -5,37 +5,41 @@ use crate::{Avltriee, AvltrieeNode};
 impl<T> Avltriee<T> {
     pub(crate) fn balance(&mut self, row: NonZeroU32) {
         let mut t: &AvltrieeNode<T> = unsafe { self.get_unchecked(row) };
-        while t.parent != 0 {
-            let u_row = unsafe { NonZeroU32::new_unchecked(t.parent) };
+        while let Some(u_row) = NonZeroU32::new(t.parent) {
             let u = unsafe { self.get_unchecked(u_row) };
 
             let height_before_balance = u.height;
 
-            let left_row = unsafe { NonZeroU32::new_unchecked(u.left) };
-            let right_row = unsafe { NonZeroU32::new_unchecked(u.right) };
-
-            let left = unsafe { self.get_unchecked(left_row) };
-            let right = unsafe { self.get_unchecked(right_row) };
-
-            let (t_row, new_height) = match left.height as isize - right.height as isize {
-                2 => {
-                    if self.height(left.left) < self.height(left.right) {
-                        self.rotate_left(left_row);
+            let (t_row, new_height) =
+                match self.height(u.left) as isize - self.height(u.right) as isize {
+                    2 => {
+                        let right_row = NonZeroU32::new(u.right);
+                        let left_row = NonZeroU32::new(u.left).unwrap();
+                        let left = unsafe { self.get_unchecked(left_row) };
+                        if self.height(left.left) < self.height(left.right) {
+                            self.rotate_left(left_row);
+                        }
+                        (right_row, self.rotate_right(u_row))
                     }
-                    (right_row, self.rotate_right(u_row))
-                }
-                -2 => {
-                    if self.height(right.left) > self.height(right.right) {
-                        self.rotate_right(right_row);
+                    -2 => {
+                        let left_row = NonZeroU32::new(u.left);
+                        let right_row = NonZeroU32::new(u.right).unwrap();
+                        let right = unsafe { self.get_unchecked(right_row) };
+                        if self.height(right.left) > self.height(right.right) {
+                            self.rotate_right(right_row);
+                        }
+                        (left_row, self.rotate_left(u_row))
                     }
-                    (left_row, self.rotate_left(u_row))
-                }
-                _ => (u_row, self.reset_height(u_row)),
-            };
+                    _ => (Some(u_row), self.reset_height(u_row)),
+                };
             if height_before_balance == new_height {
                 break;
             }
-            t = unsafe { self.get_unchecked(t_row) };
+            if let Some(t_row) = t_row {
+                t = unsafe { self.get_unchecked(t_row) };
+            } else {
+                break;
+            }
         }
     }
 
