@@ -107,26 +107,28 @@ impl<T> Avltriee<T> {
     where
         F: Fn(&T) -> Ordering,
     {
-        let mut row = self.root();
+        let mut row = NonZeroU32::new(self.root());
         let mut keep = 0;
-        while row != 0 {
-            let node = unsafe { self.get_unchecked(NonZeroU32::new_unchecked(row)) };
+        while let Some(row_non0) = row {
+            let node = unsafe { self.get_unchecked(row_non0) };
             match compare(node) {
                 Ordering::Greater => {
-                    if node.left == 0 {
-                        return row;
+                    if let Some(left) = node.left {
+                        keep = row_non0.get();
+                        row = Some(left);
+                    } else {
+                        return row_non0.get();
                     }
-                    keep = row;
-                    row = node.left;
                 }
                 Ordering::Equal => {
-                    return row;
+                    return row_non0.get();
                 }
                 Ordering::Less => {
-                    if node.right == 0 {
+                    if let Some(right) = node.right {
+                        row = Some(right);
+                    } else {
                         break;
                     }
-                    row = node.right;
                 }
             }
         }
@@ -166,34 +168,36 @@ impl<T> Avltriee<T> {
     where
         F: Fn(&T) -> Ordering,
     {
-        let mut row = self.root();
+        let mut row = NonZeroU32::new(self.root());
         let mut keep = 0;
-        while row != 0 {
-            let node = unsafe { self.get_unchecked(NonZeroU32::new_unchecked(row)) };
+        while let Some(row_non0) = row {
+            let node = unsafe { self.get_unchecked(row_non0) };
             match compare(node) {
                 Ordering::Greater => {
-                    if node.left == 0 {
-                        return row;
+                    if let Some(left) = node.left {
+                        keep = row_non0.get();
+                        row = Some(left);
+                    } else {
+                        return row_non0.get();
                     }
-                    keep = row;
-                    row = node.left;
                 }
                 Ordering::Equal => {
-                    if node.right != 0 {
-                        return self.min(node.right);
+                    if let Some(right) = node.right {
+                        return self.min(right.get());
                     }
                     if let Some(parent) = node.parent {
-                        if unsafe { self.get_unchecked(parent).left } == row {
+                        if unsafe { self.get_unchecked(parent).left } == Some(row_non0) {
                             return parent.get();
                         }
                     }
                     return keep;
                 }
                 Ordering::Less => {
-                    if node.right == 0 {
+                    if let Some(right) = node.right {
+                        row = Some(right);
+                    } else {
                         break;
                     }
-                    row = node.right;
                 }
             }
         }
@@ -233,26 +237,28 @@ impl<T> Avltriee<T> {
     where
         F: Fn(&T) -> Ordering,
     {
-        let mut row = self.root();
+        let mut row = NonZeroU32::new(self.root());
         let mut keep = 0;
-        while row != 0 {
-            let node = unsafe { self.get_unchecked(NonZeroU32::new_unchecked(row)) };
+        while let Some(row_non0) = row {
+            let node = unsafe { self.get_unchecked(row_non0) };
             match compare(node) {
                 Ordering::Greater => {
-                    if node.left == 0 {
+                    if let Some(left) = node.left {
+                        row = Some(left);
+                    } else {
                         break;
                     }
-                    row = node.left;
                 }
                 Ordering::Equal => {
-                    return row;
+                    return row_non0.get();
                 }
                 Ordering::Less => {
-                    if node.right == 0 {
-                        return row;
+                    if let Some(right) = node.right {
+                        keep = row_non0.get();
+                        row = Some(right);
+                    } else {
+                        return row_non0.get();
                     }
-                    keep = row;
-                    row = node.right;
                 }
             }
         }
@@ -296,34 +302,36 @@ impl<T> Avltriee<T> {
     where
         F: Fn(&T) -> Ordering,
     {
-        let mut row = self.root();
+        let mut row = NonZeroU32::new(self.root());
         let mut keep = 0;
-        while row != 0 {
-            let node = unsafe { self.get_unchecked(NonZeroU32::new_unchecked(row)) };
+        while let Some(row_non0) = row {
+            let node = unsafe { self.get_unchecked(row_non0) };
             match compare(node) {
                 Ordering::Greater => {
-                    if node.left == 0 {
+                    if let Some(left) = node.left {
+                        row = Some(left);
+                    } else {
                         break;
                     }
-                    row = node.left;
                 }
                 Ordering::Equal => {
-                    if node.left != 0 {
-                        return self.max(node.left);
+                    if let Some(left) = node.left {
+                        return self.max(left.get());
                     }
                     if let Some(parent) = node.parent {
-                        if unsafe { self.get_unchecked(parent) }.right == row {
+                        if unsafe { self.get_unchecked(parent) }.right == Some(row_non0) {
                             return parent.get();
                         }
                     }
                     return keep;
                 }
                 Ordering::Less => {
-                    if node.right == 0 {
-                        return row;
+                    if let Some(right) = node.right {
+                        keep = row_non0.get();
+                        row = Some(right);
+                    } else {
+                        return row_non0.get();
                     }
-                    keep = row;
-                    row = node.right;
                 }
             }
         }
@@ -368,27 +376,29 @@ impl<T> Avltriee<T> {
         S: Fn(&T) -> Ordering,
         E: Fn(&T) -> Ordering,
     {
-        let mut row = self.root();
+        let mut row = NonZeroU32::new(self.root());
         let mut start = 0;
-        while row != 0 {
-            let node = unsafe { self.get_unchecked(NonZeroU32::new_unchecked(row)) };
+        while let Some(row_non0) = row {
+            let node = unsafe { self.get_unchecked(row_non0) };
             match compare_ge(node) {
                 Ordering::Greater => {
-                    start = row;
-                    if node.left == 0 {
+                    start = row_non0.get();
+                    if let Some(left) = node.left {
+                        row = Some(left);
+                    } else {
                         break;
                     }
-                    row = node.left;
                 }
                 Ordering::Equal => {
-                    start = row;
+                    start = row_non0.get();
                     break;
                 }
                 Ordering::Less => {
-                    if node.right == 0 {
+                    if let Some(right) = node.right {
+                        row = Some(right);
+                    } else {
                         break;
                     }
-                    row = node.right;
                 }
             }
         }
@@ -396,27 +406,29 @@ impl<T> Avltriee<T> {
             && compare_le(unsafe { self.get_unchecked(NonZeroU32::new_unchecked(start)) })
                 != Ordering::Greater)
             .then(|| {
-                row = self.root();
+                row = NonZeroU32::new(self.root());
                 let mut end = 0;
-                while row != 0 {
-                    let node = unsafe { self.get_unchecked(NonZeroU32::new_unchecked(row)) };
+                while let Some(row_non0) = row {
+                    let node = unsafe { self.get_unchecked(row_non0) };
                     match compare_le(node) {
                         Ordering::Greater => {
-                            if node.left == 0 {
+                            if let Some(left) = node.left {
+                                row = Some(left);
+                            } else {
                                 break;
                             }
-                            row = node.left;
                         }
                         Ordering::Equal => {
-                            end = row;
+                            end = row_non0.get();
                             break;
                         }
                         Ordering::Less => {
-                            end = row;
-                            if node.right == 0 {
+                            end = row_non0.get();
+                            if let Some(right) = node.right {
+                                row = Some(right);
+                            } else {
                                 break;
                             }
-                            row = node.right;
                         }
                     }
                 }
@@ -470,19 +482,19 @@ impl<T> Avltriee<T> {
                 },
             ))
         } else {
-            let mut current = c.get();
+            let mut current = c;
             if same_branch != 0 {
-                current = same_branch;
-                node = unsafe { self.get_unchecked(NonZeroU32::new_unchecked(same_branch)) };
+                current = unsafe { NonZeroU32::new_unchecked(same_branch) };
+                node = unsafe { self.get_unchecked(current) };
             }
-            if node.right != 0 {
+            if let Some(right) = node.right {
                 Some((
-                    unsafe { NonZeroU32::new_unchecked(self.min(node.right)) },
+                    unsafe { NonZeroU32::new_unchecked(self.min(right.get())) },
                     0,
                 ))
             } else {
                 if let Some(parent) = node.parent {
-                    if unsafe { self.get_unchecked(parent) }.left == current {
+                    if unsafe { self.get_unchecked(parent) }.left == Some(current) {
                         Some((parent, 0))
                     } else {
                         self.retroactive(parent).map(|i| (i, 0))
@@ -496,7 +508,7 @@ impl<T> Avltriee<T> {
 
     fn retroactive(&self, c: NonZeroU32) -> Option<NonZeroU32> {
         if let Some(parent) = unsafe { self.get_unchecked(c) }.parent {
-            if unsafe { self.get_unchecked(parent) }.right == c.get() {
+            if unsafe { self.get_unchecked(parent) }.right == Some(c) {
                 self.retroactive(parent).filter(|p| p.get() != c.get())
             } else {
                 Some(parent)
@@ -518,16 +530,19 @@ impl<T> Avltriee<T> {
                 },
             ))
         } else {
-            let mut current = c.get();
+            let mut current = c;
             if same_branch != 0 {
-                current = same_branch;
-                node = unsafe { self.get_unchecked(NonZeroU32::new_unchecked(same_branch)) };
+                current = unsafe { NonZeroU32::new_unchecked(same_branch) };
+                node = unsafe { self.get_unchecked(current) };
             }
-            if node.left != 0 {
-                Some((unsafe { NonZeroU32::new_unchecked(self.max(node.left)) }, 0))
+            if let Some(left) = node.left {
+                Some((
+                    unsafe { NonZeroU32::new_unchecked(self.max(left.get())) },
+                    0,
+                ))
             } else {
                 if let Some(parent) = node.parent {
-                    if unsafe { self.get_unchecked(parent) }.right == current {
+                    if unsafe { self.get_unchecked(parent) }.right == Some(current) {
                         Some((parent, 0))
                     } else {
                         self.retroactive_desc(parent).map(|i| (i, 0))
@@ -541,7 +556,7 @@ impl<T> Avltriee<T> {
 
     fn retroactive_desc(&self, c: NonZeroU32) -> Option<NonZeroU32> {
         if let Some(parent) = unsafe { self.get_unchecked(c) }.parent {
-            if unsafe { self.get_unchecked(parent) }.left == c.get() {
+            if unsafe { self.get_unchecked(parent) }.left == Some(c) {
                 self.retroactive_desc(parent).filter(|p| *p != c)
             } else {
                 Some(parent)

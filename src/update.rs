@@ -88,8 +88,8 @@ impl<T> Avltriee<T> {
             holder.as_mut().allocate(row);
 
             let same_node = unsafe { holder.as_mut().get_unchecked_mut(same_row) };
-            let same_left = NonZeroU32::new(same_node.left);
-            let same_right = NonZeroU32::new(same_node.right);
+            let same_left = same_node.left;
+            let same_right = same_node.right;
             let same_parent = same_node.parent;
 
             *unsafe { holder.as_mut().get_unchecked_mut(row) } =
@@ -126,9 +126,9 @@ impl<T> Avltriee<T> {
         } else {
             let p = self.get_unchecked_mut(NonZeroU32::new_unchecked(found.row));
             if found.ord == Ordering::Greater {
-                p.left = row.get();
+                p.left = Some(row);
             } else {
-                p.right = row.get();
+                p.right = Some(row);
             }
             self.balance(row);
         }
@@ -136,13 +136,13 @@ impl<T> Avltriee<T> {
 
     fn reset_height(&mut self, row: NonZeroU32) -> u8 {
         let node = unsafe { self.get_unchecked(row) };
-        let left_height = if node.left != 0 {
-            unsafe { self.get_unchecked(NonZeroU32::new_unchecked(node.left)) }.height
+        let left_height = if let Some(left) = node.left {
+            unsafe { self.get_unchecked(left) }.height
         } else {
             0
         };
-        let right_height = if node.right != 0 {
-            unsafe { self.get_unchecked(NonZeroU32::new_unchecked(node.right)) }.height
+        let right_height = if let Some(right) = node.right {
+            unsafe { self.get_unchecked(right) }.height
         } else {
             0
         };

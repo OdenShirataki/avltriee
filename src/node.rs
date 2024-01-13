@@ -3,8 +3,8 @@ use std::num::NonZeroU32;
 #[derive(Clone, Debug, Default)]
 pub struct AvltrieeNode<T> {
     pub(super) parent: Option<NonZeroU32>,
-    pub(super) left: u32,
-    pub(super) right: u32,
+    pub(super) left: Option<NonZeroU32>,
+    pub(super) right: Option<NonZeroU32>,
     pub(super) same: Option<NonZeroU32>,
     pub(super) height: u8,
     value: T,
@@ -15,19 +15,18 @@ impl<T> AvltrieeNode<T> {
         AvltrieeNode {
             height: if row.is_none() { 0 } else { 1 },
             parent,
-            left: 0,
-            right: 0,
+            left: None,
+            right: None,
             same: None,
             value,
         }
     }
 
     pub(crate) fn changeling(&mut self, current_child: NonZeroU32, new_child: NonZeroU32) {
-        let current_child = current_child.get();
-        if self.right == current_child {
-            self.right = new_child.get();
-        } else if self.left == current_child {
-            self.left = new_child.get();
+        if self.right == Some(current_child) {
+            self.right = Some(new_child);
+        } else if self.left == Some(current_child) {
+            self.left = Some(new_child);
         }
     }
 
@@ -43,8 +42,8 @@ impl<T> AvltrieeNode<T> {
             same: Some(self_row),
             value: self.value.clone(),
         };
-        self.left = 0;
-        self.right = 0;
+        self.left = None;
+        self.right = None;
         self.parent = Some(new_row);
 
         cloned

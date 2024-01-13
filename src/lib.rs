@@ -80,19 +80,21 @@ impl<T> Avltriee<T> {
             ord = cmp(node);
             match ord {
                 Ordering::Greater => {
-                    if node.left == 0 {
+                    if let Some(left) = node.left {
+                        row = left.get();
+                    } else {
                         break;
                     }
-                    row = node.left;
                 }
                 Ordering::Equal => {
                     break;
                 }
                 Ordering::Less => {
-                    if node.right == 0 {
+                    if let Some(right) = node.right {
+                        row = right.get();
+                    } else {
                         break;
                     }
-                    row = node.right;
                 }
             }
         }
@@ -124,10 +126,11 @@ impl<T> Avltriee<T> {
         let mut t = t;
         while t != 0 {
             let l = unsafe { self.get_unchecked(NonZeroU32::new_unchecked(t)) }.left;
-            if l == 0 {
+            if let Some(l) = l {
+                t = l.get();
+            } else {
                 break;
             }
-            t = l;
         }
         t
     }
@@ -136,10 +139,11 @@ impl<T> Avltriee<T> {
         let mut t = t;
         while t != 0 {
             let r = unsafe { self.get_unchecked(NonZeroU32::new_unchecked(t)) }.right;
-            if r == 0 {
+            if let Some(r) = r {
+                t = r.get();
+            } else {
                 break;
             }
-            t = r;
         }
         t
     }

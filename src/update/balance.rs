@@ -13,8 +13,8 @@ impl<T> Avltriee<T> {
             let (t_row, new_height) =
                 match self.height(u.left) as isize - self.height(u.right) as isize {
                     2 => {
-                        let right_row = NonZeroU32::new(u.right);
-                        let left_row = NonZeroU32::new(u.left).unwrap();
+                        let right_row = u.right;
+                        let left_row = u.left.unwrap();
                         let left = unsafe { self.get_unchecked(left_row) };
                         if self.height(left.left) < self.height(left.right) {
                             self.rotate_left(left_row);
@@ -22,8 +22,8 @@ impl<T> Avltriee<T> {
                         (right_row, self.rotate_right(u_row))
                     }
                     -2 => {
-                        let left_row = NonZeroU32::new(u.left);
-                        let right_row = NonZeroU32::new(u.right).unwrap();
+                        let left_row = u.left;
+                        let right_row = u.right.unwrap();
                         let right = unsafe { self.get_unchecked(right_row) };
                         if self.height(right.left) > self.height(right.right) {
                             self.rotate_right(right_row);
@@ -43,8 +43,8 @@ impl<T> Avltriee<T> {
         }
     }
 
-    fn height(&self, row: u32) -> u8 {
-        if let Some(row) = NonZeroU32::new(row) {
+    fn height(&self, row: Option<NonZeroU32>) -> u8 {
+        if let Some(row) = row {
             unsafe { self.get_unchecked(row) }.height
         } else {
             0
@@ -66,27 +66,27 @@ impl<T> Avltriee<T> {
     }
 
     fn rotate_left(&mut self, row: NonZeroU32) -> u8 {
-        let right_row = unsafe { NonZeroU32::new_unchecked(self.get_unchecked(row).right) };
+        let right_row = unsafe { self.get_unchecked(row) }.right.unwrap();
         let right_left = unsafe { self.get_unchecked(right_row) }.left;
 
         unsafe { self.get_unchecked_mut(row) }.right = right_left;
-        if let Some(right) = NonZeroU32::new(right_left) {
+        if let Some(right) = right_left {
             unsafe { self.get_unchecked_mut(right) }.parent = Some(row);
         }
-        unsafe { self.get_unchecked_mut(right_row) }.left = row.get();
+        unsafe { self.get_unchecked_mut(right_row) }.left = Some(row);
 
         self.rotate_common(row, right_row)
     }
 
     fn rotate_right(&mut self, row: NonZeroU32) -> u8 {
-        let left_row = unsafe { NonZeroU32::new_unchecked(self.get_unchecked(row).left) };
+        let left_row = unsafe { self.get_unchecked(row) }.left.unwrap();
         let left_right = unsafe { self.get_unchecked(left_row) }.right;
 
         unsafe { self.get_unchecked_mut(row) }.left = left_right;
-        if let Some(left) = NonZeroU32::new(left_right) {
+        if let Some(left) = left_right {
             unsafe { self.get_unchecked_mut(left) }.parent = Some(row);
         }
-        unsafe { self.get_unchecked_mut(left_row) }.right = row.get();
+        unsafe { self.get_unchecked_mut(left_row) }.right = Some(row);
 
         self.rotate_common(row, left_row)
     }
