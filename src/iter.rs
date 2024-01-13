@@ -44,10 +44,13 @@ impl<'a, T> Iterator for AvltrieeIter<'a, T> {
             let c = self.now;
             self.now = if c == self.end_row {
                 let same = unsafe { self.triee.get_unchecked(NonZeroU32::new_unchecked(c)) }.same;
-                if same != 0 {
+                if let Some(same) = same {
+                    let same = same.get();
                     self.end_row = same;
+                    same
+                } else {
+                    0
                 }
-                same
             } else {
                 let next_func = self.next_func;
                 next_func(
@@ -457,9 +460,9 @@ impl<T> Avltriee<T> {
 
     fn next(&self, c: NonZeroU32, same_branch: u32) -> Option<(NonZeroU32, u32)> {
         let mut node = unsafe { self.get_unchecked(c) };
-        if node.same != 0 {
+        if let Some(same) = node.same {
             Some((
-                unsafe { NonZeroU32::new_unchecked(node.same) },
+                same,
                 if same_branch == 0 {
                     c.get()
                 } else {
@@ -505,9 +508,9 @@ impl<T> Avltriee<T> {
 
     fn next_desc(&self, c: NonZeroU32, same_branch: u32) -> Option<(NonZeroU32, u32)> {
         let mut node = unsafe { self.get_unchecked(c) };
-        if node.same != 0 {
+        if let Some(same) = node.same {
             Some((
-                unsafe { NonZeroU32::new_unchecked(node.same) },
+                same,
                 if same_branch == 0 {
                     c.get()
                 } else {

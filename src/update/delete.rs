@@ -6,7 +6,7 @@ impl<T> Avltriee<T> {
     fn delete_same(&mut self, delete_row: NonZeroU32) {
         let delete_node = unsafe { self.get_unchecked(delete_row) };
 
-        let delete_node_same = unsafe { NonZeroU32::new_unchecked(delete_node.same) };
+        let delete_node_same = delete_node.same.unwrap();
         let delete_node_parent = delete_node.parent;
         let delete_node_height = delete_node.height;
         let delete_node_left = delete_node.left;
@@ -72,14 +72,13 @@ impl<T> Avltriee<T> {
             let same = node.same;
             if let Some(row_parent) = row_parent {
                 let parent_same = unsafe { self.get_unchecked_mut(row_parent) }.same;
-                if parent_same == row.get() {
+                if parent_same == Some(row) {
                     unsafe { self.get_unchecked_mut(row_parent) }.same = same;
-                    if same != 0 {
+                    if same.is_some() {
                         self.delete_same(row);
                     }
-                } else if same != 0 {
-                    unsafe { self.get_unchecked_mut(row_parent) }
-                        .changeling(row, unsafe { NonZeroU32::new_unchecked(same) });
+                } else if let Some(same) = same {
+                    unsafe { self.get_unchecked_mut(row_parent) }.changeling(row, same);
                     self.delete_same(row);
                 } else {
                     let left = unsafe { self.get_unchecked(row) }.left;
@@ -109,8 +108,8 @@ impl<T> Avltriee<T> {
                     }
                 }
             } else {
-                if same != 0 {
-                    self.set_root(same);
+                if let Some(same) = same {
+                    self.set_root(same.get());
                     self.delete_same(row);
                 } else {
                     let left = node.left;

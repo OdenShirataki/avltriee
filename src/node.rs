@@ -5,19 +5,19 @@ pub struct AvltrieeNode<T> {
     pub(super) parent: Option<NonZeroU32>,
     pub(super) left: u32,
     pub(super) right: u32,
-    pub(super) same: u32,
+    pub(super) same: Option<NonZeroU32>,
     pub(super) height: u8,
     value: T,
 }
 
 impl<T> AvltrieeNode<T> {
-    pub fn new(row: u32, parent: u32, value: T) -> Self {
+    pub fn new(row: Option<NonZeroU32>, parent: Option<NonZeroU32>, value: T) -> Self {
         AvltrieeNode {
-            height: if row == 0 { 0 } else { 1 },
-            parent: NonZeroU32::new(parent),
+            height: if row.is_none() { 0 } else { 1 },
+            parent,
             left: 0,
             right: 0,
-            same: 0,
+            same: None,
             value,
         }
     }
@@ -40,7 +40,7 @@ impl<T> AvltrieeNode<T> {
             parent: self.parent,
             left: self.left,
             right: self.right,
-            same: self_row.get(),
+            same: Some(self_row),
             value: self.value.clone(),
         };
         self.left = 0;

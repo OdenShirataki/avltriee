@@ -103,9 +103,9 @@ impl<T> Avltriee<T> {
     pub fn is_unique(&self, row: NonZeroU32) -> Option<(bool, &AvltrieeNode<T>)> {
         self.get(row).map(|node| {
             (
-                node.same == 0
+                node.same.is_none()
                     && node.parent.is_some_and(|parent| {
-                        unsafe { self.get_unchecked(parent) }.same != row.get()
+                        unsafe { self.get_unchecked(parent) }.same != Some(row)
                     }),
                 node,
             )

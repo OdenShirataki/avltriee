@@ -119,7 +119,8 @@ impl<T> Avltriee<T> {
     {
         self.allocate(row);
 
-        *self.get_unchecked_mut(row) = AvltrieeNode::new(row.get(), found.row, value);
+        *self.get_unchecked_mut(row) =
+            AvltrieeNode::new(Some(row), NonZeroU32::new(found.row), value);
         if found.row == 0 {
             self.set_root(row.get());
         } else {
