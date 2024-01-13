@@ -5,7 +5,7 @@ use crate::{Avltriee, AvltrieeNode};
 impl<T> Avltriee<T> {
     pub(crate) fn balance(&mut self, row: NonZeroU32) {
         let mut t: &AvltrieeNode<T> = unsafe { self.get_unchecked(row) };
-        while let Some(u_row) = NonZeroU32::new(t.parent) {
+        while let Some(u_row) = t.parent {
             let u = unsafe { self.get_unchecked(u_row) };
 
             let height_before_balance = u.height;
@@ -60,7 +60,7 @@ impl<T> Avltriee<T> {
         self.reset_height(child_row);
 
         unsafe { self.get_unchecked_mut(child_row) }.parent = node_parent;
-        unsafe { self.get_unchecked_mut(row) }.parent = child_row.get();
+        unsafe { self.get_unchecked_mut(row) }.parent = Some(child_row);
 
         new_height
     }
@@ -71,7 +71,7 @@ impl<T> Avltriee<T> {
 
         unsafe { self.get_unchecked_mut(row) }.right = right_left;
         if let Some(right) = NonZeroU32::new(right_left) {
-            unsafe { self.get_unchecked_mut(right) }.parent = row.get();
+            unsafe { self.get_unchecked_mut(right) }.parent = Some(row);
         }
         unsafe { self.get_unchecked_mut(right_row) }.left = row.get();
 
@@ -84,7 +84,7 @@ impl<T> Avltriee<T> {
 
         unsafe { self.get_unchecked_mut(row) }.left = left_right;
         if let Some(left) = NonZeroU32::new(left_right) {
-            unsafe { self.get_unchecked_mut(left) }.parent = row.get();
+            unsafe { self.get_unchecked_mut(left) }.parent = Some(row);
         }
         unsafe { self.get_unchecked_mut(left_row) }.right = row.get();
 

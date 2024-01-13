@@ -98,10 +98,10 @@ impl<T> Avltriee<T> {
             holder.as_mut().replace_child(same_parent, same_row, row);
 
             if let Some(left) = same_left {
-                unsafe { holder.as_mut().get_unchecked_mut(left) }.parent = row.get();
+                unsafe { holder.as_mut().get_unchecked_mut(left) }.parent = Some(row);
             }
             if let Some(right) = same_right {
-                unsafe { holder.as_mut().get_unchecked_mut(right) }.parent = row.get();
+                unsafe { holder.as_mut().get_unchecked_mut(right) }.parent = Some(row);
             }
         } else {
             let value = holder.convert_value(input);
@@ -150,12 +150,16 @@ impl<T> Avltriee<T> {
         height
     }
 
-    fn replace_child(&mut self, parent: u32, current_child: NonZeroU32, new_child: NonZeroU32) {
-        if parent == 0 {
-            self.set_root(new_child.get());
+    fn replace_child(
+        &mut self,
+        parent: Option<NonZeroU32>,
+        current_child: NonZeroU32,
+        new_child: NonZeroU32,
+    ) {
+        if let Some(parent) = parent {
+            unsafe { self.get_unchecked_mut(parent) }.changeling(current_child, new_child);
         } else {
-            unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(parent)) }
-                .changeling(current_child, new_child);
+            self.set_root(new_child.get());
         }
     }
 }

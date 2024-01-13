@@ -104,10 +104,9 @@ impl<T> Avltriee<T> {
         self.get(row).map(|node| {
             (
                 node.same == 0
-                    && (node.parent == 0
-                        || unsafe { self.get_unchecked(NonZeroU32::new_unchecked(node.parent)) }
-                            .same
-                            != row.get()),
+                    && node.parent.is_some_and(|parent| {
+                        unsafe { self.get_unchecked(parent) }.same != row.get()
+                    }),
                 node,
             )
         })

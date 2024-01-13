@@ -2,7 +2,7 @@ use std::num::NonZeroU32;
 
 #[derive(Clone, Debug, Default)]
 pub struct AvltrieeNode<T> {
-    pub(super) parent: u32,
+    pub(super) parent: Option<NonZeroU32>,
     pub(super) left: u32,
     pub(super) right: u32,
     pub(super) same: u32,
@@ -14,7 +14,7 @@ impl<T> AvltrieeNode<T> {
     pub fn new(row: u32, parent: u32, value: T) -> Self {
         AvltrieeNode {
             height: if row == 0 { 0 } else { 1 },
-            parent,
+            parent: NonZeroU32::new(parent),
             left: 0,
             right: 0,
             same: 0,
@@ -45,7 +45,7 @@ impl<T> AvltrieeNode<T> {
         };
         self.left = 0;
         self.right = 0;
-        self.parent = new_row.get();
+        self.parent = Some(new_row);
 
         cloned
     }

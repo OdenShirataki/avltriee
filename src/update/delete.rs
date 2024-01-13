@@ -20,10 +20,10 @@ impl<T> Avltriee<T> {
         new_node.right = delete_node_right;
 
         if let Some(left) = NonZeroU32::new(delete_node_left) {
-            unsafe { self.get_unchecked_mut(left) }.parent = delete_node_same.get();
+            unsafe { self.get_unchecked_mut(left) }.parent = Some(delete_node_same);
         }
         if let Some(right) = NonZeroU32::new(delete_node_right) {
-            unsafe { self.get_unchecked_mut(right) }.parent = delete_node_same.get();
+            unsafe { self.get_unchecked_mut(right) }.parent = Some(delete_node_same);
         }
     }
 
@@ -38,7 +38,7 @@ impl<T> Avltriee<T> {
         let left_max = unsafe { NonZeroU32::new_unchecked(self.max(delete_node_left.get())) };
 
         unsafe { self.get_unchecked_mut(left_max) }.right = delete_node_right.get();
-        unsafe { self.get_unchecked_mut(delete_node_right).parent = left_max.get() };
+        unsafe { self.get_unchecked_mut(delete_node_right) }.parent = Some(left_max);
 
         if delete_node_left == left_max {
             unsafe { self.get_unchecked_mut(left_max) }.parent = delete_node_parent;
@@ -47,17 +47,17 @@ impl<T> Avltriee<T> {
         } else {
             let left_max_node = unsafe { self.get_unchecked_mut(left_max) };
 
-            let left_max_parent = unsafe { NonZeroU32::new_unchecked(left_max_node.parent) };
+            let left_max_parent = left_max_node.parent.unwrap();
             let left_max_left = left_max_node.left;
 
             left_max_node.height = delete_node_height;
 
             left_max_node.left = delete_node_left.get();
-            unsafe { self.get_unchecked_mut(delete_node_left).parent = left_max.get() };
+            unsafe { self.get_unchecked_mut(delete_node_left) }.parent = Some(left_max);
 
             unsafe { self.get_unchecked_mut(left_max_parent) }.right = left_max_left;
             if let Some(right) = NonZeroU32::new(left_max_left) {
-                unsafe { self.get_unchecked_mut(right) }.parent = left_max_parent.get();
+                unsafe { self.get_unchecked_mut(right) }.parent = Some(left_max_parent);
             }
 
             (left_max, left_max_parent)
@@ -70,32 +70,7 @@ impl<T> Avltriee<T> {
             let node = unsafe { self.get_unchecked(row) };
             let row_parent = node.parent;
             let same = node.same;
-            if row_parent == 0 {
-                if same != 0 {
-                    self.set_root(same);
-                    self.delete_same(row);
-                } else {
-                    let left = node.left;
-                    let right = node.right;
-                    if left == 0 {
-                        self.set_root(right);
-                        if let Some(right) = NonZeroU32::new(right) {
-                            unsafe { self.get_unchecked_mut(right) }.parent = 0;
-                        }
-                    } else if right == 0 {
-                        self.set_root(left);
-                        unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(left)) }.parent =
-                            0;
-                    } else {
-                        let (new_row, balance_row) = self.delete_intermediate(row);
-                        self.set_root(new_row.get());
-                        unsafe { self.get_unchecked_mut(new_row) }.parent = 0;
-                        self.reset_height(balance_row);
-                        self.balance(balance_row);
-                    }
-                }
-            } else {
-                let row_parent = unsafe { NonZeroU32::new_unchecked(row_parent) };
+            if let Some(row_parent) = row_parent {
                 let parent_same = unsafe { self.get_unchecked_mut(row_parent) }.same;
                 if parent_same == row.get() {
                     unsafe { self.get_unchecked_mut(row_parent) }.same = same;
@@ -113,14 +88,14 @@ impl<T> Avltriee<T> {
                         unsafe { self.get_unchecked_mut(row_parent) }
                             .changeling(row, unsafe { NonZeroU32::new_unchecked(right) });
                         if let Some(right) = NonZeroU32::new(right) {
-                            unsafe { self.get_unchecked_mut(right) }.parent = row_parent.get();
+                            unsafe { self.get_unchecked_mut(right) }.parent = Some(row_parent);
                         }
                         self.balance(row_parent);
                     } else if right == 0 {
                         unsafe { self.get_unchecked_mut(row_parent) }
                             .changeling(row, unsafe { NonZeroU32::new_unchecked(left) });
                         unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(left)) }.parent =
-                            row_parent.get();
+                            Some(row_parent);
                         self.balance(row_parent);
                     } else {
                         let (new_row, balance_row) = self.delete_intermediate(row);
@@ -128,7 +103,31 @@ impl<T> Avltriee<T> {
                         let delete_row_height = unsafe { self.get_unchecked(row) }.height;
                         let node = unsafe { self.get_unchecked_mut(new_row) };
                         node.height = delete_row_height;
-                        node.parent = row_parent.get();
+                        node.parent = Some(row_parent);
+                        self.reset_height(balance_row);
+                        self.balance(balance_row);
+                    }
+                }
+            } else {
+                if same != 0 {
+                    self.set_root(same);
+                    self.delete_same(row);
+                } else {
+                    let left = node.left;
+                    let right = node.right;
+                    if left == 0 {
+                        self.set_root(right);
+                        if let Some(right) = NonZeroU32::new(right) {
+                            unsafe { self.get_unchecked_mut(right) }.parent = None;
+                        }
+                    } else if right == 0 {
+                        self.set_root(left);
+                        unsafe { self.get_unchecked_mut(NonZeroU32::new_unchecked(left)) }.parent =
+                            None;
+                    } else {
+                        let (new_row, balance_row) = self.delete_intermediate(row);
+                        self.set_root(new_row.get());
+                        unsafe { self.get_unchecked_mut(new_row) }.parent = None;
                         self.reset_height(balance_row);
                         self.balance(balance_row);
                     }
