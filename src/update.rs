@@ -85,8 +85,8 @@ impl<T> Avltriee<T> {
         }
 
         let found = holder.search(&input);
-        if found.ord == Ordering::Equal && found.row != 0 {
-            let same_row = unsafe { NonZeroU32::new_unchecked(found.row) };
+        if found.ord == Ordering::Equal && found.row.is_some() {
+            let same_row = found.row.unwrap();
 
             holder.as_mut().allocate(row);
 
@@ -124,18 +124,17 @@ impl<T> Avltriee<T> {
     {
         self.allocate(row);
 
-        *self.get_unchecked_mut(row) =
-            AvltrieeNode::new(Some(row), NonZeroU32::new(found.row), value);
-        if found.row == 0 {
-            self.set_root(row.get());
-        } else {
-            let p = self.get_unchecked_mut(NonZeroU32::new_unchecked(found.row));
+        *self.get_unchecked_mut(row) = AvltrieeNode::new(Some(row), found.row, value);
+        if let Some(found_row) = found.row {
+            let p = self.get_unchecked_mut(found_row);
             if found.ord == Ordering::Greater {
                 p.left = Some(row);
             } else {
                 p.right = Some(row);
             }
             self.balance(row);
+        } else {
+            self.set_root(Some(row));
         }
     }
 
@@ -166,11 +165,7 @@ impl<T> Avltriee<T> {
         if let Some(parent) = parent {
             unsafe { self.get_unchecked_mut(parent) }.changeling(current_child, new_child);
         } else {
-            self.set_root(if let Some(new_child) = new_child {
-                new_child.get()
-            } else {
-                0
-            });
+            self.set_root(new_child);
         }
     }
 }

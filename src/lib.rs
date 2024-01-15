@@ -14,11 +14,11 @@ use std::{cmp::Ordering, num::NonZeroU32};
 
 #[derive(Debug)]
 pub struct Found {
-    row: u32,
+    row: Option<NonZeroU32>,
     ord: Ordering,
 }
 impl Found {
-    pub fn row(&self) -> u32 {
+    pub fn row(&self) -> Option<NonZeroU32> {
         self.row
     }
 
@@ -75,13 +75,13 @@ impl<T> Avltriee<T> {
     {
         let mut row = self.root();
         let mut ord = Ordering::Equal;
-        while row != 0 {
-            let node = unsafe { self.get_unchecked(NonZeroU32::new_unchecked(row)) };
+        while let Some(row_inner) = row {
+            let node = unsafe { self.get_unchecked(row_inner) };
             ord = cmp(node);
             match ord {
                 Ordering::Greater => {
                     if let Some(left) = node.left {
-                        row = left.get();
+                        row = Some(left);
                     } else {
                         break;
                     }
@@ -91,7 +91,7 @@ impl<T> Avltriee<T> {
                 }
                 Ordering::Less => {
                     if let Some(right) = node.right {
-                        row = right.get();
+                        row = Some(right);
                     } else {
                         break;
                     }
@@ -122,12 +122,12 @@ impl<T> Avltriee<T> {
         self.set_rows_count(rows.get());
     }
 
-    fn min(&self, t: u32) -> u32 {
+    fn min(&self, t: Option<NonZeroU32>) -> Option<NonZeroU32> {
         let mut t = t;
-        while t != 0 {
-            let l = unsafe { self.get_unchecked(NonZeroU32::new_unchecked(t)) }.left;
+        while let Some(t_inner) = t {
+            let l = unsafe { self.get_unchecked(t_inner) }.left;
             if let Some(l) = l {
-                t = l.get();
+                t = Some(l);
             } else {
                 break;
             }
@@ -135,12 +135,12 @@ impl<T> Avltriee<T> {
         t
     }
 
-    fn max(&self, t: u32) -> u32 {
+    fn max(&self, t: Option<NonZeroU32>) -> Option<NonZeroU32> {
         let mut t = t;
-        while t != 0 {
-            let r = unsafe { self.get_unchecked(NonZeroU32::new_unchecked(t)) }.right;
+        while let Some(t_inner) = t {
+            let r = unsafe { self.get_unchecked(t_inner) }.right;
             if let Some(r) = r {
-                t = r.get();
+                t = Some(r);
             } else {
                 break;
             }

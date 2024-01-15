@@ -35,7 +35,7 @@ impl<T> Avltriee<T> {
         let delete_node_parent = delete_node.parent;
         let delete_node_height = delete_node.height;
 
-        let left_max = unsafe { NonZeroU32::new_unchecked(self.max(delete_node_left.get())) };
+        let left_max = self.max(Some(delete_node_left)).unwrap();
 
         unsafe { self.get_unchecked_mut(left_max) }.right = Some(delete_node_right);
         unsafe { self.get_unchecked_mut(delete_node_right) }.parent = Some(left_max);
@@ -108,22 +108,22 @@ impl<T> Avltriee<T> {
                 }
             } else {
                 if let Some(same) = same {
-                    self.set_root(same.get());
+                    self.set_root(Some(same));
                     self.delete_same(row);
                 } else {
                     let left = node.left;
                     let right = node.right;
                     if left.is_none() {
                         let right = right.unwrap();
-                        self.set_root(right.get());
+                        self.set_root(Some(right));
                         unsafe { self.get_unchecked_mut(right) }.parent = None;
                     } else if right.is_none() {
                         let left = left.unwrap();
-                        self.set_root(left.get());
+                        self.set_root(Some(left));
                         unsafe { self.get_unchecked_mut(left) }.parent = None;
                     } else {
                         let (new_row, balance_row) = self.delete_intermediate(row);
-                        self.set_root(new_row.get());
+                        self.set_root(Some(new_row));
                         unsafe { self.get_unchecked_mut(new_row) }.parent = None;
                         self.reset_height(balance_row);
                         self.balance(balance_row);

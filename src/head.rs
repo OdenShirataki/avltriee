@@ -1,7 +1,9 @@
+use std::num::NonZeroU32;
+
 use crate::Avltriee;
 
 pub(crate) struct AvltrieeHead {
-    root: u32,
+    root: Option<NonZeroU32>,
     rows_count: u32,
 }
 
@@ -14,11 +16,11 @@ impl<T> Avltriee<T> {
         unsafe { &mut *(self.allocator.as_mut_ptr() as *mut AvltrieeHead) }
     }
 
-    pub(crate) fn set_root(&mut self, row: u32) {
+    pub(crate) fn set_root(&mut self, row: Option<NonZeroU32>) {
         self.head_mut().root = row;
     }
 
-    pub(crate) fn root(&self) -> u32 {
+    pub(crate) fn root(&self) -> Option<NonZeroU32> {
         self.head().root
     }
 
