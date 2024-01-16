@@ -1,4 +1,4 @@
-use std::num::{NonZeroU32, NonZeroU8};
+use std::num::NonZeroU32;
 
 #[derive(Clone, Debug, Default)]
 pub struct AvltrieeNode<T> {
@@ -6,14 +6,14 @@ pub struct AvltrieeNode<T> {
     pub(super) left: Option<NonZeroU32>,
     pub(super) right: Option<NonZeroU32>,
     pub(super) same: Option<NonZeroU32>,
-    pub(super) height: Option<NonZeroU8>,
+    pub(super) height: u8,
     value: T,
 }
 
 impl<T> AvltrieeNode<T> {
     pub fn new(row: Option<NonZeroU32>, parent: Option<NonZeroU32>, value: T) -> Self {
         AvltrieeNode {
-            height: NonZeroU8::new(if row.is_none() { 0 } else { 1 }),
+            height: if row.is_none() { 0 } else { 1 },
             parent,
             left: None,
             right: None,

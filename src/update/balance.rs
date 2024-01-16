@@ -1,4 +1,4 @@
-use std::num::{NonZeroU32, NonZeroU8};
+use std::num::NonZeroU32;
 
 use crate::{Avltriee, AvltrieeNode};
 
@@ -8,7 +8,7 @@ impl<T> Avltriee<T> {
         while let Some(u_row) = t.parent {
             let u = unsafe { self.get_unchecked(u_row) };
 
-            let height_before_balance = u.height.unwrap();
+            let height_before_balance = u.height;
 
             let (t_row, new_height) =
                 match self.height(u.left) as isize - self.height(u.right) as isize {
@@ -30,7 +30,7 @@ impl<T> Avltriee<T> {
                         }
                         (left_row, self.rotate_left(u_row))
                     }
-                    _ => (Some(u_row), self.reset_height(u_row)),
+                    _ => (t.parent, self.reset_height(u_row)),
                 };
             if height_before_balance == new_height {
                 break;
@@ -44,14 +44,10 @@ impl<T> Avltriee<T> {
     }
 
     fn height(&self, row: Option<NonZeroU32>) -> u8 {
-        if let Some(row) = row {
-            unsafe { self.get_unchecked(row) }.height.unwrap().get()
-        } else {
-            0
-        }
+        row.map_or(0, |row| unsafe { self.get_unchecked(row) }.height)
     }
 
-    fn rotate_common(&mut self, row: NonZeroU32, child_row: NonZeroU32) -> NonZeroU8 {
+    fn rotate_common(&mut self, row: NonZeroU32, child_row: NonZeroU32) -> u8 {
         let node_parent = unsafe { self.get_unchecked(row) }.parent;
 
         self.replace_child(node_parent, row, Some(child_row));
@@ -65,7 +61,7 @@ impl<T> Avltriee<T> {
         new_height
     }
 
-    fn rotate_left(&mut self, row: NonZeroU32) -> NonZeroU8 {
+    fn rotate_left(&mut self, row: NonZeroU32) -> u8 {
         let right_row = unsafe { self.get_unchecked(row) }.right.unwrap();
         let right_left = unsafe { self.get_unchecked(right_row) }.left;
 
@@ -78,7 +74,7 @@ impl<T> Avltriee<T> {
         self.rotate_common(row, right_row)
     }
 
-    fn rotate_right(&mut self, row: NonZeroU32) -> NonZeroU8 {
+    fn rotate_right(&mut self, row: NonZeroU32) -> u8 {
         let left_row = unsafe { self.get_unchecked(row) }.left.unwrap();
         let left_right = unsafe { self.get_unchecked(left_row) }.right;
 

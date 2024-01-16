@@ -49,15 +49,9 @@ impl<T> Avltriee<T> {
 
     /// Returns the node of the specified row.
     pub fn get(&self, row: NonZeroU32) -> Option<&AvltrieeNode<T>> {
-        if let Some(node) = self.allocator.get(row) {
-            if node.height.is_some() {
-                Some(unsafe { self.get_unchecked(row) })
-            } else {
-                None
-            }
-        } else {
-            None
-        }
+        self.allocator
+            .get(row)
+            .and_then(|node| (node.height != 0).then_some(unsafe { self.get_unchecked(row) }))
     }
 
     pub unsafe fn get_unchecked(&self, row: NonZeroU32) -> &AvltrieeNode<T> {

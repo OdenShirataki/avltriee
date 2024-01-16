@@ -52,17 +52,15 @@ impl<'a, T> Iterator for AvltrieeIter<'a, T> {
         self.now.map(|c| {
             self.now = if Some(c) == self.end_row {
                 let same = unsafe { self.triee.get_unchecked(c) }.same;
-                if let Some(same) = same {
-                    self.end_row = Some(same);
-                    Some(same)
-                } else {
-                    None
+                if same.is_some() {
+                    self.end_row = same;
                 }
+                same
             } else {
                 let next_func = self.next_func;
-                next_func(self.triee, c, self.same_branch).map_or(None, |(i, b)| {
+                next_func(self.triee, c, self.same_branch).map(|(i, b)| {
                     self.same_branch = b;
-                    Some(i)
+                    i
                 })
             };
             c
@@ -115,19 +113,19 @@ impl<T> Avltriee<T> {
             let node = unsafe { self.get_unchecked(row_inner) };
             match compare(node) {
                 Ordering::Greater => {
-                    if let Some(left) = node.left {
-                        keep = Some(row_inner);
-                        row = Some(left);
+                    if node.left.is_some() {
+                        keep = row;
+                        row = node.left;
                     } else {
-                        return Some(row_inner);
+                        return row;
                     }
                 }
                 Ordering::Equal => {
-                    return Some(row_inner);
+                    return row;
                 }
                 Ordering::Less => {
-                    if let Some(right) = node.right {
-                        row = Some(right);
+                    if node.right.is_some() {
+                        row = node.right;
                     } else {
                         break;
                     }
@@ -142,16 +140,7 @@ impl<T> Avltriee<T> {
         F: Fn(&T) -> Ordering,
     {
         let now = self.search_ge(search);
-        AvltrieeIter::new(
-            self,
-            now,
-            if now.is_none() {
-                None
-            } else {
-                self.max(self.root())
-            },
-            order,
-        )
+        AvltrieeIter::new(self, now, now.and_then(|_| self.max(self.root())), order)
     }
 
     /// Generates an iterator with values ​​starting from the specified value.
@@ -180,27 +169,27 @@ impl<T> Avltriee<T> {
             let node = unsafe { self.get_unchecked(row_inner) };
             match compare(node) {
                 Ordering::Greater => {
-                    if let Some(left) = node.left {
-                        keep = Some(row_inner);
-                        row = Some(left);
+                    if node.left.is_some() {
+                        keep = row;
+                        row = node.left;
                     } else {
-                        return Some(row_inner);
+                        return row;
                     }
                 }
                 Ordering::Equal => {
-                    if let Some(right) = node.right {
-                        return self.min(Some(right));
+                    if node.right.is_some() {
+                        return self.min(node.right);
                     }
                     if let Some(parent) = node.parent {
-                        if unsafe { self.get_unchecked(parent).left } == Some(row_inner) {
-                            return Some(parent);
+                        if unsafe { self.get_unchecked(parent).left } == row {
+                            return node.parent;
                         }
                     }
                     break;
                 }
                 Ordering::Less => {
-                    if let Some(right) = node.right {
-                        row = Some(right);
+                    if node.right.is_some() {
+                        row = node.right;
                     } else {
                         break;
                     }
@@ -215,16 +204,8 @@ impl<T> Avltriee<T> {
         F: Fn(&T) -> Ordering,
     {
         let now = self.search_gt(search);
-        AvltrieeIter::new(
-            self,
-            now,
-            if now.is_none() {
-                None
-            } else {
-                self.max(self.root())
-            },
-            order,
-        )
+
+        AvltrieeIter::new(self, now, now.and_then(|_| self.max(self.root())), order)
     }
 
     /// Generates an iterator of nodes with values ​​greater than the specified value.
@@ -253,21 +234,21 @@ impl<T> Avltriee<T> {
             let node = unsafe { self.get_unchecked(row_inner) };
             match compare(node) {
                 Ordering::Greater => {
-                    if let Some(left) = node.left {
-                        row = Some(left);
+                    if node.left.is_some() {
+                        row = node.left;
                     } else {
                         break;
                     }
                 }
                 Ordering::Equal => {
-                    return Some(row_inner);
+                    return row;
                 }
                 Ordering::Less => {
-                    if let Some(right) = node.right {
-                        keep = Some(row_inner);
-                        row = Some(right);
+                    if node.right.is_some() {
+                        keep = row;
+                        row = node.right;
                     } else {
-                        return Some(row_inner);
+                        return row;
                     }
                 }
             }
@@ -282,11 +263,7 @@ impl<T> Avltriee<T> {
         let end_row = self.search_le(search_from);
         AvltrieeIter::new(
             self,
-            if end_row.is_none() {
-                None
-            } else {
-                self.min(self.root())
-            },
+            end_row.and_then(|_| self.min(self.root())),
             end_row,
             order,
         )
@@ -318,29 +295,29 @@ impl<T> Avltriee<T> {
             let node = unsafe { self.get_unchecked(row_inner) };
             match compare(node) {
                 Ordering::Greater => {
-                    if let Some(left) = node.left {
-                        row = Some(left);
+                    if node.left.is_some() {
+                        row = node.left;
                     } else {
                         break;
                     }
                 }
                 Ordering::Equal => {
-                    if let Some(left) = node.left {
-                        return self.max(Some(left));
+                    if node.left.is_some() {
+                        return self.max(node.left);
                     }
                     if let Some(parent) = node.parent {
-                        if unsafe { self.get_unchecked(parent) }.right == Some(row_inner) {
-                            return Some(parent);
+                        if unsafe { self.get_unchecked(parent) }.right == row {
+                            return node.parent;
                         }
                     }
                     break;
                 }
                 Ordering::Less => {
-                    if let Some(right) = node.right {
-                        keep = Some(row_inner);
-                        row = Some(right);
+                    if node.right.is_some() {
+                        keep = row;
+                        row = node.right;
                     } else {
-                        return Some(row_inner);
+                        return row;
                     }
                 }
             }
@@ -355,11 +332,7 @@ impl<T> Avltriee<T> {
         let end_row = self.search_lt(search_from);
         AvltrieeIter::new(
             self,
-            if end_row.is_none() {
-                None
-            } else {
-                self.min(self.root())
-            },
+            end_row.and_then(|_| self.min(self.root())),
             end_row,
             order,
         )
@@ -392,20 +365,20 @@ impl<T> Avltriee<T> {
             let node = unsafe { self.get_unchecked(row_inner) };
             match compare_ge(node) {
                 Ordering::Greater => {
-                    start = Some(row_inner);
-                    if let Some(left) = node.left {
-                        row = Some(left);
+                    start = row;
+                    if node.left.is_some() {
+                        row = node.left;
                     } else {
                         break;
                     }
                 }
                 Ordering::Equal => {
-                    start = Some(row_inner);
+                    start = row;
                     break;
                 }
                 Ordering::Less => {
-                    if let Some(right) = node.right {
-                        row = Some(right);
+                    if node.right.is_some() {
+                        row = node.right;
                     } else {
                         break;
                     }
@@ -420,20 +393,20 @@ impl<T> Avltriee<T> {
                     let node = unsafe { self.get_unchecked(row_inner) };
                     match compare_le(node) {
                         Ordering::Greater => {
-                            if let Some(left) = node.left {
-                                row = Some(left);
+                            if node.left.is_some() {
+                                row = node.left;
                             } else {
                                 break;
                             }
                         }
                         Ordering::Equal => {
-                            end = Some(row_inner);
+                            end = row;
                             break;
                         }
                         Ordering::Less => {
-                            end = Some(row_inner);
-                            if let Some(right) = node.right {
-                                row = Some(right);
+                            end = row;
+                            if node.right.is_some() {
+                                row = node.right;
                             } else {
                                 break;
                             }
@@ -454,12 +427,7 @@ impl<T> Avltriee<T> {
         E: Fn(&T) -> Ordering,
     {
         if let Some(range) = self.search_range(start, end) {
-            AvltrieeIter::new(
-                self,
-                Some(unsafe { NonZeroU32::new_unchecked(range.start.get()) }),
-                Some(unsafe { NonZeroU32::new_unchecked(range.end.get()) }),
-                order,
-            )
+            AvltrieeIter::new(self, Some(range.start), Some(range.end), order)
         } else {
             AvltrieeIter::new(self, None, None, order)
         }
@@ -492,44 +460,41 @@ impl<T> Avltriee<T> {
         if let Some(same) = node.same {
             Some((
                 same,
-                Some(if let Some(same_branch) = same_branch {
+                if same_branch.is_some() {
                     same_branch
                 } else {
-                    c
-                }),
+                    Some(c)
+                },
             ))
         } else {
-            let mut current = c;
-            if let Some(same_branch) = same_branch {
-                current = same_branch;
-                node = unsafe { self.get_unchecked(current) };
-            }
-            if let Some(right) = node.right {
-                Some((self.min(Some(right)).unwrap(), None))
+            let current = if let Some(same_branch) = same_branch {
+                node = unsafe { self.get_unchecked(same_branch) };
+                same_branch
             } else {
-                if let Some(parent) = node.parent {
+                c
+            };
+            if node.right.is_some() {
+                Some((self.min(node.right).unwrap(), None))
+            } else {
+                node.parent.and_then(|parent| {
                     if unsafe { self.get_unchecked(parent) }.left == Some(current) {
                         Some((parent, None))
                     } else {
                         self.retroactive(parent).map(|i| (i, None))
                     }
-                } else {
-                    None
-                }
+                })
             }
         }
     }
 
     fn retroactive(&self, c: NonZeroU32) -> Option<NonZeroU32> {
-        if let Some(parent) = unsafe { self.get_unchecked(c) }.parent {
+        unsafe { self.get_unchecked(c) }.parent.and_then(|parent| {
             if unsafe { self.get_unchecked(parent) }.right == Some(c) {
                 self.retroactive(parent).filter(|p| p.get() != c.get())
             } else {
                 Some(parent)
             }
-        } else {
-            None
-        }
+        })
     }
 
     fn next_desc(
@@ -553,31 +518,27 @@ impl<T> Avltriee<T> {
                 current = same_branch;
                 node = unsafe { self.get_unchecked(current) };
             }
-            if let Some(left) = node.left {
-                Some((self.max(Some(left)).unwrap(), None))
+            if node.left.is_some() {
+                Some((self.max(node.left).unwrap(), None))
             } else {
-                if let Some(parent) = node.parent {
+                node.parent.and_then(|parent| {
                     if unsafe { self.get_unchecked(parent) }.right == Some(current) {
                         Some((parent, None))
                     } else {
                         self.retroactive_desc(parent).map(|i| (i, None))
                     }
-                } else {
-                    None
-                }
+                })
             }
         }
     }
 
     fn retroactive_desc(&self, c: NonZeroU32) -> Option<NonZeroU32> {
-        if let Some(parent) = unsafe { self.get_unchecked(c) }.parent {
+        unsafe { self.get_unchecked(c) }.parent.and_then(|parent| {
             if unsafe { self.get_unchecked(parent) }.left == Some(c) {
                 self.retroactive_desc(parent).filter(|p| *p != c)
             } else {
                 Some(parent)
             }
-        } else {
-            None
-        }
+        })
     }
 }

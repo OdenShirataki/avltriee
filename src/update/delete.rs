@@ -69,39 +69,39 @@ impl<T> Avltriee<T> {
         if let Some(node) = self.get(row) {
             let row_parent = node.parent;
             let same = node.same;
-            if let Some(row_parent) = row_parent {
-                let parent_same = unsafe { self.get_unchecked_mut(row_parent) }.same;
+            if let Some(row_parent_inner) = row_parent {
+                let parent_same = unsafe { self.get_unchecked_mut(row_parent_inner) }.same;
                 if parent_same == Some(row) {
-                    unsafe { self.get_unchecked_mut(row_parent) }.same = same;
+                    unsafe { self.get_unchecked_mut(row_parent_inner) }.same = same;
                     if same.is_some() {
                         self.delete_same(row);
                     }
                 } else if let Some(same) = same {
-                    unsafe { self.get_unchecked_mut(row_parent) }.changeling(row, Some(same));
+                    unsafe { self.get_unchecked_mut(row_parent_inner) }.changeling(row, Some(same));
                     self.delete_same(row);
                 } else {
                     let left = unsafe { self.get_unchecked(row) }.left;
                     let right = unsafe { self.get_unchecked(row) }.right;
                     if left.is_none() {
-                        unsafe { self.get_unchecked_mut(row_parent) }.changeling(row, right);
+                        unsafe { self.get_unchecked_mut(row_parent_inner) }.changeling(row, right);
                         if let Some(right) = right {
-                            unsafe { self.get_unchecked_mut(right) }.parent = Some(row_parent);
+                            unsafe { self.get_unchecked_mut(right) }.parent = row_parent;
                         }
-                        self.balance(row_parent);
+                        self.balance(row_parent_inner);
                     } else if right.is_none() {
-                        unsafe { self.get_unchecked_mut(row_parent) }.changeling(row, left);
+                        unsafe { self.get_unchecked_mut(row_parent_inner) }.changeling(row, left);
                         if let Some(left) = left {
-                            unsafe { self.get_unchecked_mut(left) }.parent = Some(row_parent);
+                            unsafe { self.get_unchecked_mut(left) }.parent = row_parent;
                         }
-                        self.balance(row_parent);
+                        self.balance(row_parent_inner);
                     } else {
                         let (new_row, balance_row) = self.delete_intermediate(row);
-                        unsafe { self.get_unchecked_mut(row_parent) }
+                        unsafe { self.get_unchecked_mut(row_parent_inner) }
                             .changeling(row, Some(new_row));
                         let delete_row_height = unsafe { self.get_unchecked(row) }.height;
                         let node = unsafe { self.get_unchecked_mut(new_row) };
                         node.height = delete_row_height;
-                        node.parent = Some(row_parent);
+                        node.parent = row_parent;
                         self.reset_height(balance_row);
                         self.balance(balance_row);
                     }
@@ -114,13 +114,15 @@ impl<T> Avltriee<T> {
                     let left = node.left;
                     let right = node.right;
                     if left.is_none() {
-                        let right = right.unwrap();
-                        self.set_root(Some(right));
-                        unsafe { self.get_unchecked_mut(right) }.parent = None;
+                        if let Some(right) = right {
+                            unsafe { self.get_unchecked_mut(right) }.parent = None;
+                        }
+                        self.set_root(right);
                     } else if right.is_none() {
-                        let left = left.unwrap();
-                        self.set_root(Some(left));
-                        unsafe { self.get_unchecked_mut(left) }.parent = None;
+                        if let Some(left) = left {
+                            unsafe { self.get_unchecked_mut(left) }.parent = None;
+                        }
+                        self.set_root(left);
                     } else {
                         let (new_row, balance_row) = self.delete_intermediate(row);
                         self.set_root(Some(new_row));
@@ -130,13 +132,13 @@ impl<T> Avltriee<T> {
                     }
                 }
             }
-            unsafe { self.get_unchecked_mut(row) }.height = None;
+            unsafe { self.get_unchecked_mut(row) }.height = 0;
 
             if row.get() == self.rows_count() {
                 let mut current = row.get() - 1;
                 if current > 0 {
-                    while let None =
-                        unsafe { self.allocator.get(NonZeroU32::new_unchecked(current)) }
+                    while unsafe { self.allocator.get(NonZeroU32::new_unchecked(current)) }
+                        .is_none()
                     {
                         current -= 1;
                         if current == 0 {

@@ -1,10 +1,7 @@
 mod balance;
 mod delete;
 
-use std::{
-    cmp::Ordering,
-    num::{NonZeroU32, NonZeroU8},
-};
+use std::{cmp::Ordering, num::NonZeroU32};
 
 use async_trait::async_trait;
 
@@ -138,21 +135,19 @@ impl<T> Avltriee<T> {
         }
     }
 
-    fn reset_height(&mut self, row: NonZeroU32) -> NonZeroU8 {
+    fn reset_height(&mut self, row: NonZeroU32) -> u8 {
         let node = unsafe { self.get_unchecked(row) };
-        let left_height = if let Some(left) = node.left {
-            unsafe { self.get_unchecked(left) }.height.unwrap().get()
-        } else {
-            0
-        };
-        let right_height = if let Some(right) = node.right {
-            unsafe { self.get_unchecked(right) }.height.unwrap().get()
-        } else {
-            0
-        };
-        let height =
-            unsafe { NonZeroU8::new_unchecked(std::cmp::max(left_height, right_height) + 1) };
-        unsafe { self.get_unchecked_mut(row) }.height = Some(height);
+
+        let left_height = node
+            .left
+            .map_or(0, |left| unsafe { self.get_unchecked(left) }.height);
+
+        let right_height = node
+            .right
+            .map_or(0, |right| unsafe { self.get_unchecked(right) }.height);
+
+        let height = std::cmp::max(left_height, right_height) + 1;
+        unsafe { self.get_unchecked_mut(row) }.height = height;
         height
     }
 
