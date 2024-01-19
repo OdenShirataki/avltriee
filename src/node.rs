@@ -11,9 +11,9 @@ pub struct AvltrieeNode<T> {
 }
 
 impl<T> AvltrieeNode<T> {
-    pub fn new(row: Option<NonZeroU32>, parent: Option<NonZeroU32>, value: T) -> Self {
+    pub(crate) fn new(parent: Option<NonZeroU32>, value: T) -> Self {
         AvltrieeNode {
-            height: if row.is_none() { 0 } else { 1 },
+            height: 1,
             parent,
             left: None,
             right: None,

@@ -18,7 +18,7 @@ fn test_iter() {
     futures::executor::block_on(async {
         for i in 1..=TEST_LENGTH {
             let num = die.sample(&mut rng);
-            println!("update:{}", num);
+            println!("update:{} {}", i, num);
             t.update(i.try_into().unwrap(), num).await;
         }
     });

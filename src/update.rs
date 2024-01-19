@@ -121,7 +121,7 @@ impl<T> Avltriee<T> {
     {
         self.allocate(row);
 
-        *self.get_unchecked_mut(row) = AvltrieeNode::new(Some(row), found.row, value);
+        *self.get_unchecked_mut(row) = AvltrieeNode::new(found.row, value);
         if let Some(found_row) = found.row {
             let p = self.get_unchecked_mut(found_row);
             if found.ord == Ordering::Greater {
@@ -135,7 +135,7 @@ impl<T> Avltriee<T> {
         }
     }
 
-    fn reset_height(&mut self, row: NonZeroU32) -> u8 {
+    fn reset_height(&mut self, row: NonZeroU32) {
         let node = unsafe { self.get_unchecked(row) };
 
         let left_height = node
@@ -146,9 +146,8 @@ impl<T> Avltriee<T> {
             .right
             .map_or(0, |right| unsafe { self.get_unchecked(right) }.height);
 
-        let height = std::cmp::max(left_height, right_height) + 1;
-        unsafe { self.get_unchecked_mut(row) }.height = height;
-        height
+        unsafe { self.get_unchecked_mut(row) }.height =
+            std::cmp::max(left_height, right_height) + 1;
     }
 
     fn replace_child(
