@@ -33,7 +33,7 @@ pub struct Avltriee<T, A = DefaultAvltrieeAllocator<T>> {
     _marker: PhantomData<fn() -> T>,
 }
 
-impl<T: Default + 'static> Avltriee<T, DefaultAvltrieeAllocator<T>> {
+impl<T: Default> Avltriee<T, DefaultAvltrieeAllocator<T>> {
     /// Creates the Avltriee with Default allocator.
     pub fn new() -> Self {
         Self {
