@@ -4,13 +4,14 @@ mod iter;
 mod node;
 mod update;
 
-pub use allocator::AvltrieeAllocator;
+use std::{cmp::Ordering, marker::PhantomData, num::NonZeroU32};
+
 use allocator::DefaultAvltrieeAllocator;
+
+pub use allocator::AvltrieeAllocator;
 pub use iter::AvltrieeIter;
 pub use node::AvltrieeNode;
 pub use update::AvltrieeHolder;
-
-use std::{cmp::Ordering, num::NonZeroU32};
 
 #[derive(Debug)]
 pub struct Found {
@@ -27,24 +28,28 @@ impl Found {
     }
 }
 
-pub struct Avltriee<T> {
-    allocator: Box<dyn AvltrieeAllocator<T>>,
+pub struct Avltriee<T, A = DefaultAvltrieeAllocator<T>> {
+    allocator: A,
+    _marker: PhantomData<fn() -> T>,
 }
 
-impl<T> Avltriee<T> {
-    /// Creates the Avltriee<T>.
-    pub fn new() -> Self
-    where
-        T: Default + 'static,
-    {
+impl<T: Default + 'static> Avltriee<T, DefaultAvltrieeAllocator<T>> {
+    /// Creates the Avltriee with Default allocator.
+    pub fn new() -> Self {
         Self {
-            allocator: Box::new(DefaultAvltrieeAllocator::new()),
+            allocator: DefaultAvltrieeAllocator::new(),
+            _marker: PhantomData,
         }
     }
+}
 
-    /// Creates the Avltriee<T> with [AvltrieeAllocator].
-    pub fn with_allocator(allocator: Box<dyn AvltrieeAllocator<T>>) -> Self {
-        Self { allocator }
+impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
+    /// Creates the Avltriee with [AvltrieeAllocator].
+    pub fn with_allocator(allocator: A) -> Self {
+        Self {
+            allocator,
+            _marker: PhantomData,
+        }
     }
 
     /// Returns the node of the specified row.
@@ -63,10 +68,7 @@ impl<T> Avltriee<T> {
     }
 
     /// Finds the edge of a node from the specified value.
-    pub fn search<F>(&self, cmp: F) -> Found
-    where
-        F: Fn(&T) -> Ordering,
-    {
+    pub fn search<F: Fn(&T) -> Ordering>(&self, cmp: F) -> Found {
         let mut row = self.root();
         let mut ord = Ordering::Equal;
         while let Some(row_inner) = row {

@@ -5,21 +5,23 @@ use std::{cmp::Ordering, num::NonZeroU32};
 
 use async_trait::async_trait;
 
+use crate::AvltrieeAllocator;
+
 use super::{Avltriee, AvltrieeNode, Found};
 
-impl<T> AsRef<Avltriee<T>> for Avltriee<T> {
-    fn as_ref(&self) -> &Avltriee<T> {
+impl<T, A> AsRef<Avltriee<T, A>> for Avltriee<T, A> {
+    fn as_ref(&self) -> &Avltriee<T, A> {
         self
     }
 }
-impl<T> AsMut<Avltriee<T>> for Avltriee<T> {
-    fn as_mut(&mut self) -> &mut Avltriee<T> {
+impl<T, A> AsMut<Avltriee<T, A>> for Avltriee<T, A> {
+    fn as_mut(&mut self) -> &mut Avltriee<T, A> {
         self
     }
 }
 
 #[async_trait(?Send)]
-pub trait AvltrieeHolder<T, I>: AsRef<Avltriee<T>> + AsMut<Avltriee<T>> {
+pub trait AvltrieeHolder<T, I, A>: AsRef<Avltriee<T, A>> + AsMut<Avltriee<T, A>> {
     fn cmp(&self, left: &T, right: &I) -> Ordering;
     fn search(&self, input: &I) -> Found;
     fn convert_value(&mut self, input: I) -> T;
@@ -27,7 +29,7 @@ pub trait AvltrieeHolder<T, I>: AsRef<Avltriee<T>> + AsMut<Avltriee<T>> {
 }
 
 #[async_trait(?Send)]
-impl<T: Ord> AvltrieeHolder<T, T> for Avltriee<T> {
+impl<T: Ord, A: AvltrieeAllocator<T>> AvltrieeHolder<T, T, A> for Avltriee<T, A> {
     fn cmp(&self, left: &T, right: &T) -> Ordering {
         left.cmp(right)
     }
@@ -45,7 +47,7 @@ impl<T: Ord> AvltrieeHolder<T, T> for Avltriee<T> {
     }
 }
 
-impl<T> Avltriee<T> {
+impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
     /// Creates a new row and assigns a value to it.
     pub async fn insert(&mut self, value: T) -> NonZeroU32
     where
@@ -68,7 +70,7 @@ impl<T> Avltriee<T> {
     /// Updates the value of the specified row via trait [AvltrieeHolder].
     /// If you specify a row that does not exist, space will be automatically allocated. If you specify a row that is too large, memory may be allocated unnecessarily.
     pub async fn update_with_holder<I>(
-        holder: &mut dyn AvltrieeHolder<T, I>,
+        holder: &mut impl AvltrieeHolder<T, I, A>,
         row: NonZeroU32,
         input: I,
     ) where

@@ -1,13 +1,13 @@
 use std::num::NonZeroU32;
 
-use crate::Avltriee;
+use crate::{Avltriee, AvltrieeAllocator};
 
 pub(crate) struct AvltrieeHead {
     root: Option<NonZeroU32>,
     rows_count: u32,
 }
 
-impl<T> Avltriee<T> {
+impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
     fn head(&self) -> &AvltrieeHead {
         unsafe { &*(self.allocator.as_ptr() as *const AvltrieeHead) }
     }
