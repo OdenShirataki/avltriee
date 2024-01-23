@@ -56,7 +56,7 @@ impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
     pub fn get(&self, row: NonZeroU32) -> Option<&AvltrieeNode<T>> {
         self.allocator
             .get(row)
-            .and_then(|node| (node.height != 0).then_some(unsafe { self.get_unchecked(row) }))
+            .and_then(|node| (node.height != 0).then(|| unsafe { self.get_unchecked(row) }))
     }
 
     pub unsafe fn get_unchecked(&self, row: NonZeroU32) -> &AvltrieeNode<T> {
@@ -122,8 +122,8 @@ impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
         let mut t = t;
         while let Some(t_inner) = t {
             let l = unsafe { self.get_unchecked(t_inner) }.left;
-            if let Some(l) = l {
-                t = Some(l);
+            if l.is_some() {
+                t = l;
             } else {
                 break;
             }
@@ -135,8 +135,8 @@ impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
         let mut t = t;
         while let Some(t_inner) = t {
             let r = unsafe { self.get_unchecked(t_inner) }.right;
-            if let Some(r) = r {
-                t = Some(r);
+            if r.is_some() {
+                t = r;
             } else {
                 break;
             }
