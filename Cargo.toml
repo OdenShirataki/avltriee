@@ -1,6 +1,6 @@
 [package]
 name = "avltriee"
-version = "0.66.2"
+version = "0.67.0"
 edition = "2021"
 
 authors = ["Oden Shirataki <oden.srtk@gmail.com>"]
@@ -15,7 +15,6 @@ categories = ["algorithms"]
 license = "MIT/Apache-2.0"
 
 [dependencies]
-async-trait = "0.1.74"
 futures = "0.3.29"
 
 [dev-dependencies]

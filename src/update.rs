@@ -3,8 +3,6 @@ mod delete;
 
 use std::{cmp::Ordering, num::NonZeroU32};
 
-use async_trait::async_trait;
-
 use crate::AvltrieeAllocator;
 
 use super::{Avltriee, AvltrieeNode, Found};
@@ -20,15 +18,13 @@ impl<T, A> AsMut<Avltriee<T, A>> for Avltriee<T, A> {
     }
 }
 
-#[async_trait(?Send)]
 pub trait AvltrieeHolder<T, I, A>: AsRef<Avltriee<T, A>> + AsMut<Avltriee<T, A>> {
     fn cmp(&self, left: &T, right: &I) -> Ordering;
     fn search(&self, input: &I) -> Found;
     fn convert_value(&mut self, input: I) -> T;
-    async fn delete_before_update(&mut self, row: NonZeroU32);
+    fn delete_before_update(&mut self, row: NonZeroU32) -> impl std::future::Future<Output = ()>;
 }
 
-#[async_trait(?Send)]
 impl<T: Ord, A: AvltrieeAllocator<T>> AvltrieeHolder<T, T, A> for Avltriee<T, A> {
     fn cmp(&self, left: &T, right: &T) -> Ordering {
         left.cmp(right)
