@@ -22,7 +22,7 @@ pub trait AvltrieeHolder<T, I, A>: AsRef<Avltriee<T, A>> + AsMut<Avltriee<T, A>>
     fn cmp(&self, left: &T, right: &I) -> Ordering;
     fn search(&self, input: &I) -> Found;
     fn convert_value(&mut self, input: I) -> T;
-    fn delete_before_update(&mut self, row: NonZeroU32) -> impl std::future::Future<Output = ()>;
+    fn delete_before_update(&mut self, row: NonZeroU32);
 }
 
 impl<T: Ord, A: AvltrieeAllocator<T>> AvltrieeHolder<T, T, A> for Avltriee<T, A> {
@@ -38,34 +38,34 @@ impl<T: Ord, A: AvltrieeAllocator<T>> AvltrieeHolder<T, T, A> for Avltriee<T, A>
         input
     }
 
-    async fn delete_before_update(&mut self, row: NonZeroU32) {
+    fn delete_before_update(&mut self, row: NonZeroU32) {
         self.delete(row);
     }
 }
 
 impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
     /// Creates a new row and assigns a value to it.
-    pub async fn insert(&mut self, value: T) -> NonZeroU32
+    pub fn insert(&mut self, value: T) -> NonZeroU32
     where
         T: Ord + Clone + Default,
     {
         let row = unsafe { NonZeroU32::new_unchecked(self.rows_count() + 1) };
-        self.update(row, value).await;
+        self.update(row, value);
         row
     }
 
     /// Updates the value in the specified row.
     /// If you specify a row that does not exist, space will be automatically allocated. If you specify a row that is too large, memory may be allocated unnecessarily.
-    pub async fn update(&mut self, row: NonZeroU32, value: T)
+    pub fn update(&mut self, row: NonZeroU32, value: T)
     where
         T: Ord + Clone + Default,
     {
-        Self::update_with_holder(self, row, value).await;
+        Self::update_with_holder(self, row, value);
     }
 
     /// Updates the value of the specified row via trait [AvltrieeHolder].
     /// If you specify a row that does not exist, space will be automatically allocated. If you specify a row that is too large, memory may be allocated unnecessarily.
-    pub async fn update_with_holder<I>(
+    pub fn update_with_holder<I>(
         holder: &mut impl AvltrieeHolder<T, I, A>,
         row: NonZeroU32,
         input: I,
@@ -76,7 +76,7 @@ impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
             if holder.cmp(node, &input) == Ordering::Equal {
                 return; //update value eq exists value
             }
-            holder.delete_before_update(row).await;
+            holder.delete_before_update(row);
         }
 
         let found = holder.search(&input);
