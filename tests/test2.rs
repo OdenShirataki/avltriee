@@ -1,4 +1,4 @@
-use std::{collections::HashSet, ops::Deref};
+use std::collections::HashSet;
 
 use avltriee::Avltriee;
 
@@ -33,7 +33,7 @@ fn test2() {
     fn output(t: &Avltriee<i64>, deleted: &HashSet<u32>) {
         let mut c = 0;
         for i in t.iter() {
-            println!("{}:{}:{}", c, i, unsafe { t.get_unchecked(i) }.deref());
+            println!("{}:{}:{}", c, i, **unsafe { t.get_unchecked(i) });
             c += 1;
         }
         println!("output:{} {}\n", c, 10 - deleted.len());
