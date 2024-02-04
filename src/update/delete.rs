@@ -2,7 +2,7 @@ use std::num::NonZeroU32;
 
 use crate::{Avltriee, AvltrieeAllocator};
 
-impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
+impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     fn delete_same(&mut self, delete_row: NonZeroU32) {
         let delete_node = unsafe { self.get_unchecked(delete_row) };
 

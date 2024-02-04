@@ -7,7 +7,7 @@ pub(crate) struct AvltrieeHead {
     rows_count: u32,
 }
 
-impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
+impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     fn head(&self) -> &AvltrieeHead {
         unsafe { &*(self.allocator.as_ptr() as *const AvltrieeHead) }
     }

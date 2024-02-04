@@ -18,7 +18,7 @@ fn test_iter() {
     for i in 1..=TEST_LENGTH {
         let num = die.sample(&mut rng);
         println!("update:{} {}", i, num);
-        t.update(i.try_into().unwrap(), num);
+        t.update(i.try_into().unwrap(), &num);
     }
 
     let mut deleted: HashSet<u32> = HashSet::new();
@@ -52,7 +52,7 @@ fn test_desc_iter() {
     for i in 1..=TEST_LENGTH {
         let num = die.sample(&mut rng);
         println!("update:{}", i);
-        t.update(i.try_into().unwrap(), num);
+        t.update(i.try_into().unwrap(), &num);
     }
 
     for i in t.desc_iter() {
@@ -74,24 +74,24 @@ fn test_iter_by_search() {
     for i in 1..=len {
         let num = die.sample(&mut rng);
         println!("update:{}", num);
-        t.update(i.try_into().unwrap(), num);
+        t.update(i.try_into().unwrap(), &num);
     }
 
     println!("iter_by(5)");
-    for i in t.iter_by(|v| v.cmp(&5)) {
+    for i in t.iter_by(&5) {
         println!("{}:{}", i, **unsafe { t.get_unchecked(i) });
     }
     println!("iter_range(3-5)");
-    for i in t.iter_range(|v| v.cmp(&3), |v| v.cmp(&5)) {
+    for i in t.iter_range(&3, &5) {
         println!("{}:{}", i, **unsafe { t.get_unchecked(i) });
     }
 
     println!("iter_from(5)");
-    for i in t.iter_from(|v| v.cmp(&5)) {
+    for i in t.iter_from(&5) {
         println!("{}:{}", i, **unsafe { t.get_unchecked(i) });
     }
     println!("iter_to(5)");
-    for i in t.iter_to(|v| v.cmp(&5)) {
+    for i in t.iter_to(&5) {
         println!("{}:{}", i, **unsafe { t.get_unchecked(i) });
     }
 }
@@ -105,7 +105,7 @@ fn test_insert_10000() {
     let mut t = Avltriee::new();
 
     for i in 1..=TEST_LENGTH {
-        t.insert(i);
+        t.insert(&i);
     }
 
     println!("OK:{}", 1000000);
