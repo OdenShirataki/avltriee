@@ -1,6 +1,6 @@
-use std::{cmp::Ordering, num::NonZeroU32, ops::Range};
+use std::{cmp::Ordering, num::NonZeroU32};
 
-use crate::AvltrieeAllocator;
+use crate::{ord::AvltrieeOrd, AvltrieeAllocator};
 
 use super::Avltriee;
 
@@ -10,44 +10,187 @@ enum Order {
     Desc,
 }
 
-pub struct AvltrieeIter<'a, T, A> {
+pub struct AvltrieeIter<'a, T, I: ?Sized, A> {
     now: Option<NonZeroU32>,
     end_row: Option<NonZeroU32>,
     same_branch: Option<NonZeroU32>,
-    triee: &'a Avltriee<T, A>,
+    triee: &'a Avltriee<T, I, A>,
     next_func: fn(
-        &Avltriee<T, A>,
+        &Avltriee<T, I, A>,
         NonZeroU32,
         Option<NonZeroU32>,
     ) -> Option<(NonZeroU32, Option<NonZeroU32>)>,
 }
-impl<'a, T, A: AvltrieeAllocator<T>> AvltrieeIter<'a, T, A> {
+impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> AvltrieeIter<'a, T, I, A> {
     fn new(
-        triee: &'a Avltriee<T, A>,
+        triee: &'a Avltriee<T, I, A>,
         now: Option<NonZeroU32>,
         end_row: Option<NonZeroU32>,
         order: Order,
-    ) -> AvltrieeIter<'a, T, A> {
+    ) -> AvltrieeIter<'a, T, I, A> {
         match order {
             Order::Asc => AvltrieeIter {
                 now,
                 end_row,
                 same_branch: None,
                 triee,
-                next_func: Avltriee::<T, A>::next,
+                next_func: Avltriee::<T, I, A>::next,
             },
             Order::Desc => AvltrieeIter {
                 now: end_row,
                 end_row: now,
                 same_branch: None,
                 triee,
-                next_func: Avltriee::<T, A>::next_desc,
+                next_func: Avltriee::<T, I, A>::next_desc,
             },
+        }
+    }
+
+    /// Generates an iterator of nodes with the same value as the specified value.
+    pub fn by<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
+        holder: &'a H,
+        value: &I,
+    ) -> AvltrieeIter<'a, T, I, A> {
+        let triee = holder.as_ref();
+        let found = triee.search_edge(holder, value);
+        let row = if found.ord == Ordering::Equal {
+            found.row
+        } else {
+            None
+        };
+        AvltrieeIter::new(triee, row, row, Order::Asc)
+    }
+
+    pub fn from_asc<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
+        holder: &'a H,
+        value: &I,
+    ) -> AvltrieeIter<'a, T, I, A> {
+        Self::from_inner(holder, value, Order::Asc)
+    }
+
+    pub fn from_desc<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
+        holder: &'a H,
+        value: &I,
+    ) -> AvltrieeIter<'a, T, I, A> {
+        Self::from_inner(holder, value, Order::Desc)
+    }
+
+    fn from_inner<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
+        holder: &'a H,
+        value: &I,
+        order: Order,
+    ) -> AvltrieeIter<'a, T, I, A> {
+        let triee = holder.as_ref();
+        let now = triee.search_ge(holder, value);
+        AvltrieeIter::new(triee, now, now.and_then(|_| triee.max(triee.root())), order)
+    }
+
+    pub fn to_asc<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
+        holder: &'a H,
+        value: &I,
+    ) -> AvltrieeIter<'a, T, I, A> {
+        Self::to_inner(holder, value, Order::Asc)
+    }
+
+    pub fn to_desc<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
+        holder: &'a H,
+        value: &I,
+    ) -> AvltrieeIter<'a, T, I, A> {
+        Self::to_inner(holder, value, Order::Desc)
+    }
+
+    fn to_inner<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
+        holder: &'a H,
+        value: &I,
+        order: Order,
+    ) -> AvltrieeIter<'a, T, I, A> {
+        let triee = holder.as_ref();
+        let end_row = triee.search_le(holder, value);
+        AvltrieeIter::new(
+            triee,
+            end_row.and_then(|_| triee.min(triee.root())),
+            end_row,
+            order,
+        )
+    }
+
+    pub fn over_asc<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
+        holder: &'a H,
+        value: &I,
+    ) -> AvltrieeIter<'a, T, I, A> {
+        Self::over_inner(holder, value, Order::Asc)
+    }
+
+    pub fn over_desc<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
+        holder: &'a H,
+        value: &I,
+    ) -> AvltrieeIter<'a, T, I, A> {
+        Self::over_inner(holder, value, Order::Desc)
+    }
+
+    fn over_inner<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
+        holder: &'a H,
+        value: &I,
+        order: Order,
+    ) -> AvltrieeIter<'a, T, I, A> {
+        let triee = holder.as_ref();
+        let now = triee.search_gt(holder, value);
+        AvltrieeIter::new(triee, now, now.and_then(|_| triee.max(triee.root())), order)
+    }
+
+    pub fn under_asc<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
+        holder: &'a H,
+        value: &I,
+    ) -> AvltrieeIter<'a, T, I, A> {
+        Self::under_inner(holder, value, Order::Asc)
+    }
+
+    pub fn under_desc<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
+        holder: &'a H,
+        value: &I,
+    ) -> AvltrieeIter<'a, T, I, A> {
+        Self::under_inner(holder, value, Order::Desc)
+    }
+
+    fn under_inner<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
+        holder: &'a H,
+        value: &I,
+        order: Order,
+    ) -> AvltrieeIter<'a, T, I, A> {
+        let triee = holder.as_ref();
+        let end_row = triee.search_lt(holder, value);
+        AvltrieeIter::new(
+            triee,
+            end_row.and_then(|_| triee.min(triee.root())),
+            end_row,
+            order,
+        )
+    }
+
+    pub fn range_asc<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
+        holder: &'a H,
+        start: &I,
+        end: &I,
+    ) -> AvltrieeIter<'a, T, I, A> {
+        Self::range_inner(holder, start, end, Order::Asc)
+    }
+
+    fn range_inner<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
+        holder: &'a H,
+        start: &I,
+        end: &I,
+        order: Order,
+    ) -> AvltrieeIter<'a, T, I, A> {
+        let triee = holder.as_ref();
+        if let Some(range) = triee.search_range(holder, start, end) {
+            AvltrieeIter::new(triee, Some(range.start), Some(range.end), order)
+        } else {
+            AvltrieeIter::new(triee, None, None, order)
         }
     }
 }
 
-impl<'a, T, A: AvltrieeAllocator<T>> Iterator for AvltrieeIter<'a, T, A> {
+impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> Iterator for AvltrieeIter<'a, T, I, A> {
     type Item = NonZeroU32;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -70,9 +213,9 @@ impl<'a, T, A: AvltrieeAllocator<T>> Iterator for AvltrieeIter<'a, T, A> {
     }
 }
 
-impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
+impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     /// Generate an iterator.
-    pub fn iter(&self) -> AvltrieeIter<T, A> {
+    pub fn iter(&self) -> AvltrieeIter<T, I, A> {
         AvltrieeIter::new(
             &self,
             self.min(self.root()),
@@ -82,7 +225,7 @@ impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
     }
 
     /// Generate an iterator. Iterates in descending order.
-    pub fn desc_iter(&self) -> AvltrieeIter<T, A> {
+    pub fn desc_iter(&self) -> AvltrieeIter<T, I, A> {
         AvltrieeIter::new(
             &self,
             self.min(self.root()),
@@ -92,365 +235,90 @@ impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
     }
 
     /// Generates an iterator of nodes with the same value as the specified value.
-    pub fn iter_by<'a, F>(&'a self, cmp: F) -> AvltrieeIter<T, A>
+    pub fn iter_by<'a>(&'a self, value: &I) -> AvltrieeIter<T, I, A>
     where
-        F: Fn(&T) -> Ordering,
+        Self: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>,
     {
-        let found = self.search(cmp);
-        let row = if found.ord == Ordering::Equal {
-            found.row
-        } else {
-            None
-        };
-        AvltrieeIter::new(&self, row, row, Order::Asc)
-    }
-
-    fn search_ge<F>(&self, compare: F) -> Option<NonZeroU32>
-    where
-        F: Fn(&T) -> Ordering,
-    {
-        let mut row = self.root();
-        let mut keep = None;
-        while let Some(row_inner) = row {
-            let node = unsafe { self.get_unchecked(row_inner) };
-            match compare(node) {
-                Ordering::Greater => {
-                    if node.left.is_some() {
-                        keep = row;
-                        row = node.left;
-                    } else {
-                        return row;
-                    }
-                }
-                Ordering::Equal => {
-                    return row;
-                }
-                Ordering::Less => {
-                    if node.right.is_some() {
-                        row = node.right;
-                    } else {
-                        break;
-                    }
-                }
-            }
-        }
-        keep
-    }
-
-    fn iter_from_inner<'a, F>(&'a self, search: F, order: Order) -> AvltrieeIter<T, A>
-    where
-        F: Fn(&T) -> Ordering,
-    {
-        let now = self.search_ge(search);
-        AvltrieeIter::new(self, now, now.and_then(|_| self.max(self.root())), order)
+        AvltrieeIter::by(self, value)
     }
 
     /// Generates an iterator with values ​​starting from the specified value.
-    pub fn iter_from<'a, F>(&'a self, search: F) -> AvltrieeIter<T, A>
+    pub fn iter_from<'a>(&'a self, value: &I) -> AvltrieeIter<T, I, A>
     where
-        F: Fn(&T) -> Ordering,
+        Self: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>,
     {
-        self.iter_from_inner(search, Order::Asc)
+        AvltrieeIter::from_asc(self, value)
     }
 
     /// Generates an iterator with values ​​starting from the specified value. Iterates in descending order.
-    pub fn desc_iter_from<'a, F>(&'a self, search: F) -> AvltrieeIter<T, A>
+    pub fn desc_iter_from<'a>(&'a self, value: &I) -> AvltrieeIter<T, I, A>
     where
-        F: Fn(&T) -> Ordering,
+        Self: AvltrieeOrd<T, I, A>,
     {
-        self.iter_from_inner(search, Order::Desc)
-    }
-
-    fn search_gt<F>(&self, compare: F) -> Option<NonZeroU32>
-    where
-        F: Fn(&T) -> Ordering,
-    {
-        let mut row = self.root();
-        let mut keep = None;
-        while let Some(row_inner) = row {
-            let node = unsafe { self.get_unchecked(row_inner) };
-            match compare(node) {
-                Ordering::Greater => {
-                    if node.left.is_some() {
-                        keep = row;
-                        row = node.left;
-                    } else {
-                        return row;
-                    }
-                }
-                Ordering::Equal => {
-                    if node.right.is_some() {
-                        return self.min(node.right);
-                    }
-                    if let Some(parent) = node.parent {
-                        if unsafe { self.get_unchecked(parent).left } == row {
-                            return node.parent;
-                        }
-                    }
-                    break;
-                }
-                Ordering::Less => {
-                    if node.right.is_some() {
-                        row = node.right;
-                    } else {
-                        break;
-                    }
-                }
-            }
-        }
-        keep
-    }
-
-    fn iter_over_inner<'a, F>(&'a self, search: F, order: Order) -> AvltrieeIter<T, A>
-    where
-        F: Fn(&T) -> Ordering,
-    {
-        let now = self.search_gt(search);
-
-        AvltrieeIter::new(self, now, now.and_then(|_| self.max(self.root())), order)
-    }
-
-    /// Generates an iterator of nodes with values ​​greater than the specified value.
-    pub fn iter_over<'a, F>(&'a self, search: F) -> AvltrieeIter<T, A>
-    where
-        F: Fn(&T) -> Ordering,
-    {
-        self.iter_over_inner(search, Order::Asc)
-    }
-
-    /// Generates an iterator of nodes with values ​​greater than the specified value. Iterates in descending order.
-    pub fn desc_iter_over<'a, F>(&'a self, search: F) -> AvltrieeIter<T, A>
-    where
-        F: Fn(&T) -> Ordering,
-    {
-        self.iter_over_inner(search, Order::Desc)
-    }
-
-    fn search_le<F>(&self, compare: F) -> Option<NonZeroU32>
-    where
-        F: Fn(&T) -> Ordering,
-    {
-        let mut row = self.root();
-        let mut keep = None;
-        while let Some(row_inner) = row {
-            let node = unsafe { self.get_unchecked(row_inner) };
-            match compare(node) {
-                Ordering::Greater => {
-                    if node.left.is_some() {
-                        row = node.left;
-                    } else {
-                        break;
-                    }
-                }
-                Ordering::Equal => {
-                    return row;
-                }
-                Ordering::Less => {
-                    if node.right.is_some() {
-                        keep = row;
-                        row = node.right;
-                    } else {
-                        return row;
-                    }
-                }
-            }
-        }
-        keep
-    }
-
-    fn iter_to_inner<'a, F>(&'a self, search_from: F, order: Order) -> AvltrieeIter<T, A>
-    where
-        F: Fn(&T) -> Ordering,
-    {
-        let end_row = self.search_le(search_from);
-        AvltrieeIter::new(
-            self,
-            end_row.and_then(|_| self.min(self.root())),
-            end_row,
-            order,
-        )
+        AvltrieeIter::from_desc(self, value)
     }
 
     /// Generates an iterator of nodes with values ​​less than or equal to the specified value.
-    pub fn iter_to<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T, A>
+    pub fn iter_to<'a>(&'a self, value: &I) -> AvltrieeIter<T, I, A>
     where
-        F: Fn(&T) -> Ordering,
+        Self: AvltrieeOrd<T, I, A>,
     {
-        self.iter_to_inner(search_from, Order::Asc)
+        AvltrieeIter::to_asc(self, value)
     }
 
     /// Generates an iterator of nodes with values ​​less than or equal to the specified value. Iterates in descending order.
-    pub fn desc_iter_to<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T, A>
+    pub fn desc_iter_to<'a>(&'a self, value: &I) -> AvltrieeIter<T, I, A>
     where
-        F: Fn(&T) -> Ordering,
+        Self: AvltrieeOrd<T, I, A>,
     {
-        self.iter_to_inner(search_from, Order::Desc)
+        AvltrieeIter::to_desc(self, value)
     }
 
-    fn search_lt<F>(&self, compare: F) -> Option<NonZeroU32>
+    /// Generates an iterator of nodes with values ​​greater than the specified value.
+    pub fn iter_over<'a>(&'a self, value: &I) -> AvltrieeIter<T, I, A>
     where
-        F: Fn(&T) -> Ordering,
+        Self: AvltrieeOrd<T, I, A>,
     {
-        let mut row = self.root();
-        let mut keep = None;
-        while let Some(row_inner) = row {
-            let node = unsafe { self.get_unchecked(row_inner) };
-            match compare(node) {
-                Ordering::Greater => {
-                    if node.left.is_some() {
-                        row = node.left;
-                    } else {
-                        break;
-                    }
-                }
-                Ordering::Equal => {
-                    if node.left.is_some() {
-                        return self.max(node.left);
-                    }
-                    if let Some(parent) = node.parent {
-                        if unsafe { self.get_unchecked(parent) }.right == row {
-                            return node.parent;
-                        }
-                    }
-                    break;
-                }
-                Ordering::Less => {
-                    if node.right.is_some() {
-                        keep = row;
-                        row = node.right;
-                    } else {
-                        return row;
-                    }
-                }
-            }
-        }
-        keep
+        AvltrieeIter::over_asc(self, value)
     }
 
-    fn iter_under_inner<'a, F>(&'a self, search_from: F, order: Order) -> AvltrieeIter<T, A>
+    /// Generates an iterator of nodes with values ​​greater than the specified value. Iterates in descending order.
+    pub fn desc_iter_over<'a>(&'a self, value: &I) -> AvltrieeIter<T, I, A>
     where
-        F: Fn(&T) -> Ordering,
+        Self: AvltrieeOrd<T, I, A>,
     {
-        let end_row = self.search_lt(search_from);
-        AvltrieeIter::new(
-            self,
-            end_row.and_then(|_| self.min(self.root())),
-            end_row,
-            order,
-        )
+        AvltrieeIter::over_desc(self, value)
     }
 
-    /// Generates an iterator of nodes with values ​​less than the specified value.
-    pub fn iter_under<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T, A>
+    pub fn iter_under<'a>(&'a self, value: &I) -> AvltrieeIter<T, I, A>
     where
-        F: Fn(&T) -> Ordering,
+        Self: AvltrieeOrd<T, I, A>,
     {
-        self.iter_under_inner(search_from, Order::Asc)
+        AvltrieeIter::under_asc(self, value)
     }
 
     /// Generates an iterator of nodes with values ​​less than the specified value. Iterates in descending order.
-    pub fn desc_iter_under<'a, F>(&'a self, search_from: F) -> AvltrieeIter<T, A>
+    pub fn desc_iter_under<'a>(&'a self, value: &I) -> AvltrieeIter<T, I, A>
     where
-        F: Fn(&T) -> Ordering,
+        Self: AvltrieeOrd<T, I, A>,
     {
-        self.iter_under_inner(search_from, Order::Desc)
-    }
-
-    fn search_range<S, E>(&self, compare_ge: S, compare_le: E) -> Option<Range<NonZeroU32>>
-    where
-        S: Fn(&T) -> Ordering,
-        E: Fn(&T) -> Ordering,
-    {
-        let mut row = self.root();
-        let mut start = None;
-        while let Some(row_inner) = row {
-            let node = unsafe { self.get_unchecked(row_inner) };
-            match compare_ge(node) {
-                Ordering::Greater => {
-                    start = row;
-                    if node.left.is_some() {
-                        row = node.left;
-                    } else {
-                        break;
-                    }
-                }
-                Ordering::Equal => {
-                    start = row;
-                    break;
-                }
-                Ordering::Less => {
-                    if node.right.is_some() {
-                        row = node.right;
-                    } else {
-                        break;
-                    }
-                }
-            }
-        }
-        if let Some(start) = start {
-            if compare_le(unsafe { self.get_unchecked(start) }) != Ordering::Greater {
-                row = self.root();
-                let mut end = None;
-                while let Some(row_inner) = row {
-                    let node = unsafe { self.get_unchecked(row_inner) };
-                    match compare_le(node) {
-                        Ordering::Greater => {
-                            if node.left.is_some() {
-                                row = node.left;
-                            } else {
-                                break;
-                            }
-                        }
-                        Ordering::Equal => {
-                            end = row;
-                            break;
-                        }
-                        Ordering::Less => {
-                            end = row;
-                            if node.right.is_some() {
-                                row = node.right;
-                            } else {
-                                break;
-                            }
-                        }
-                    }
-                }
-                if let Some(end) = end {
-                    return Some(Range { start, end });
-                }
-            }
-        }
-        None
-    }
-
-    fn iter_range_inner<'a, S, E>(&'a self, start: S, end: E, order: Order) -> AvltrieeIter<T, A>
-    where
-        S: Fn(&T) -> Ordering,
-        E: Fn(&T) -> Ordering,
-    {
-        if let Some(range) = self.search_range(start, end) {
-            AvltrieeIter::new(self, Some(range.start), Some(range.end), order)
-        } else {
-            AvltrieeIter::new(self, None, None, order)
-        }
+        AvltrieeIter::under_desc(self, value)
     }
 
     /// Generates an iterator of nodes with the specified range of values.
-    pub fn iter_range<'a, S, E>(&'a self, start: S, end: E) -> AvltrieeIter<T, A>
+    pub fn iter_range<'a>(&'a self, start: &I, end: &I) -> AvltrieeIter<T, I, A>
     where
-        S: Fn(&T) -> Ordering,
-        E: Fn(&T) -> Ordering,
+        Self: AvltrieeOrd<T, I, A>,
     {
-        self.iter_range_inner(start, end, Order::Asc)
+        AvltrieeIter::range_asc(self, start, end)
     }
 
     /// Generates an iterator of nodes with the specified range of values. Iterates in descending order.
-    pub fn desc_iter_range<'a, S, E>(&'a self, start: S, end: E) -> AvltrieeIter<T, A>
+    pub fn desc_iter_range<'a>(&'a self, start: &I, end: &I) -> AvltrieeIter<T, I, A>
     where
-        S: Fn(&T) -> Ordering,
-        E: Fn(&T) -> Ordering,
+        Self: AvltrieeOrd<T, I, A>,
     {
-        self.iter_range_inner(start, end, Order::Desc)
+        AvltrieeIter::range_asc(self, start, end)
     }
 
     fn next(

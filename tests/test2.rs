@@ -8,16 +8,16 @@ fn test2() {
 
     let mut deleted: HashSet<u32> = HashSet::new();
 
-    t.update(1.try_into().unwrap(), 8);
-    t.update(2.try_into().unwrap(), 8);
-    t.update(3.try_into().unwrap(), 5);
-    t.update(4.try_into().unwrap(), 10);
-    t.update(5.try_into().unwrap(), 6);
-    t.update(6.try_into().unwrap(), 3);
-    t.update(7.try_into().unwrap(), 10);
-    t.update(8.try_into().unwrap(), 8);
-    t.update(9.try_into().unwrap(), 3);
-    t.update(10.try_into().unwrap(), 5);
+    t.update(1.try_into().unwrap(), &8);
+    t.update(2.try_into().unwrap(), &8);
+    t.update(3.try_into().unwrap(), &5);
+    t.update(4.try_into().unwrap(), &10);
+    t.update(5.try_into().unwrap(), &6);
+    t.update(6.try_into().unwrap(), &3);
+    t.update(7.try_into().unwrap(), &10);
+    t.update(8.try_into().unwrap(), &8);
+    t.update(9.try_into().unwrap(), &3);
+    t.update(10.try_into().unwrap(), &5);
 
     output(&t, &deleted);
 

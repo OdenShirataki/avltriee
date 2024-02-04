@@ -2,7 +2,7 @@ use std::num::NonZeroU32;
 
 use crate::{Avltriee, AvltrieeAllocator, AvltrieeNode};
 
-impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
+impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     pub(crate) fn balance(&mut self, row: NonZeroU32) {
         let mut t: &AvltrieeNode<T> = unsafe { self.get_unchecked(row) };
         while let Some(mut u_row) = t.parent {

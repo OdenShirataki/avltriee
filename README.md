@@ -21,16 +21,16 @@ let mut triee = Avltriee::new();
 
 ```rust
 unsafe {
-    triee.insert(100); //or triee.update(1.try_into().unwrap(), 100);
+    triee.insert(&100); //or triee.update(1.try_into().unwrap(), &100);
 }
 unsafe {
-    triee.insert(345); //or triee.update(2.try_into().unwrap(), 345);
+    triee.insert(&345); //or triee.update(2.try_into().unwrap(), &345);
 }
 unsafe {
-    triee.insert(789); //or triee.update(3.try_into().unwrap(), 789);
+    triee.insert(&789); //or triee.update(3.try_into().unwrap(), &789);
 }
 unsafe {
-    triee.update(2.try_into().unwrap(), 1234); //update exists row
+    triee.update(2.try_into().unwrap(), &1234); //update exists row
 }
 ```
 ### iterator
@@ -42,13 +42,13 @@ for i in triee.iter() {
 for i in triee.desc_iter() {
     println!("{}:{}", i, unsafe{ t.value_unchecked(i) });
 }
-for i in t.iter_from(|v|v.cmp(&10)) {
+for i in t.iter_from(&10) {
     println!("{}:{}", i, unsafe{ t.value_unchecked(i) });
 }
-for i in t.iter_to(|v|v.cmp(&500)) {
+for i in t.iter_to(&500) {
     println!("{}:{}", i, unsafe{ t.value_unchecked(i) });
 }
-for i in t.iter_range(|v|v.cmp(&300),|v|v.cmp(&999)) {
+for i in t.iter_range(&300,&999) {
     println!("{}:{}", i, unsafe{ t.value_unchecked(i) });
 }
 ```
@@ -59,7 +59,7 @@ triee.delete(1.try_into().unwrap());
 
 ### search
 ```rust
-let (ord,row) = triee.search(|v|v.cmp(&100));
+let (ord,row) = triee.search(&100);
 if ord==Ordering::Equal{
     //found 
 }

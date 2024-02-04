@@ -13,11 +13,11 @@ pub trait AvltrieeAllocator<T> {
         T: Clone + Default;
 }
 
-pub struct DefaultAvltrieeAllocator<T> {
+pub struct VecAvltrieeAllocator<T> {
     node_list: Vec<AvltrieeNode<T>>,
 }
 
-impl<T> AvltrieeAllocator<T> for DefaultAvltrieeAllocator<T> {
+impl<T> AvltrieeAllocator<T> for VecAvltrieeAllocator<T> {
     fn as_ptr(&self) -> *const AvltrieeNode<T> {
         self.node_list.as_ptr()
     }
@@ -39,12 +39,12 @@ impl<T> AvltrieeAllocator<T> for DefaultAvltrieeAllocator<T> {
     }
 }
 
-impl<T> DefaultAvltrieeAllocator<T> {
+impl<T> VecAvltrieeAllocator<T> {
     pub fn new() -> Self
     where
         T: Default,
     {
-        DefaultAvltrieeAllocator {
+        VecAvltrieeAllocator {
             node_list: vec![Default::default()],
         }
     }

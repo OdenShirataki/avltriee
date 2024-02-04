@@ -2,16 +2,19 @@ mod allocator;
 mod head;
 mod iter;
 mod node;
+mod ord;
+mod search;
 mod update;
 
 use std::{cmp::Ordering, marker::PhantomData, num::NonZeroU32};
 
-use allocator::DefaultAvltrieeAllocator;
+use allocator::VecAvltrieeAllocator;
 
 pub use allocator::AvltrieeAllocator;
 pub use iter::AvltrieeIter;
 pub use node::AvltrieeNode;
-pub use update::AvltrieeHolder;
+pub use ord::AvltrieeOrd;
+pub use update::AvltrieeUpdate;
 
 #[derive(Debug)]
 pub struct Found {
@@ -28,22 +31,33 @@ impl Found {
     }
 }
 
-pub struct Avltriee<T, A = DefaultAvltrieeAllocator<T>> {
+pub struct Avltriee<T, I: ?Sized = T, A = VecAvltrieeAllocator<T>> {
     allocator: A,
-    _marker: PhantomData<fn() -> T>,
+    _marker: PhantomData<fn(I, T)>,
 }
 
-impl<T: Default> Avltriee<T, DefaultAvltrieeAllocator<T>> {
+impl<T, I: ?Sized, A> AsRef<Avltriee<T, I, A>> for Avltriee<T, I, A> {
+    fn as_ref(&self) -> &Avltriee<T, I, A> {
+        self
+    }
+}
+impl<T, I: ?Sized, A> AsMut<Avltriee<T, I, A>> for Avltriee<T, I, A> {
+    fn as_mut(&mut self) -> &mut Avltriee<T, I, A> {
+        self
+    }
+}
+
+impl<T: Default> Avltriee<T, T, VecAvltrieeAllocator<T>> {
     /// Creates the Avltriee with Default allocator.
     pub fn new() -> Self {
         Self {
-            allocator: DefaultAvltrieeAllocator::new(),
+            allocator: VecAvltrieeAllocator::new(),
             _marker: PhantomData,
         }
     }
 }
 
-impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
+impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     /// Creates the Avltriee with [AvltrieeAllocator].
     pub fn with_allocator(allocator: A) -> Self {
         Self {
@@ -65,36 +79,6 @@ impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
 
     unsafe fn get_unchecked_mut(&mut self, row: NonZeroU32) -> &mut AvltrieeNode<T> {
         &mut *self.allocator.as_mut_ptr().offset(row.get() as isize)
-    }
-
-    /// Finds the edge of a node from the specified value.
-    pub fn search<F: Fn(&T) -> Ordering>(&self, cmp: F) -> Found {
-        let mut row = self.root();
-        let mut ord = Ordering::Equal;
-        while let Some(row_inner) = row {
-            let node = unsafe { self.get_unchecked(row_inner) };
-            ord = cmp(node);
-            match ord {
-                Ordering::Greater => {
-                    if let Some(left) = node.left {
-                        row = Some(left);
-                    } else {
-                        break;
-                    }
-                }
-                Ordering::Equal => {
-                    break;
-                }
-                Ordering::Less => {
-                    if let Some(right) = node.right {
-                        row = Some(right);
-                    } else {
-                        break;
-                    }
-                }
-            }
-        }
-        Found { row, ord }
     }
 
     /// Checks whether the specified row is a node with a unique value.

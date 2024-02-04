@@ -3,39 +3,18 @@ mod delete;
 
 use std::{cmp::Ordering, num::NonZeroU32};
 
-use crate::AvltrieeAllocator;
+use crate::{ord::AvltrieeOrd, AvltrieeAllocator};
 
 use super::{Avltriee, AvltrieeNode, Found};
 
-impl<T, A> AsRef<Avltriee<T, A>> for Avltriee<T, A> {
-    fn as_ref(&self) -> &Avltriee<T, A> {
-        self
-    }
-}
-impl<T, A> AsMut<Avltriee<T, A>> for Avltriee<T, A> {
-    fn as_mut(&mut self) -> &mut Avltriee<T, A> {
-        self
-    }
-}
-
-pub trait AvltrieeHolder<T, I, A>: AsRef<Avltriee<T, A>> + AsMut<Avltriee<T, A>> {
-    fn cmp(&self, left: &T, right: &I) -> Ordering;
-    fn search(&self, input: &I) -> Found;
-    fn convert_value(&mut self, input: I) -> T;
+pub trait AvltrieeUpdate<T, I: ?Sized, A>: AsMut<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A> {
+    fn convert_value(&mut self, input: &I) -> T;
     fn delete_before_update(&mut self, row: NonZeroU32);
 }
 
-impl<T: Ord, A: AvltrieeAllocator<T>> AvltrieeHolder<T, T, A> for Avltriee<T, A> {
-    fn cmp(&self, left: &T, right: &T) -> Ordering {
-        left.cmp(right)
-    }
-
-    fn search(&self, input: &T) -> Found {
-        self.search(|v| v.cmp(input))
-    }
-
-    fn convert_value(&mut self, input: T) -> T {
-        input
+impl<T: Ord + Clone, A: AvltrieeAllocator<T>> AvltrieeUpdate<T, T, A> for Avltriee<T, T, A> {
+    fn convert_value(&mut self, input: &T) -> T {
+        input.clone()
     }
 
     fn delete_before_update(&mut self, row: NonZeroU32) {
@@ -43,11 +22,12 @@ impl<T: Ord, A: AvltrieeAllocator<T>> AvltrieeHolder<T, T, A> for Avltriee<T, A>
     }
 }
 
-impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
+impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     /// Creates a new row and assigns a value to it.
-    pub fn insert(&mut self, value: T) -> NonZeroU32
+    pub fn insert(&mut self, value: &I) -> NonZeroU32
     where
         T: Ord + Clone + Default,
+        Self: AvltrieeUpdate<T, I, A>,
     {
         let row = unsafe { NonZeroU32::new_unchecked(self.rows_count() + 1) };
         self.update(row, value);
@@ -56,19 +36,20 @@ impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
 
     /// Updates the value in the specified row.
     /// If you specify a row that does not exist, space will be automatically allocated. If you specify a row that is too large, memory may be allocated unnecessarily.
-    pub fn update(&mut self, row: NonZeroU32, value: T)
+    pub fn update(&mut self, row: NonZeroU32, value: &I)
     where
         T: Ord + Clone + Default,
+        Self: AvltrieeUpdate<T, I, A>,
     {
-        Self::update_with_holder(self, row, value);
+        Self::update_with(self, row, value);
     }
 
-    /// Updates the value of the specified row via trait [AvltrieeHolder].
+    /// Updates the value of the specified row via trait [AvltrieeUpdate].
     /// If you specify a row that does not exist, space will be automatically allocated. If you specify a row that is too large, memory may be allocated unnecessarily.
-    pub fn update_with_holder<I>(
-        holder: &mut impl AvltrieeHolder<T, I, A>,
+    pub fn update_with<H: AvltrieeUpdate<T, I, A> + AvltrieeOrd<T, I, A>>(
+        holder: &mut H,
         row: NonZeroU32,
-        input: I,
+        input: &I,
     ) where
         T: Clone + Default,
     {
@@ -79,7 +60,7 @@ impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
             holder.delete_before_update(row);
         }
 
-        let found = holder.search(&input);
+        let found = holder.as_ref().search_edge(holder, &input);
         if found.ord == Ordering::Equal && found.row.is_some() {
             let same_row = found.row.unwrap();
 
@@ -104,7 +85,7 @@ impl<T, A: AvltrieeAllocator<T>> Avltriee<T, A> {
                 unsafe { holder.as_mut().get_unchecked_mut(right) }.parent = Some(row);
             }
         } else {
-            let value = holder.convert_value(input);
+            let value = holder.convert_value(&input);
             unsafe { holder.as_mut().insert_unique_unchecked(row, value, found) };
         }
     }
