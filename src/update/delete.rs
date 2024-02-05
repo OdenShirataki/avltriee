@@ -63,8 +63,7 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
         }
     }
 
-    /// Delete the specified row.
-    pub fn delete(&mut self, row: NonZeroU32) {
+    pub(crate) fn delete_inner(&mut self, row: NonZeroU32) {
         if let Some(node) = self.get(row) {
             let row_parent = node.parent;
             let same = node.same;

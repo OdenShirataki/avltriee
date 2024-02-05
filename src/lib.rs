@@ -1,9 +1,11 @@
+pub mod search;
+
 mod allocator;
+mod default;
 mod head;
 mod iter;
 mod node;
 mod ord;
-mod search;
 mod update;
 
 use std::{cmp::Ordering, marker::PhantomData, num::NonZeroU32};
@@ -34,17 +36,6 @@ impl Found {
 pub struct Avltriee<T, I: ?Sized = T, A = VecAvltrieeAllocator<T>> {
     allocator: A,
     _marker: PhantomData<fn(I, T)>,
-}
-
-impl<T, I: ?Sized, A> AsRef<Avltriee<T, I, A>> for Avltriee<T, I, A> {
-    fn as_ref(&self) -> &Avltriee<T, I, A> {
-        self
-    }
-}
-impl<T, I: ?Sized, A> AsMut<Avltriee<T, I, A>> for Avltriee<T, I, A> {
-    fn as_mut(&mut self) -> &mut Avltriee<T, I, A> {
-        self
-    }
 }
 
 impl<T: Default> Avltriee<T, T, VecAvltrieeAllocator<T>> {
@@ -94,10 +85,7 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
         })
     }
 
-    fn allocate(&mut self, rows: NonZeroU32)
-    where
-        T: Clone + Default,
-    {
+    fn allocate(&mut self, rows: NonZeroU32) {
         self.allocator.resize(rows.get());
         self.set_rows_count(rows.get());
     }

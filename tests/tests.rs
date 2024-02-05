@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use avltriee::AvltrieeUpdate;
+
 #[cfg(test)]
 const TEST_LENGTH: u32 = 100;
 const TEST_VALUE_RANGE_MIN: i64 = 0;

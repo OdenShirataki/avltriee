@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, num::NonZeroU32};
 
-use crate::{ord::AvltrieeOrd, AvltrieeAllocator};
+use crate::{ord::AvltrieeOrd, search, AvltrieeAllocator};
 
 use super::Avltriee;
 
@@ -21,6 +21,7 @@ pub struct AvltrieeIter<'a, T, I: ?Sized, A> {
         Option<NonZeroU32>,
     ) -> Option<(NonZeroU32, Option<NonZeroU32>)>,
 }
+
 impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> AvltrieeIter<'a, T, I, A> {
     fn new(
         triee: &'a Avltriee<T, I, A>,
@@ -47,12 +48,9 @@ impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> AvltrieeIter<'a, T, I, A> {
     }
 
     /// Generates an iterator of nodes with the same value as the specified value.
-    pub fn by<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
-        holder: &'a H,
-        value: &I,
-    ) -> AvltrieeIter<'a, T, I, A> {
-        let triee = holder.as_ref();
-        let found = triee.search_edge(holder, value);
+    pub fn by<O: AvltrieeOrd<T, I, A>>(o: &'a O, value: &I) -> AvltrieeIter<'a, T, I, A> {
+        let triee = o.as_ref();
+        let found = search::edge(o, value);
         let row = if found.ord == Ordering::Equal {
             found.row
         } else {
@@ -61,51 +59,39 @@ impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> AvltrieeIter<'a, T, I, A> {
         AvltrieeIter::new(triee, row, row, Order::Asc)
     }
 
-    pub fn from_asc<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
-        holder: &'a H,
-        value: &I,
-    ) -> AvltrieeIter<'a, T, I, A> {
-        Self::from_inner(holder, value, Order::Asc)
+    pub fn from_asc<O: AvltrieeOrd<T, I, A>>(o: &'a O, value: &I) -> AvltrieeIter<'a, T, I, A> {
+        Self::from_inner(o, value, Order::Asc)
     }
 
-    pub fn from_desc<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
-        holder: &'a H,
-        value: &I,
-    ) -> AvltrieeIter<'a, T, I, A> {
-        Self::from_inner(holder, value, Order::Desc)
+    pub fn from_desc<O: AvltrieeOrd<T, I, A>>(o: &'a O, value: &I) -> AvltrieeIter<'a, T, I, A> {
+        Self::from_inner(o, value, Order::Desc)
     }
 
-    fn from_inner<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
-        holder: &'a H,
+    fn from_inner<O: AvltrieeOrd<T, I, A>>(
+        o: &'a O,
         value: &I,
         order: Order,
     ) -> AvltrieeIter<'a, T, I, A> {
-        let triee = holder.as_ref();
-        let now = triee.search_ge(holder, value);
+        let triee = o.as_ref();
+        let now = search::ge(o, value);
         AvltrieeIter::new(triee, now, now.and_then(|_| triee.max(triee.root())), order)
     }
 
-    pub fn to_asc<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
-        holder: &'a H,
-        value: &I,
-    ) -> AvltrieeIter<'a, T, I, A> {
-        Self::to_inner(holder, value, Order::Asc)
+    pub fn to_asc<O: AvltrieeOrd<T, I, A>>(o: &'a O, value: &I) -> AvltrieeIter<'a, T, I, A> {
+        Self::to_inner(o, value, Order::Asc)
     }
 
-    pub fn to_desc<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
-        holder: &'a H,
-        value: &I,
-    ) -> AvltrieeIter<'a, T, I, A> {
-        Self::to_inner(holder, value, Order::Desc)
+    pub fn to_desc<O: AvltrieeOrd<T, I, A>>(o: &'a O, value: &I) -> AvltrieeIter<'a, T, I, A> {
+        Self::to_inner(o, value, Order::Desc)
     }
 
-    fn to_inner<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
-        holder: &'a H,
+    fn to_inner<O: AvltrieeOrd<T, I, A>>(
+        o: &'a O,
         value: &I,
         order: Order,
     ) -> AvltrieeIter<'a, T, I, A> {
-        let triee = holder.as_ref();
-        let end_row = triee.search_le(holder, value);
+        let triee = o.as_ref();
+        let end_row = search::le(o, value);
         AvltrieeIter::new(
             triee,
             end_row.and_then(|_| triee.min(triee.root())),
@@ -114,51 +100,39 @@ impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> AvltrieeIter<'a, T, I, A> {
         )
     }
 
-    pub fn over_asc<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
-        holder: &'a H,
-        value: &I,
-    ) -> AvltrieeIter<'a, T, I, A> {
-        Self::over_inner(holder, value, Order::Asc)
+    pub fn over_asc<O: AvltrieeOrd<T, I, A>>(o: &'a O, value: &I) -> AvltrieeIter<'a, T, I, A> {
+        Self::over_inner(o, value, Order::Asc)
     }
 
-    pub fn over_desc<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
-        holder: &'a H,
-        value: &I,
-    ) -> AvltrieeIter<'a, T, I, A> {
-        Self::over_inner(holder, value, Order::Desc)
+    pub fn over_desc<O: AvltrieeOrd<T, I, A>>(o: &'a O, value: &I) -> AvltrieeIter<'a, T, I, A> {
+        Self::over_inner(o, value, Order::Desc)
     }
 
-    fn over_inner<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
-        holder: &'a H,
+    fn over_inner<O: AvltrieeOrd<T, I, A>>(
+        o: &'a O,
         value: &I,
         order: Order,
     ) -> AvltrieeIter<'a, T, I, A> {
-        let triee = holder.as_ref();
-        let now = triee.search_gt(holder, value);
+        let triee = o.as_ref();
+        let now = search::gt(o, value);
         AvltrieeIter::new(triee, now, now.and_then(|_| triee.max(triee.root())), order)
     }
 
-    pub fn under_asc<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
-        holder: &'a H,
-        value: &I,
-    ) -> AvltrieeIter<'a, T, I, A> {
-        Self::under_inner(holder, value, Order::Asc)
+    pub fn under_asc<O: AvltrieeOrd<T, I, A>>(o: &'a O, value: &I) -> AvltrieeIter<'a, T, I, A> {
+        Self::under_inner(o, value, Order::Asc)
     }
 
-    pub fn under_desc<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
-        holder: &'a H,
-        value: &I,
-    ) -> AvltrieeIter<'a, T, I, A> {
-        Self::under_inner(holder, value, Order::Desc)
+    pub fn under_desc<O: AvltrieeOrd<T, I, A>>(o: &'a O, value: &I) -> AvltrieeIter<'a, T, I, A> {
+        Self::under_inner(o, value, Order::Desc)
     }
 
-    fn under_inner<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
-        holder: &'a H,
+    fn under_inner<O: AvltrieeOrd<T, I, A>>(
+        o: &'a O,
         value: &I,
         order: Order,
     ) -> AvltrieeIter<'a, T, I, A> {
-        let triee = holder.as_ref();
-        let end_row = triee.search_lt(holder, value);
+        let triee = o.as_ref();
+        let end_row = search::lt(o, value);
         AvltrieeIter::new(
             triee,
             end_row.and_then(|_| triee.min(triee.root())),
@@ -167,22 +141,22 @@ impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> AvltrieeIter<'a, T, I, A> {
         )
     }
 
-    pub fn range_asc<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
-        holder: &'a H,
+    pub fn range_asc<O: AvltrieeOrd<T, I, A>>(
+        o: &'a O,
         start: &I,
         end: &I,
     ) -> AvltrieeIter<'a, T, I, A> {
-        Self::range_inner(holder, start, end, Order::Asc)
+        Self::range_inner(o, start, end, Order::Asc)
     }
 
-    fn range_inner<H: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>>(
-        holder: &'a H,
+    fn range_inner<O: AvltrieeOrd<T, I, A>>(
+        o: &'a O,
         start: &I,
         end: &I,
         order: Order,
     ) -> AvltrieeIter<'a, T, I, A> {
-        let triee = holder.as_ref();
-        if let Some(range) = triee.search_range(holder, start, end) {
+        let triee = o.as_ref();
+        if let Some(range) = search::range(o, start, end) {
             AvltrieeIter::new(triee, Some(range.start), Some(range.end), order)
         } else {
             AvltrieeIter::new(triee, None, None, order)
@@ -237,7 +211,7 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     /// Generates an iterator of nodes with the same value as the specified value.
     pub fn iter_by<'a>(&'a self, value: &I) -> AvltrieeIter<T, I, A>
     where
-        Self: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>,
+        Self: AvltrieeOrd<T, I, A>,
     {
         AvltrieeIter::by(self, value)
     }
@@ -245,7 +219,7 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     /// Generates an iterator with values ​​starting from the specified value.
     pub fn iter_from<'a>(&'a self, value: &I) -> AvltrieeIter<T, I, A>
     where
-        Self: AsRef<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>,
+        Self: AvltrieeOrd<T, I, A>,
     {
         AvltrieeIter::from_asc(self, value)
     }

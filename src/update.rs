@@ -3,22 +3,29 @@ mod delete;
 
 use std::{cmp::Ordering, num::NonZeroU32};
 
-use crate::{ord::AvltrieeOrd, AvltrieeAllocator};
+use crate::{ord::AvltrieeOrd, search, AvltrieeAllocator};
 
 use super::{Avltriee, AvltrieeNode, Found};
 
-pub trait AvltrieeUpdate<T, I: ?Sized, A>: AsMut<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A> {
+pub trait AvltrieeUpdate<T, I: ?Sized, A: AvltrieeAllocator<T>>:
+    AsMut<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>
+{
     fn convert_value(&mut self, input: &I) -> T;
-    fn delete_before_update(&mut self, row: NonZeroU32);
-}
+    fn on_delete(&mut self, _row: NonZeroU32) {}
 
-impl<T: Ord + Clone, A: AvltrieeAllocator<T>> AvltrieeUpdate<T, T, A> for Avltriee<T, T, A> {
-    fn convert_value(&mut self, input: &T) -> T {
-        input.clone()
+    /// Updates the value in the specified row.
+    fn update(&mut self, row: NonZeroU32, value: &I)
+    where
+        T: Clone,
+        Self: Sized,
+    {
+        Avltriee::update_with(self, row, value);
     }
 
-    fn delete_before_update(&mut self, row: NonZeroU32) {
-        self.delete(row);
+    /// Delete the specified row.
+    fn delete(&mut self, row: NonZeroU32) {
+        self.on_delete(row);
+        self.as_mut().delete_inner(row);
     }
 }
 
@@ -26,7 +33,7 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     /// Creates a new row and assigns a value to it.
     pub fn insert(&mut self, value: &I) -> NonZeroU32
     where
-        T: Ord + Clone + Default,
+        T: Clone,
         Self: AvltrieeUpdate<T, I, A>,
     {
         let row = unsafe { NonZeroU32::new_unchecked(self.rows_count() + 1) };
@@ -34,33 +41,21 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
         row
     }
 
-    /// Updates the value in the specified row.
-    /// If you specify a row that does not exist, space will be automatically allocated. If you specify a row that is too large, memory may be allocated unnecessarily.
-    pub fn update(&mut self, row: NonZeroU32, value: &I)
-    where
-        T: Ord + Clone + Default,
-        Self: AvltrieeUpdate<T, I, A>,
-    {
-        Self::update_with(self, row, value);
-    }
-
-    /// Updates the value of the specified row via trait [AvltrieeUpdate].
-    /// If you specify a row that does not exist, space will be automatically allocated. If you specify a row that is too large, memory may be allocated unnecessarily.
-    pub fn update_with<H: AvltrieeUpdate<T, I, A> + AvltrieeOrd<T, I, A>>(
+    pub(crate) fn update_with<H: AvltrieeUpdate<T, I, A>>(
         holder: &mut H,
         row: NonZeroU32,
         input: &I,
     ) where
-        T: Clone + Default,
+        T: Clone,
     {
         if let Some(node) = holder.as_ref().get(row) {
             if holder.cmp(node, &input) == Ordering::Equal {
                 return; //update value eq exists value
             }
-            holder.delete_before_update(row);
+            holder.delete(row);
         }
 
-        let found = holder.as_ref().search_edge(holder, &input);
+        let found = search::edge(holder, &input);
         if found.ord == Ordering::Equal && found.row.is_some() {
             let same_row = found.row.unwrap();
 
@@ -94,10 +89,7 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     /// If you specify a row that does not exist, space will be automatically allocated. If you specify a row that is too large, memory may be allocated unnecessarily.
     /// # Safety
     /// value ​​must be unique.
-    pub unsafe fn insert_unique_unchecked(&mut self, row: NonZeroU32, value: T, found: Found)
-    where
-        T: Clone + Default,
-    {
+    pub unsafe fn insert_unique_unchecked(&mut self, row: NonZeroU32, value: T, found: Found) {
         self.allocate(row);
 
         *self.get_unchecked_mut(row) = AvltrieeNode::new(found.row, value);

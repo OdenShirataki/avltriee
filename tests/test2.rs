@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use avltriee::Avltriee;
+use avltriee::{Avltriee, AvltrieeUpdate};
 
 #[test]
 fn test2() {
