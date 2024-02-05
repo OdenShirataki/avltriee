@@ -20,17 +20,8 @@ pub use update::AvltrieeUpdate;
 
 #[derive(Debug)]
 pub struct Found {
-    row: Option<NonZeroU32>,
-    ord: Ordering,
-}
-impl Found {
-    pub fn row(&self) -> Option<NonZeroU32> {
-        self.row
-    }
-
-    pub fn ord(&self) -> Ordering {
-        self.ord
-    }
+    pub row: Option<NonZeroU32>,
+    pub ord: Ordering,
 }
 
 pub struct Avltriee<T, I: ?Sized = T, A = VecAvltrieeAllocator<T>> {

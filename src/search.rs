@@ -1,16 +1,6 @@
 use std::{cmp::Ordering, num::NonZeroU32, ops::Range};
 
-use crate::{Avltriee, AvltrieeAllocator, AvltrieeOrd, Found};
-
-impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
-    /// Finds the edge of a node from the specified value.
-    pub fn search(&self, value: &I) -> Found
-    where
-        Self: AvltrieeOrd<T, I, A>,
-    {
-        edge(self, value)
-    }
-}
+use crate::{AvltrieeAllocator, AvltrieeOrd, Found};
 
 /// Finds the edge of a node from the specified value with custom ord.
 pub fn edge<T, I: ?Sized, A: AvltrieeAllocator<T>>(

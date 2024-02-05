@@ -10,7 +10,7 @@ use super::{Avltriee, AvltrieeNode, Found};
 pub trait AvltrieeUpdate<T, I: ?Sized, A: AvltrieeAllocator<T>>:
     AsMut<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>
 {
-    fn convert_value(&mut self, input: &I) -> T;
+    fn unique_value(&mut self, input: &I) -> T;
     fn on_delete(&mut self, _row: NonZeroU32) {}
 
     /// Updates the value in the specified row.
@@ -59,28 +59,27 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
         if found.ord == Ordering::Equal && found.row.is_some() {
             let same_row = found.row.unwrap();
 
-            holder.as_mut().allocate(row);
+            let triee = holder.as_mut();
 
-            let same_node = unsafe { holder.as_mut().get_unchecked_mut(same_row) };
+            triee.allocate(row);
+
+            let same_node = unsafe { triee.get_unchecked_mut(same_row) };
             let same_left = same_node.left;
             let same_right = same_node.right;
             let same_parent = same_node.parent;
 
-            *unsafe { holder.as_mut().get_unchecked_mut(row) } =
-                same_node.same_clone(same_row, row);
+            *unsafe { triee.get_unchecked_mut(row) } = same_node.same_clone(same_row, row);
 
-            holder
-                .as_mut()
-                .replace_child(same_parent, same_row, Some(row));
+            triee.replace_child(same_parent, same_row, Some(row));
 
             if let Some(left) = same_left {
-                unsafe { holder.as_mut().get_unchecked_mut(left) }.parent = Some(row);
+                unsafe { triee.get_unchecked_mut(left) }.parent = Some(row);
             }
             if let Some(right) = same_right {
-                unsafe { holder.as_mut().get_unchecked_mut(right) }.parent = Some(row);
+                unsafe { triee.get_unchecked_mut(right) }.parent = Some(row);
             }
         } else {
-            let value = holder.convert_value(&input);
+            let value = holder.unique_value(&input);
             unsafe { holder.as_mut().insert_unique_unchecked(row, value, found) };
         }
     }

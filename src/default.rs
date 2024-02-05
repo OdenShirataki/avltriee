@@ -9,7 +9,7 @@ impl<T: Ord, A: AvltrieeAllocator<T>> AvltrieeOrd<T, T, A> for Avltriee<T, T, A>
 }
 
 impl<T: Ord + Clone, A: AvltrieeAllocator<T>> AvltrieeUpdate<T, T, A> for Avltriee<T, T, A> {
-    fn convert_value(&mut self, input: &T) -> T {
+    fn unique_value(&mut self, input: &T) -> T {
         input.clone()
     }
 }
