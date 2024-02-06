@@ -1,15 +1,19 @@
 use std::cmp::Ordering;
 
-use crate::{Avltriee, AvltrieeAllocator, AvltrieeOrd, AvltrieeUpdate};
+use crate::{Avltriee, AvltrieeAllocator, AvltrieeSearch, AvltrieeUpdate};
 
-impl<T: Ord, A: AvltrieeAllocator<T>> AvltrieeOrd<T, T, A> for Avltriee<T, T, A> {
+impl<T: Ord + Clone, A: AvltrieeAllocator<T>> AvltrieeSearch<T, T, A> for Avltriee<T, T, A> {
     fn cmp(&self, left: &T, right: &T) -> Ordering {
         left.cmp(right)
+    }
+
+    fn convert<'a, 'b: 'a>(&'a self, value: &'b T) -> &T {
+        value
     }
 }
 
 impl<T: Ord + Clone, A: AvltrieeAllocator<T>> AvltrieeUpdate<T, T, A> for Avltriee<T, T, A> {
-    fn unique_value(&mut self, input: &T) -> T {
+    fn convert_value_on_insert_unique(&mut self, input: &T) -> T {
         input.clone()
     }
 }

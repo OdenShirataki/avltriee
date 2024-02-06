@@ -5,7 +5,6 @@ mod default;
 mod head;
 mod iter;
 mod node;
-mod ord;
 mod update;
 
 use std::{cmp::Ordering, marker::PhantomData, num::NonZeroU32};
@@ -15,7 +14,7 @@ use allocator::VecAvltrieeAllocator;
 pub use allocator::AvltrieeAllocator;
 pub use iter::AvltrieeIter;
 pub use node::AvltrieeNode;
-pub use ord::AvltrieeOrd;
+pub use search::AvltrieeSearch;
 pub use update::AvltrieeUpdate;
 
 #[derive(Debug)]

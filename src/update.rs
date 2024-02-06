@@ -3,14 +3,14 @@ mod delete;
 
 use std::{cmp::Ordering, num::NonZeroU32};
 
-use crate::{ord::AvltrieeOrd, search, AvltrieeAllocator};
+use crate::{search, AvltrieeAllocator, AvltrieeSearch};
 
 use super::{Avltriee, AvltrieeNode, Found};
 
 pub trait AvltrieeUpdate<T, I: ?Sized, A: AvltrieeAllocator<T>>:
-    AsMut<Avltriee<T, I, A>> + AvltrieeOrd<T, I, A>
+    AsMut<Avltriee<T, I, A>> + AvltrieeSearch<T, I, A>
 {
-    fn unique_value(&mut self, input: &I) -> T;
+    fn convert_value_on_insert_unique(&mut self, input: &I) -> T;
     fn on_delete(&mut self, _row: NonZeroU32) {}
 
     /// Updates the value in the specified row.
@@ -79,7 +79,7 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
                 unsafe { triee.get_unchecked_mut(right) }.parent = Some(row);
             }
         } else {
-            let value = holder.unique_value(&input);
+            let value = holder.convert_value_on_insert_unique(input);
             unsafe { holder.as_mut().insert_unique_unchecked(row, value, found) };
         }
     }
