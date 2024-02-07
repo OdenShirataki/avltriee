@@ -29,7 +29,16 @@ pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<
         A: 'a,
         T: 'a,
     {
-        self.as_ref().get(row).map(|v| self.convert(&*v))
+        self.as_ref().node(row).map(|v| self.convert(v))
+    }
+
+    /// Returns the value of the specified row.
+    unsafe fn value_unchecked<'a>(&'a self, row: NonZeroU32) -> &I
+    where
+        A: 'a,
+        T: 'a,
+    {
+        self.convert(self.as_ref().node_unchecked(row))
     }
 }
 
@@ -42,7 +51,7 @@ pub fn edge<T, I: ?Sized, A: AvltrieeAllocator<T>>(
     let mut row: Option<NonZeroU32> = triee.root();
     let mut ord = Ordering::Equal;
     while let Some(row_inner) = row {
-        let node = unsafe { triee.get_unchecked(row_inner) };
+        let node = unsafe { triee.node_unchecked(row_inner) };
         ord = s.cmp(node, value);
         match ord {
             Ordering::Greater => {
@@ -76,7 +85,7 @@ pub fn ge<T, I: ?Sized, A: AvltrieeAllocator<T>>(
     let mut row = triee.root();
     let mut keep = None;
     while let Some(row_inner) = row {
-        let node = unsafe { triee.get_unchecked(row_inner) };
+        let node = unsafe { triee.node_unchecked(row_inner) };
         match s.cmp(node, value) {
             Ordering::Greater => {
                 if node.left.is_some() {
@@ -110,7 +119,7 @@ pub fn le<T, I: ?Sized, A: AvltrieeAllocator<T>>(
     let mut row = triee.root();
     let mut keep = None;
     while let Some(row_inner) = row {
-        let node = unsafe { triee.get_unchecked(row_inner) };
+        let node = unsafe { triee.node_unchecked(row_inner) };
         match s.cmp(node, value) {
             Ordering::Greater => {
                 if node.left.is_some() {
@@ -144,7 +153,7 @@ pub fn gt<T, I: ?Sized, A: AvltrieeAllocator<T>>(
     let mut row = triee.root();
     let mut keep = None;
     while let Some(row_inner) = row {
-        let node = unsafe { triee.get_unchecked(row_inner) };
+        let node = unsafe { triee.node_unchecked(row_inner) };
         match s.cmp(node, value) {
             Ordering::Greater => {
                 if node.left.is_some() {
@@ -159,7 +168,7 @@ pub fn gt<T, I: ?Sized, A: AvltrieeAllocator<T>>(
                     return triee.min(node.right);
                 }
                 if let Some(parent) = node.parent {
-                    if unsafe { triee.get_unchecked(parent).left } == row {
+                    if unsafe { triee.node_unchecked(parent).left } == row {
                         return node.parent;
                     }
                 }
@@ -186,7 +195,7 @@ pub fn lt<T, I: ?Sized, A: AvltrieeAllocator<T>>(
     let mut row = triee.root();
     let mut keep = None;
     while let Some(row_inner) = row {
-        let node = unsafe { triee.get_unchecked(row_inner) };
+        let node = unsafe { triee.node_unchecked(row_inner) };
         match s.cmp(node, value) {
             Ordering::Greater => {
                 if node.left.is_some() {
@@ -200,7 +209,7 @@ pub fn lt<T, I: ?Sized, A: AvltrieeAllocator<T>>(
                     return triee.max(node.left);
                 }
                 if let Some(parent) = node.parent {
-                    if unsafe { triee.get_unchecked(parent) }.right == row {
+                    if unsafe { triee.node_unchecked(parent) }.right == row {
                         return node.parent;
                     }
                 }
@@ -229,7 +238,7 @@ pub fn range<T, I: ?Sized, A: AvltrieeAllocator<T>>(
     let mut row = triee.root();
     let mut start = None;
     while let Some(row_inner) = row {
-        let node = unsafe { triee.get_unchecked(row_inner) };
+        let node = unsafe { triee.node_unchecked(row_inner) };
         match s.cmp(node, start_value) {
             Ordering::Greater => {
                 start = row;
@@ -253,11 +262,11 @@ pub fn range<T, I: ?Sized, A: AvltrieeAllocator<T>>(
         }
     }
     if let Some(start) = start {
-        if s.cmp(unsafe { triee.get_unchecked(start) }, end_value) != Ordering::Greater {
+        if s.cmp(unsafe { triee.node_unchecked(start) }, end_value) != Ordering::Greater {
             row = triee.root();
             let mut end = None;
             while let Some(row_inner) = row {
-                let node = unsafe { triee.get_unchecked(row_inner) };
+                let node = unsafe { triee.node_unchecked(row_inner) };
                 match s.cmp(node, end_value) {
                     Ordering::Greater => {
                         if node.left.is_some() {

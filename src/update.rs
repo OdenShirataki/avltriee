@@ -48,7 +48,7 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     ) where
         T: Clone,
     {
-        if let Some(node) = holder.as_ref().get(row) {
+        if let Some(node) = holder.as_ref().node(row) {
             if holder.cmp(node, &input) == Ordering::Equal {
                 return; //update value eq exists value
             }
@@ -63,20 +63,20 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
 
             triee.allocate(row);
 
-            let same_node = unsafe { triee.get_unchecked_mut(same_row) };
+            let same_node = unsafe { triee.node_unchecked_mut(same_row) };
             let same_left = same_node.left;
             let same_right = same_node.right;
             let same_parent = same_node.parent;
 
-            *unsafe { triee.get_unchecked_mut(row) } = same_node.same_clone(same_row, row);
+            *unsafe { triee.node_unchecked_mut(row) } = same_node.same_clone(same_row, row);
 
             triee.replace_child(same_parent, same_row, Some(row));
 
             if let Some(left) = same_left {
-                unsafe { triee.get_unchecked_mut(left) }.parent = Some(row);
+                unsafe { triee.node_unchecked_mut(left) }.parent = Some(row);
             }
             if let Some(right) = same_right {
-                unsafe { triee.get_unchecked_mut(right) }.parent = Some(row);
+                unsafe { triee.node_unchecked_mut(right) }.parent = Some(row);
             }
         } else {
             let value = holder.convert_value_on_insert_unique(input);
@@ -91,9 +91,9 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     pub unsafe fn insert_unique_unchecked(&mut self, row: NonZeroU32, value: T, found: Found) {
         self.allocate(row);
 
-        *self.get_unchecked_mut(row) = AvltrieeNode::new(found.row, value);
+        *self.node_unchecked_mut(row) = AvltrieeNode::new(found.row, value);
         if let Some(found_row) = found.row {
-            let p = self.get_unchecked_mut(found_row);
+            let p = self.node_unchecked_mut(found_row);
             if found.ord == Ordering::Greater {
                 p.left = Some(row);
             } else {
@@ -106,17 +106,18 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     }
 
     fn reset_height(&mut self, row: NonZeroU32) {
-        let node = unsafe { self.get_unchecked(row) };
+        let node = unsafe { self.node_unchecked(row) };
 
-        let left_height = node
-            .left
-            .map_or(0, |left| unsafe { self.get_unchecked(left) }.height);
+        let left_height = node.left.map_or(
+            0,
+            |left: NonZeroU32| unsafe { self.node_unchecked(left) }.height,
+        );
 
         let right_height = node
             .right
-            .map_or(0, |right| unsafe { self.get_unchecked(right) }.height);
+            .map_or(0, |right| unsafe { self.node_unchecked(right) }.height);
 
-        unsafe { self.get_unchecked_mut(row) }.height =
+        unsafe { self.node_unchecked_mut(row) }.height =
             std::cmp::max(left_height, right_height) + 1;
     }
 
@@ -127,7 +128,7 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
         new_child: Option<NonZeroU32>,
     ) {
         if let Some(parent) = parent {
-            unsafe { self.get_unchecked_mut(parent) }.changeling(current_child, new_child);
+            unsafe { self.node_unchecked_mut(parent) }.changeling(current_child, new_child);
         } else {
             self.set_root(new_child);
         }

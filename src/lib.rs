@@ -48,27 +48,27 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     }
 
     /// Returns the node of the specified row.
-    pub fn get(&self, row: NonZeroU32) -> Option<&AvltrieeNode<T>> {
+    pub fn node(&self, row: NonZeroU32) -> Option<&AvltrieeNode<T>> {
         self.allocator
             .get(row)
-            .and_then(|node| (node.height != 0).then(|| unsafe { self.get_unchecked(row) }))
+            .and_then(|node| (node.height != 0).then(|| unsafe { self.node_unchecked(row) }))
     }
 
-    pub unsafe fn get_unchecked(&self, row: NonZeroU32) -> &AvltrieeNode<T> {
+    pub unsafe fn node_unchecked(&self, row: NonZeroU32) -> &AvltrieeNode<T> {
         &*self.allocator.as_ptr().offset(row.get() as isize)
     }
 
-    unsafe fn get_unchecked_mut(&mut self, row: NonZeroU32) -> &mut AvltrieeNode<T> {
+    unsafe fn node_unchecked_mut(&mut self, row: NonZeroU32) -> &mut AvltrieeNode<T> {
         &mut *self.allocator.as_mut_ptr().offset(row.get() as isize)
     }
 
     /// Checks whether the specified row is a node with a unique value.
     pub fn is_unique(&self, row: NonZeroU32) -> Option<(bool, &AvltrieeNode<T>)> {
-        self.get(row).map(|node| {
+        self.node(row).map(|node| {
             (
                 node.same.is_none()
                     && node.parent.is_some_and(|parent| {
-                        unsafe { self.get_unchecked(parent) }.same != Some(row)
+                        unsafe { self.node_unchecked(parent) }.same != Some(row)
                     }),
                 node,
             )
@@ -83,7 +83,7 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     fn min(&self, t: Option<NonZeroU32>) -> Option<NonZeroU32> {
         let mut t = t;
         while let Some(t_inner) = t {
-            let l = unsafe { self.get_unchecked(t_inner) }.left;
+            let l = unsafe { self.node_unchecked(t_inner) }.left;
             if l.is_some() {
                 t = l;
             } else {
@@ -96,7 +96,7 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     fn max(&self, t: Option<NonZeroU32>) -> Option<NonZeroU32> {
         let mut t = t;
         while let Some(t_inner) = t {
-            let r = unsafe { self.get_unchecked(t_inner) }.right;
+            let r = unsafe { self.node_unchecked(t_inner) }.right;
             if r.is_some() {
                 t = r;
             } else {

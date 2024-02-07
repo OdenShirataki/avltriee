@@ -176,7 +176,7 @@ impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> Iterator for AvltrieeIter<'a, T,
     fn next(&mut self) -> Option<Self::Item> {
         self.now.map(|c| {
             self.now = if Some(c) == self.end_row {
-                let same = unsafe { self.triee.get_unchecked(c) }.same;
+                let same = unsafe { self.triee.node_unchecked(c) }.same;
                 if same.is_some() {
                     self.end_row = same;
                 }
@@ -306,7 +306,7 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
         c: NonZeroU32,
         same_branch: Option<NonZeroU32>,
     ) -> Option<(NonZeroU32, Option<NonZeroU32>)> {
-        let mut node = unsafe { self.get_unchecked(c) };
+        let mut node = unsafe { self.node_unchecked(c) };
         if let Some(same) = node.same {
             Some((
                 same,
@@ -318,7 +318,7 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
             ))
         } else {
             let current = if let Some(same_branch) = same_branch {
-                node = unsafe { self.get_unchecked(same_branch) };
+                node = unsafe { self.node_unchecked(same_branch) };
                 same_branch
             } else {
                 c
@@ -327,7 +327,7 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
                 Some((self.min(node.right).unwrap(), None))
             } else {
                 node.parent.and_then(|parent| {
-                    if unsafe { self.get_unchecked(parent) }.left == Some(current) {
+                    if unsafe { self.node_unchecked(parent) }.left == Some(current) {
                         Some((parent, None))
                     } else {
                         self.retroactive(parent).map(|i| (i, None))
@@ -338,8 +338,8 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     }
 
     fn retroactive(&self, c: NonZeroU32) -> Option<NonZeroU32> {
-        unsafe { self.get_unchecked(c) }.parent.and_then(|parent| {
-            if unsafe { self.get_unchecked(parent) }.right == Some(c) {
+        unsafe { self.node_unchecked(c) }.parent.and_then(|parent| {
+            if unsafe { self.node_unchecked(parent) }.right == Some(c) {
                 self.retroactive(parent).filter(|p| p.get() != c.get())
             } else {
                 Some(parent)
@@ -352,7 +352,7 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
         c: NonZeroU32,
         same_branch: Option<NonZeroU32>,
     ) -> Option<(NonZeroU32, Option<NonZeroU32>)> {
-        let mut node = unsafe { self.get_unchecked(c) };
+        let mut node = unsafe { self.node_unchecked(c) };
         if let Some(same) = node.same {
             Some((
                 same,
@@ -366,13 +366,13 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
             let mut current = c;
             if let Some(same_branch) = same_branch {
                 current = same_branch;
-                node = unsafe { self.get_unchecked(current) };
+                node = unsafe { self.node_unchecked(current) };
             }
             if node.left.is_some() {
                 Some((self.max(node.left).unwrap(), None))
             } else {
                 node.parent.and_then(|parent| {
-                    if unsafe { self.get_unchecked(parent) }.right == Some(current) {
+                    if unsafe { self.node_unchecked(parent) }.right == Some(current) {
                         Some((parent, None))
                     } else {
                         self.retroactive_desc(parent).map(|i| (i, None))
@@ -383,8 +383,8 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     }
 
     fn retroactive_desc(&self, c: NonZeroU32) -> Option<NonZeroU32> {
-        unsafe { self.get_unchecked(c) }.parent.and_then(|parent| {
-            if unsafe { self.get_unchecked(parent) }.left == Some(c) {
+        unsafe { self.node_unchecked(c) }.parent.and_then(|parent| {
+            if unsafe { self.node_unchecked(parent) }.left == Some(c) {
                 self.retroactive_desc(parent).filter(|p| *p != c)
             } else {
                 Some(parent)

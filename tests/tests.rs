@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use avltriee::AvltrieeUpdate;
+use avltriee::{AvltrieeSearch, AvltrieeUpdate};
 
 #[cfg(test)]
 const TEST_LENGTH: u32 = 100;
@@ -35,7 +35,7 @@ fn test_iter() {
     let mut c = 0;
     for i in t.iter() {
         c += 1;
-        println!("{}:{}:{}", c, i, **unsafe { t.get_unchecked(i) });
+        println!("{}:{}:{}", c, i, unsafe { t.value_unchecked(i) });
     }
     println!("{}", c);
     assert_eq!(c, TEST_LENGTH as usize - deleted.len());
@@ -58,7 +58,7 @@ fn test_desc_iter() {
     }
 
     for i in t.desc_iter() {
-        println!("{}:{}", i, **unsafe { t.get_unchecked(i) });
+        println!("{}:{}", i, unsafe { t.value_unchecked(i) });
     }
 }
 
@@ -81,20 +81,20 @@ fn test_iter_by_search() {
 
     println!("iter_by(5)");
     for i in t.iter_by(&5) {
-        println!("{}:{}", i, **unsafe { t.get_unchecked(i) });
+        println!("{}:{}", i, unsafe { t.value_unchecked(i) });
     }
     println!("iter_range(3-5)");
     for i in t.iter_range(&3, &5) {
-        println!("{}:{}", i, **unsafe { t.get_unchecked(i) });
+        println!("{}:{}", i, unsafe { t.value_unchecked(i) });
     }
 
     println!("iter_from(5)");
     for i in t.iter_from(&5) {
-        println!("{}:{}", i, **unsafe { t.get_unchecked(i) });
+        println!("{}:{}", i, unsafe { t.value_unchecked(i) });
     }
     println!("iter_to(5)");
     for i in t.iter_to(&5) {
-        println!("{}:{}", i, **unsafe { t.get_unchecked(i) });
+        println!("{}:{}", i, unsafe { t.value_unchecked(i) });
     }
 }
 
