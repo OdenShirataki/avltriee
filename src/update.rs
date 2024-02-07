@@ -10,7 +10,7 @@ use super::{Avltriee, AvltrieeNode, Found};
 pub trait AvltrieeUpdate<T, I: ?Sized, A: AvltrieeAllocator<T>>:
     AsMut<Avltriee<T, I, A>> + AvltrieeSearch<T, I, A>
 {
-    fn convert_value_on_insert_unique(&mut self, input: &I) -> T;
+    fn convert_on_insert_unique(&mut self, input: &I) -> T;
     fn on_delete(&mut self, _row: NonZeroU32) {}
 
     /// Updates the value in the specified row.
@@ -79,7 +79,7 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
                 unsafe { triee.node_unchecked_mut(right) }.parent = Some(row);
             }
         } else {
-            let value = holder.convert_value_on_insert_unique(input);
+            let value = holder.convert_on_insert_unique(input);
             unsafe { holder.as_mut().insert_unique_unchecked(row, value, found) };
         }
     }

@@ -7,13 +7,13 @@ impl<T: Ord + Clone, A: AvltrieeAllocator<T>> AvltrieeSearch<T, T, A> for Avltri
         left.cmp(right)
     }
 
-    fn convert<'a, 'b: 'a>(&'a self, value: &'b T) -> &T {
+    fn invert<'a, 'b: 'a>(&'a self, value: &'b T) -> &T {
         value
     }
 }
 
 impl<T: Ord + Clone, A: AvltrieeAllocator<T>> AvltrieeUpdate<T, T, A> for Avltriee<T, T, A> {
-    fn convert_value_on_insert_unique(&mut self, input: &T) -> T {
+    fn convert_on_insert_unique(&mut self, input: &T) -> T {
         input.clone()
     }
 }

@@ -4,7 +4,7 @@ use crate::{Avltriee, AvltrieeAllocator, Found};
 
 pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<T, I, A>> {
     fn cmp(&self, left: &T, right: &I) -> Ordering;
-    fn convert<'a, 'b: 'a>(&'a self, value: &'b T) -> &I;
+    fn invert<'a, 'b: 'a>(&'a self, value: &'b T) -> &I;
 
     /// Finds the edge of a node from the specified value.
     fn search(&self, value: &I) -> Found
@@ -29,7 +29,7 @@ pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<
         A: 'a,
         T: 'a,
     {
-        self.as_ref().node(row).map(|v| self.convert(v))
+        self.as_ref().node(row).map(|v| self.invert(v))
     }
 
     /// Returns the value of the specified row.
@@ -38,7 +38,7 @@ pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<
         A: 'a,
         T: 'a,
     {
-        self.convert(self.as_ref().node_unchecked(row))
+        self.invert(self.as_ref().node_unchecked(row))
     }
 }
 
