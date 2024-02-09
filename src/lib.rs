@@ -7,7 +7,7 @@ mod iter;
 mod node;
 mod update;
 
-use std::{cmp::Ordering, marker::PhantomData, num::NonZeroU32};
+use std::{marker::PhantomData, num::NonZeroU32};
 
 use allocator::VecAvltrieeAllocator;
 
@@ -16,12 +16,6 @@ pub use iter::AvltrieeIter;
 pub use node::AvltrieeNode;
 pub use search::AvltrieeSearch;
 pub use update::AvltrieeUpdate;
-
-#[derive(Debug)]
-pub struct Found {
-    pub row: Option<NonZeroU32>,
-    pub ord: Ordering,
-}
 
 pub struct Avltriee<T, I: ?Sized = T, A = VecAvltrieeAllocator<T>> {
     allocator: A,

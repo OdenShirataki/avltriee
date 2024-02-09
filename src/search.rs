@@ -1,26 +1,48 @@
 use std::{cmp::Ordering, num::NonZeroU32, ops::Range};
 
-use crate::{Avltriee, AvltrieeAllocator, Found};
+use crate::{Avltriee, AvltrieeAllocator};
+
+pub(crate) type Edge = (Option<NonZeroU32>, Ordering);
 
 pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<T, I, A>> {
     fn cmp(&self, left: &T, right: &I) -> Ordering;
     fn invert<'a, 'b: 'a>(&'a self, value: &'b T) -> &I;
 
     /// Finds the edge of a node from the specified value.
-    fn search(&self, value: &I) -> Found
-    where
-        Self: Sized,
-    {
-        edge(self, value)
+    fn edge(&self, value: &I) -> Edge {
+        let triee = self.as_ref();
+        let mut row: Option<NonZeroU32> = triee.root();
+        let mut ord = Ordering::Equal;
+        while let Some(row_inner) = row {
+            let node = unsafe { triee.node_unchecked(row_inner) };
+            ord = self.cmp(node, value);
+            match ord {
+                Ordering::Greater => {
+                    if node.left.is_some() {
+                        row = node.left;
+                    } else {
+                        break;
+                    }
+                }
+                Ordering::Equal => {
+                    break;
+                }
+                Ordering::Less => {
+                    if node.right.is_some() {
+                        row = node.right;
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+        (row, ord)
     }
 
     /// Search row of a value.
-    fn row(&self, value: &I) -> Option<NonZeroU32>
-    where
-        Self: Sized,
-    {
-        let found = self.search(value);
-        (found.ord == Ordering::Equal).then(|| found.row).flatten()
+    fn row(&self, value: &I) -> Option<NonZeroU32> {
+        let edge = self.edge(value);
+        (edge.1 == Ordering::Equal).then(|| edge.0).flatten()
     }
 
     /// Returns the value of the specified row. Returns None if the row does not exist.
@@ -42,41 +64,7 @@ pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<
     }
 }
 
-/// Finds the edge of a node from the specified value with custom ord.
-pub fn edge<T, I: ?Sized, A: AvltrieeAllocator<T>>(
-    s: &impl AvltrieeSearch<T, I, A>,
-    value: &I,
-) -> Found {
-    let triee = s.as_ref();
-    let mut row: Option<NonZeroU32> = triee.root();
-    let mut ord = Ordering::Equal;
-    while let Some(row_inner) = row {
-        let node = unsafe { triee.node_unchecked(row_inner) };
-        ord = s.cmp(node, value);
-        match ord {
-            Ordering::Greater => {
-                if node.left.is_some() {
-                    row = node.left;
-                } else {
-                    break;
-                }
-            }
-            Ordering::Equal => {
-                break;
-            }
-            Ordering::Less => {
-                if node.right.is_some() {
-                    row = node.right;
-                } else {
-                    break;
-                }
-            }
-        }
-    }
-    Found { row, ord }
-}
-
-/// Search >= value with custom ord.
+/// Search >= value.
 pub fn ge<T, I: ?Sized, A: AvltrieeAllocator<T>>(
     s: &impl AvltrieeSearch<T, I, A>,
     value: &I,
@@ -110,7 +98,7 @@ pub fn ge<T, I: ?Sized, A: AvltrieeAllocator<T>>(
     keep
 }
 
-/// Search <= value with custom ord.
+/// Search <= value.
 pub fn le<T, I: ?Sized, A: AvltrieeAllocator<T>>(
     s: &impl AvltrieeSearch<T, I, A>,
     value: &I,
@@ -144,7 +132,7 @@ pub fn le<T, I: ?Sized, A: AvltrieeAllocator<T>>(
     keep
 }
 
-/// Search > value with custom ord.
+/// Search > value.
 pub fn gt<T, I: ?Sized, A: AvltrieeAllocator<T>>(
     s: &impl AvltrieeSearch<T, I, A>,
     value: &I,
@@ -186,7 +174,7 @@ pub fn gt<T, I: ?Sized, A: AvltrieeAllocator<T>>(
     keep
 }
 
-/// Search < value with custom ord.
+/// Search < value.
 pub fn lt<T, I: ?Sized, A: AvltrieeAllocator<T>>(
     s: &impl AvltrieeSearch<T, I, A>,
     value: &I,

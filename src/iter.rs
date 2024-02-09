@@ -53,9 +53,9 @@ impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> AvltrieeIter<'a, T, I, A> {
     /// Generates an iterator of nodes with the same value as the specified value.
     pub fn by<S: AvltrieeSearch<T, I, A>>(s: &'a S, value: &I) -> AvltrieeIter<'a, T, I, A> {
         let triee = s.as_ref();
-        let found = search::edge(s, value);
-        let row = if found.ord == Ordering::Equal {
-            found.row
+        let edge = s.edge(value);
+        let row = if edge.1 == Ordering::Equal {
+            edge.0
         } else {
             None
         };

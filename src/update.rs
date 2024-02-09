@@ -3,9 +3,9 @@ mod delete;
 
 use std::{cmp::Ordering, num::NonZeroU32};
 
-use crate::{search, AvltrieeAllocator, AvltrieeSearch};
+use crate::{search::Edge, AvltrieeAllocator, AvltrieeSearch};
 
-use super::{Avltriee, AvltrieeNode, Found};
+use super::{Avltriee, AvltrieeNode};
 
 pub trait AvltrieeUpdate<T, I: ?Sized, A: AvltrieeAllocator<T>>:
     AsMut<Avltriee<T, I, A>> + AvltrieeSearch<T, I, A>
@@ -17,9 +17,39 @@ pub trait AvltrieeUpdate<T, I: ?Sized, A: AvltrieeAllocator<T>>:
     fn update(&mut self, row: NonZeroU32, value: &I)
     where
         T: Clone,
-        Self: Sized,
     {
-        Avltriee::update_with(self, row, value);
+        if let Some(node) = self.as_ref().node(row) {
+            if self.cmp(node, value) == Ordering::Equal {
+                return; //update value eq exists value
+            }
+            self.delete(row);
+        }
+
+        let edge = self.edge(value);
+        if let (Some(same_row), Ordering::Equal) = edge {
+            let triee = self.as_mut();
+
+            triee.allocate(row);
+
+            let same_node = unsafe { triee.node_unchecked_mut(same_row) };
+            let same_left = same_node.left;
+            let same_right = same_node.right;
+            let same_parent = same_node.parent;
+
+            *unsafe { triee.node_unchecked_mut(row) } = same_node.same_clone(same_row, row);
+
+            triee.replace_child(same_parent, same_row, Some(row));
+
+            if let Some(left) = same_left {
+                unsafe { triee.node_unchecked_mut(left) }.parent = Some(row);
+            }
+            if let Some(right) = same_right {
+                unsafe { triee.node_unchecked_mut(right) }.parent = Some(row);
+            }
+        } else {
+            let value = self.convert_on_insert_unique(value);
+            unsafe { self.as_mut().insert_unique_unchecked(row, value, edge) };
+        }
     }
 
     /// Delete the specified row.
@@ -41,60 +71,17 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
         row
     }
 
-    pub(crate) fn update_with<H: AvltrieeUpdate<T, I, A>>(
-        holder: &mut H,
-        row: NonZeroU32,
-        input: &I,
-    ) where
-        T: Clone,
-    {
-        if let Some(node) = holder.as_ref().node(row) {
-            if holder.cmp(node, &input) == Ordering::Equal {
-                return; //update value eq exists value
-            }
-            holder.delete(row);
-        }
-
-        let found = search::edge(holder, &input);
-        if found.ord == Ordering::Equal && found.row.is_some() {
-            let same_row = found.row.unwrap();
-
-            let triee = holder.as_mut();
-
-            triee.allocate(row);
-
-            let same_node = unsafe { triee.node_unchecked_mut(same_row) };
-            let same_left = same_node.left;
-            let same_right = same_node.right;
-            let same_parent = same_node.parent;
-
-            *unsafe { triee.node_unchecked_mut(row) } = same_node.same_clone(same_row, row);
-
-            triee.replace_child(same_parent, same_row, Some(row));
-
-            if let Some(left) = same_left {
-                unsafe { triee.node_unchecked_mut(left) }.parent = Some(row);
-            }
-            if let Some(right) = same_right {
-                unsafe { triee.node_unchecked_mut(right) }.parent = Some(row);
-            }
-        } else {
-            let value = holder.convert_on_insert_unique(input);
-            unsafe { holder.as_mut().insert_unique_unchecked(row, value, found) };
-        }
-    }
-
     /// Insert a unique value.
     /// If you specify a row that does not exist, space will be automatically allocated. If you specify a row that is too large, memory may be allocated unnecessarily.
     /// # Safety
     /// value ​​must be unique.
-    pub unsafe fn insert_unique_unchecked(&mut self, row: NonZeroU32, value: T, found: Found) {
+    pub unsafe fn insert_unique_unchecked(&mut self, row: NonZeroU32, value: T, edge: Edge) {
         self.allocate(row);
 
-        *self.node_unchecked_mut(row) = AvltrieeNode::new(found.row, value);
-        if let Some(found_row) = found.row {
+        *self.node_unchecked_mut(row) = AvltrieeNode::new(edge.0, value);
+        if let Some(found_row) = edge.0 {
             let p = self.node_unchecked_mut(found_row);
-            if found.ord == Ordering::Greater {
+            if edge.1 == Ordering::Greater {
                 p.left = Some(row);
             } else {
                 p.right = Some(row);
