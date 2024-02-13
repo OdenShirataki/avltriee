@@ -62,226 +62,213 @@ pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<
     {
         self.invert(self.as_ref().node_unchecked(row))
     }
-}
 
-/// Search >= value.
-pub fn ge<T, I: ?Sized, A: AvltrieeAllocator<T>, S: AvltrieeSearch<T, I, A>>(
-    s: &S,
-    value: &I,
-) -> Option<NonZeroU32> {
-    let triee = s.as_ref();
-    let mut row = triee.root();
-    let mut keep = None;
-    while let Some(row_inner) = row {
-        let node = unsafe { triee.node_unchecked(row_inner) };
-        match S::cmp(s.invert(node), value) {
-            Ordering::Greater => {
-                if node.left.is_some() {
-                    keep = row;
-                    row = node.left;
-                } else {
-                    return row;
-                }
-            }
-            Ordering::Equal => {
-                return row;
-            }
-            Ordering::Less => {
-                if node.right.is_some() {
-                    row = node.right;
-                } else {
-                    break;
-                }
-            }
-        }
-    }
-    keep
-}
-
-/// Search <= value.
-pub fn le<T, I: ?Sized, A: AvltrieeAllocator<T>, S: AvltrieeSearch<T, I, A>>(
-    s: &S,
-    value: &I,
-) -> Option<NonZeroU32> {
-    let triee = s.as_ref();
-    let mut row = triee.root();
-    let mut keep = None;
-    while let Some(row_inner) = row {
-        let node = unsafe { triee.node_unchecked(row_inner) };
-        match S::cmp(s.invert(node), value) {
-            Ordering::Greater => {
-                if node.left.is_some() {
-                    row = node.left;
-                } else {
-                    break;
-                }
-            }
-            Ordering::Equal => {
-                return row;
-            }
-            Ordering::Less => {
-                if node.right.is_some() {
-                    keep = row;
-                    row = node.right;
-                } else {
-                    return row;
-                }
-            }
-        }
-    }
-    keep
-}
-
-/// Search > value.
-pub fn gt<T, I: ?Sized, A: AvltrieeAllocator<T>, S: AvltrieeSearch<T, I, A>>(
-    s: &S,
-    value: &I,
-) -> Option<NonZeroU32> {
-    let triee = s.as_ref();
-    let mut row = triee.root();
-    let mut keep = None;
-    while let Some(row_inner) = row {
-        let node = unsafe { triee.node_unchecked(row_inner) };
-        match S::cmp(s.invert(node), value) {
-            Ordering::Greater => {
-                if node.left.is_some() {
-                    keep = row;
-                    row = node.left;
-                } else {
-                    return row;
-                }
-            }
-            Ordering::Equal => {
-                if node.right.is_some() {
-                    return triee.min(node.right);
-                }
-                if let Some(parent) = node.parent {
-                    if unsafe { triee.node_unchecked(parent).left } == row {
-                        return node.parent;
+    /// Search >= value.
+    fn ge(&self, value: &I) -> Option<NonZeroU32> {
+        let triee = self.as_ref();
+        let mut row = triee.root();
+        let mut keep = None;
+        while let Some(row_inner) = row {
+            let node = unsafe { triee.node_unchecked(row_inner) };
+            match Self::cmp(self.invert(node), value) {
+                Ordering::Greater => {
+                    if node.left.is_some() {
+                        keep = row;
+                        row = node.left;
+                    } else {
+                        return row;
                     }
                 }
-                break;
-            }
-            Ordering::Less => {
-                if node.right.is_some() {
-                    row = node.right;
-                } else {
-                    break;
-                }
-            }
-        }
-    }
-    keep
-}
-
-/// Search < value.
-pub fn lt<T, I: ?Sized, A: AvltrieeAllocator<T>, S: AvltrieeSearch<T, I, A>>(
-    s: &S,
-    value: &I,
-) -> Option<NonZeroU32> {
-    let triee = s.as_ref();
-    let mut row = triee.root();
-    let mut keep = None;
-    while let Some(row_inner) = row {
-        let node = unsafe { triee.node_unchecked(row_inner) };
-        match S::cmp(s.invert(node), value) {
-            Ordering::Greater => {
-                if node.left.is_some() {
-                    row = node.left;
-                } else {
-                    break;
-                }
-            }
-            Ordering::Equal => {
-                if node.left.is_some() {
-                    return triee.max(node.left);
-                }
-                if let Some(parent) = node.parent {
-                    if unsafe { triee.node_unchecked(parent) }.right == row {
-                        return node.parent;
-                    }
-                }
-                break;
-            }
-            Ordering::Less => {
-                if node.right.is_some() {
-                    keep = row;
-                    row = node.right;
-                } else {
+                Ordering::Equal => {
                     return row;
                 }
-            }
-        }
-    }
-    keep
-}
-
-/// Search with range value with custom ord.
-pub fn range<T, I: ?Sized, A: AvltrieeAllocator<T>, S: AvltrieeSearch<T, I, A>>(
-    s: &S,
-    start_value: &I,
-    end_value: &I,
-) -> Option<Range<NonZeroU32>> {
-    let triee = s.as_ref();
-    let mut row = triee.root();
-    let mut start = None;
-    while let Some(row_inner) = row {
-        let node = unsafe { triee.node_unchecked(row_inner) };
-        match S::cmp(s.invert(node), start_value) {
-            Ordering::Greater => {
-                start = row;
-                if node.left.is_some() {
-                    row = node.left;
-                } else {
-                    break;
-                }
-            }
-            Ordering::Equal => {
-                start = row;
-                break;
-            }
-            Ordering::Less => {
-                if node.right.is_some() {
-                    row = node.right;
-                } else {
-                    break;
-                }
-            }
-        }
-    }
-    if let Some(start) = start {
-        if S::cmp(s.invert(unsafe { triee.node_unchecked(start) }), end_value) != Ordering::Greater
-        {
-            row = triee.root();
-            let mut end = None;
-            while let Some(row_inner) = row {
-                let node = unsafe { triee.node_unchecked(row_inner) };
-                match S::cmp(s.invert(node), end_value) {
-                    Ordering::Greater => {
-                        if node.left.is_some() {
-                            row = node.left;
-                        } else {
-                            break;
-                        }
-                    }
-                    Ordering::Equal => {
-                        end = row;
+                Ordering::Less => {
+                    if node.right.is_some() {
+                        row = node.right;
+                    } else {
                         break;
                     }
-                    Ordering::Less => {
-                        end = row;
-                        if node.right.is_some() {
-                            row = node.right;
-                        } else {
-                            break;
-                        }
+                }
+            }
+        }
+        keep
+    }
+
+    /// Search <= value.
+    fn le(&self, value: &I) -> Option<NonZeroU32> {
+        let triee = self.as_ref();
+        let mut row = triee.root();
+        let mut keep = None;
+        while let Some(row_inner) = row {
+            let node = unsafe { triee.node_unchecked(row_inner) };
+            match Self::cmp(self.invert(node), value) {
+                Ordering::Greater => {
+                    if node.left.is_some() {
+                        row = node.left;
+                    } else {
+                        break;
+                    }
+                }
+                Ordering::Equal => {
+                    return row;
+                }
+                Ordering::Less => {
+                    if node.right.is_some() {
+                        keep = row;
+                        row = node.right;
+                    } else {
+                        return row;
                     }
                 }
             }
-            if let Some(end) = end {
-                return Some(Range { start, end });
+        }
+        keep
+    }
+
+    /// Search > value.
+    fn gt(&self, value: &I) -> Option<NonZeroU32> {
+        let triee = self.as_ref();
+        let mut row = triee.root();
+        let mut keep = None;
+        while let Some(row_inner) = row {
+            let node = unsafe { triee.node_unchecked(row_inner) };
+            match Self::cmp(self.invert(node), value) {
+                Ordering::Greater => {
+                    if node.left.is_some() {
+                        keep = row;
+                        row = node.left;
+                    } else {
+                        return row;
+                    }
+                }
+                Ordering::Equal => {
+                    if node.right.is_some() {
+                        return triee.min(node.right);
+                    }
+                    if let Some(parent) = node.parent {
+                        if unsafe { triee.node_unchecked(parent).left } == row {
+                            return node.parent;
+                        }
+                    }
+                    break;
+                }
+                Ordering::Less => {
+                    if node.right.is_some() {
+                        row = node.right;
+                    } else {
+                        break;
+                    }
+                }
             }
         }
+        keep
     }
-    None
+
+    /// Search < value.
+    fn lt(&self, value: &I) -> Option<NonZeroU32> {
+        let triee = self.as_ref();
+        let mut row = triee.root();
+        let mut keep = None;
+        while let Some(row_inner) = row {
+            let node = unsafe { triee.node_unchecked(row_inner) };
+            match Self::cmp(self.invert(node), value) {
+                Ordering::Greater => {
+                    if node.left.is_some() {
+                        row = node.left;
+                    } else {
+                        break;
+                    }
+                }
+                Ordering::Equal => {
+                    if node.left.is_some() {
+                        return triee.max(node.left);
+                    }
+                    if let Some(parent) = node.parent {
+                        if unsafe { triee.node_unchecked(parent) }.right == row {
+                            return node.parent;
+                        }
+                    }
+                    break;
+                }
+                Ordering::Less => {
+                    if node.right.is_some() {
+                        keep = row;
+                        row = node.right;
+                    } else {
+                        return row;
+                    }
+                }
+            }
+        }
+        keep
+    }
+
+    /// Search with range value with custom ord.
+    fn range(&self, start_value: &I, end_value: &I) -> Option<Range<NonZeroU32>> {
+        let triee = self.as_ref();
+        let mut row = triee.root();
+        let mut start = None;
+        while let Some(row_inner) = row {
+            let node = unsafe { triee.node_unchecked(row_inner) };
+            match Self::cmp(self.invert(node), start_value) {
+                Ordering::Greater => {
+                    start = row;
+                    if node.left.is_some() {
+                        row = node.left;
+                    } else {
+                        break;
+                    }
+                }
+                Ordering::Equal => {
+                    start = row;
+                    break;
+                }
+                Ordering::Less => {
+                    if node.right.is_some() {
+                        row = node.right;
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+        if let Some(start) = start {
+            if Self::cmp(
+                self.invert(unsafe { triee.node_unchecked(start) }),
+                end_value,
+            ) != Ordering::Greater
+            {
+                row = triee.root();
+                let mut end = None;
+                while let Some(row_inner) = row {
+                    let node = unsafe { triee.node_unchecked(row_inner) };
+                    match Self::cmp(self.invert(node), end_value) {
+                        Ordering::Greater => {
+                            if node.left.is_some() {
+                                row = node.left;
+                            } else {
+                                break;
+                            }
+                        }
+                        Ordering::Equal => {
+                            end = row;
+                            break;
+                        }
+                        Ordering::Less => {
+                            end = row;
+                            if node.right.is_some() {
+                                row = node.right;
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                }
+                if let Some(end) = end {
+                    return Some(Range { start, end });
+                }
+            }
+        }
+        None
+    }
 }

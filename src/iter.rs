@@ -1,9 +1,6 @@
 use std::{cmp::Ordering, num::NonZeroU32};
 
-use crate::{
-    search::{self, AvltrieeSearch},
-    AvltrieeAllocator,
-};
+use crate::{search::AvltrieeSearch, AvltrieeAllocator};
 
 use super::Avltriee;
 
@@ -76,7 +73,7 @@ impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> AvltrieeIter<'a, T, I, A> {
         order: Order,
     ) -> AvltrieeIter<'a, T, I, A> {
         let triee = s.as_ref();
-        let now = search::ge(s, value);
+        let now = s.ge(value);
         AvltrieeIter::new(triee, now, now.and_then(|_| triee.max(triee.root())), order)
     }
 
@@ -94,7 +91,7 @@ impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> AvltrieeIter<'a, T, I, A> {
         order: Order,
     ) -> AvltrieeIter<'a, T, I, A> {
         let triee = s.as_ref();
-        let end_row = search::le(s, value);
+        let end_row = s.le(value);
         AvltrieeIter::new(
             triee,
             end_row.and_then(|_| triee.min(triee.root())),
@@ -117,7 +114,7 @@ impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> AvltrieeIter<'a, T, I, A> {
         order: Order,
     ) -> AvltrieeIter<'a, T, I, A> {
         let triee = s.as_ref();
-        let now = search::gt(s, value);
+        let now = s.gt(value);
         AvltrieeIter::new(triee, now, now.and_then(|_| triee.max(triee.root())), order)
     }
 
@@ -138,7 +135,7 @@ impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> AvltrieeIter<'a, T, I, A> {
         order: Order,
     ) -> AvltrieeIter<'a, T, I, A> {
         let triee = s.as_ref();
-        let end_row = search::lt(s, value);
+        let end_row = s.lt(value);
         AvltrieeIter::new(
             triee,
             end_row.and_then(|_| triee.min(triee.root())),
@@ -162,7 +159,7 @@ impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> AvltrieeIter<'a, T, I, A> {
         order: Order,
     ) -> AvltrieeIter<'a, T, I, A> {
         let triee = s.as_ref();
-        if let Some(range) = search::range(s, start, end) {
+        if let Some(range) = s.range(start, end) {
             AvltrieeIter::new(triee, Some(range.start), Some(range.end), order)
         } else {
             AvltrieeIter::new(triee, None, None, order)
