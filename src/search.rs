@@ -5,8 +5,8 @@ use crate::{Avltriee, AvltrieeAllocator};
 pub(crate) type Edge = (Option<NonZeroU32>, Ordering);
 
 pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<T, I, A>> {
-    fn cmp(&self, left: &T, right: &I) -> Ordering;
-    fn invert<'a, 'b: 'a>(&'a self, value: &'b T) -> &I;
+    fn cmp(left: &I, right: &I) -> Ordering;
+    fn invert<'a>(&'a self, value: &'a T) -> &I;
 
     /// Finds the edge of a node from the specified value.
     fn edge(&self, value: &I) -> Edge {
@@ -15,7 +15,7 @@ pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<
         let mut ord = Ordering::Equal;
         while let Some(row_inner) = row {
             let node = unsafe { triee.node_unchecked(row_inner) };
-            ord = self.cmp(node, value);
+            ord = Self::cmp(self.invert(node), value);
             match ord {
                 Ordering::Greater => {
                     if node.left.is_some() {
@@ -65,8 +65,8 @@ pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<
 }
 
 /// Search >= value.
-pub fn ge<T, I: ?Sized, A: AvltrieeAllocator<T>>(
-    s: &impl AvltrieeSearch<T, I, A>,
+pub fn ge<T, I: ?Sized, A: AvltrieeAllocator<T>, S: AvltrieeSearch<T, I, A>>(
+    s: &S,
     value: &I,
 ) -> Option<NonZeroU32> {
     let triee = s.as_ref();
@@ -74,7 +74,7 @@ pub fn ge<T, I: ?Sized, A: AvltrieeAllocator<T>>(
     let mut keep = None;
     while let Some(row_inner) = row {
         let node = unsafe { triee.node_unchecked(row_inner) };
-        match s.cmp(node, value) {
+        match S::cmp(s.invert(node), value) {
             Ordering::Greater => {
                 if node.left.is_some() {
                     keep = row;
@@ -99,8 +99,8 @@ pub fn ge<T, I: ?Sized, A: AvltrieeAllocator<T>>(
 }
 
 /// Search <= value.
-pub fn le<T, I: ?Sized, A: AvltrieeAllocator<T>>(
-    s: &impl AvltrieeSearch<T, I, A>,
+pub fn le<T, I: ?Sized, A: AvltrieeAllocator<T>, S: AvltrieeSearch<T, I, A>>(
+    s: &S,
     value: &I,
 ) -> Option<NonZeroU32> {
     let triee = s.as_ref();
@@ -108,7 +108,7 @@ pub fn le<T, I: ?Sized, A: AvltrieeAllocator<T>>(
     let mut keep = None;
     while let Some(row_inner) = row {
         let node = unsafe { triee.node_unchecked(row_inner) };
-        match s.cmp(node, value) {
+        match S::cmp(s.invert(node), value) {
             Ordering::Greater => {
                 if node.left.is_some() {
                     row = node.left;
@@ -133,8 +133,8 @@ pub fn le<T, I: ?Sized, A: AvltrieeAllocator<T>>(
 }
 
 /// Search > value.
-pub fn gt<T, I: ?Sized, A: AvltrieeAllocator<T>>(
-    s: &impl AvltrieeSearch<T, I, A>,
+pub fn gt<T, I: ?Sized, A: AvltrieeAllocator<T>, S: AvltrieeSearch<T, I, A>>(
+    s: &S,
     value: &I,
 ) -> Option<NonZeroU32> {
     let triee = s.as_ref();
@@ -142,7 +142,7 @@ pub fn gt<T, I: ?Sized, A: AvltrieeAllocator<T>>(
     let mut keep = None;
     while let Some(row_inner) = row {
         let node = unsafe { triee.node_unchecked(row_inner) };
-        match s.cmp(node, value) {
+        match S::cmp(s.invert(node), value) {
             Ordering::Greater => {
                 if node.left.is_some() {
                     keep = row;
@@ -175,8 +175,8 @@ pub fn gt<T, I: ?Sized, A: AvltrieeAllocator<T>>(
 }
 
 /// Search < value.
-pub fn lt<T, I: ?Sized, A: AvltrieeAllocator<T>>(
-    s: &impl AvltrieeSearch<T, I, A>,
+pub fn lt<T, I: ?Sized, A: AvltrieeAllocator<T>, S: AvltrieeSearch<T, I, A>>(
+    s: &S,
     value: &I,
 ) -> Option<NonZeroU32> {
     let triee = s.as_ref();
@@ -184,7 +184,7 @@ pub fn lt<T, I: ?Sized, A: AvltrieeAllocator<T>>(
     let mut keep = None;
     while let Some(row_inner) = row {
         let node = unsafe { triee.node_unchecked(row_inner) };
-        match s.cmp(node, value) {
+        match S::cmp(s.invert(node), value) {
             Ordering::Greater => {
                 if node.left.is_some() {
                     row = node.left;
@@ -217,8 +217,8 @@ pub fn lt<T, I: ?Sized, A: AvltrieeAllocator<T>>(
 }
 
 /// Search with range value with custom ord.
-pub fn range<T, I: ?Sized, A: AvltrieeAllocator<T>>(
-    s: &impl AvltrieeSearch<T, I, A>,
+pub fn range<T, I: ?Sized, A: AvltrieeAllocator<T>, S: AvltrieeSearch<T, I, A>>(
+    s: &S,
     start_value: &I,
     end_value: &I,
 ) -> Option<Range<NonZeroU32>> {
@@ -227,7 +227,7 @@ pub fn range<T, I: ?Sized, A: AvltrieeAllocator<T>>(
     let mut start = None;
     while let Some(row_inner) = row {
         let node = unsafe { triee.node_unchecked(row_inner) };
-        match s.cmp(node, start_value) {
+        match S::cmp(s.invert(node), start_value) {
             Ordering::Greater => {
                 start = row;
                 if node.left.is_some() {
@@ -250,12 +250,13 @@ pub fn range<T, I: ?Sized, A: AvltrieeAllocator<T>>(
         }
     }
     if let Some(start) = start {
-        if s.cmp(unsafe { triee.node_unchecked(start) }, end_value) != Ordering::Greater {
+        if S::cmp(s.invert(unsafe { triee.node_unchecked(start) }), end_value) != Ordering::Greater
+        {
             row = triee.root();
             let mut end = None;
             while let Some(row_inner) = row {
                 let node = unsafe { triee.node_unchecked(row_inner) };
-                match s.cmp(node, end_value) {
+                match S::cmp(s.invert(node), end_value) {
                     Ordering::Greater => {
                         if node.left.is_some() {
                             row = node.left;

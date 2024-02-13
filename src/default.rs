@@ -3,11 +3,11 @@ use std::cmp::Ordering;
 use crate::{Avltriee, AvltrieeAllocator, AvltrieeSearch, AvltrieeUpdate};
 
 impl<T: Ord + Clone, A: AvltrieeAllocator<T>> AvltrieeSearch<T, T, A> for Avltriee<T, T, A> {
-    fn cmp(&self, left: &T, right: &T) -> Ordering {
+    fn cmp(left: &T, right: &T) -> Ordering {
         left.cmp(right)
     }
 
-    fn invert<'a, 'b: 'a>(&'a self, value: &'b T) -> &T {
+    fn invert<'a>(&'a self, value: &'a T) -> &T {
         value
     }
 }
