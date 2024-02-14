@@ -18,8 +18,8 @@ pub trait AvltrieeUpdate<T, I: ?Sized, A: AvltrieeAllocator<T>>:
     where
         T: Clone,
     {
-        if let Some(node) = self.as_ref().node(row) {
-            if Self::cmp(self.invert(node), value) == Ordering::Equal {
+        if let Some(node_value) = self.value(row) {
+            if Self::cmp(node_value, value) == Ordering::Equal {
                 return; //update value eq exists value
             }
             self.delete(row);

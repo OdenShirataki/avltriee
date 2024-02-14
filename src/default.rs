@@ -1,14 +1,26 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, num::NonZeroU32, ops::Deref};
 
-use crate::{Avltriee, AvltrieeAllocator, AvltrieeSearch, AvltrieeUpdate};
+use crate::{Avltriee, AvltrieeAllocator, AvltrieeNode, AvltrieeSearch, AvltrieeUpdate};
 
 impl<T: Ord + Clone, A: AvltrieeAllocator<T>> AvltrieeSearch<T, T, A> for Avltriee<T, T, A> {
     fn cmp(left: &T, right: &T) -> Ordering {
         left.cmp(right)
     }
 
-    fn invert<'a>(&'a self, value: &'a T) -> &T {
-        value
+    /// Returns the value of the specified row. Returns None if the row does not exist.
+    fn value(&self, row: NonZeroU32) -> Option<&T> {
+        self.as_ref().node(row).map(|v| v.deref())
+    }
+
+    /// Returns the value of the specified row.
+    unsafe fn value_unchecked(&self, row: NonZeroU32) -> &T {
+        self.as_ref().node_unchecked(row)
+    }
+
+    /// Returns node adn value of the specified row.
+    unsafe fn node_value_unchecked(&self, row: NonZeroU32) -> (&AvltrieeNode<T>, &T) {
+        let node = self.as_ref().node_unchecked(row);
+        (node, node)
     }
 }
 

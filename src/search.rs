@@ -1,12 +1,20 @@
 use std::{cmp::Ordering, num::NonZeroU32, ops::Range};
 
-use crate::{Avltriee, AvltrieeAllocator};
+use crate::{Avltriee, AvltrieeAllocator, AvltrieeNode};
 
 pub(crate) type Edge = (Option<NonZeroU32>, Ordering);
 
 pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<T, I, A>> {
     fn cmp(left: &I, right: &I) -> Ordering;
-    fn invert<'a>(&'a self, value: &'a T) -> &I;
+    fn value(&self, row: NonZeroU32) -> Option<&I>;
+    unsafe fn value_unchecked(&self, row: NonZeroU32) -> &I;
+    unsafe fn node_value_unchecked(&self, row: NonZeroU32) -> (&AvltrieeNode<T>, &I);
+
+    /// Search row of a value.
+    fn row(&self, value: &I) -> Option<NonZeroU32> {
+        let edge = self.edge(value);
+        (edge.1 == Ordering::Equal).then(|| edge.0).flatten()
+    }
 
     /// Finds the edge of a node from the specified value.
     fn edge(&self, value: &I) -> Edge {
@@ -14,8 +22,8 @@ pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<
         let mut row: Option<NonZeroU32> = triee.root();
         let mut ord = Ordering::Equal;
         while let Some(row_inner) = row {
-            let node = unsafe { triee.node_unchecked(row_inner) };
-            ord = Self::cmp(self.invert(node), value);
+            let (node, node_value) = unsafe { self.node_value_unchecked(row_inner) };
+            ord = Self::cmp(node_value, value);
             match ord {
                 Ordering::Greater => {
                     if node.left.is_some() {
@@ -39,38 +47,14 @@ pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<
         (row, ord)
     }
 
-    /// Search row of a value.
-    fn row(&self, value: &I) -> Option<NonZeroU32> {
-        let edge = self.edge(value);
-        (edge.1 == Ordering::Equal).then(|| edge.0).flatten()
-    }
-
-    /// Returns the value of the specified row. Returns None if the row does not exist.
-    fn value<'a>(&'a self, row: NonZeroU32) -> Option<&I>
-    where
-        A: 'a,
-        T: 'a,
-    {
-        self.as_ref().node(row).map(|v| self.invert(v))
-    }
-
-    /// Returns the value of the specified row.
-    unsafe fn value_unchecked<'a>(&'a self, row: NonZeroU32) -> &I
-    where
-        A: 'a,
-        T: 'a,
-    {
-        self.invert(self.as_ref().node_unchecked(row))
-    }
-
     /// Search >= value.
     fn ge(&self, value: &I) -> Option<NonZeroU32> {
         let triee = self.as_ref();
         let mut row = triee.root();
         let mut keep = None;
         while let Some(row_inner) = row {
-            let node = unsafe { triee.node_unchecked(row_inner) };
-            match Self::cmp(self.invert(node), value) {
+            let (node, node_value) = unsafe { self.node_value_unchecked(row_inner) };
+            match Self::cmp(node_value, value) {
                 Ordering::Greater => {
                     if node.left.is_some() {
                         keep = row;
@@ -100,8 +84,8 @@ pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<
         let mut row = triee.root();
         let mut keep = None;
         while let Some(row_inner) = row {
-            let node = unsafe { triee.node_unchecked(row_inner) };
-            match Self::cmp(self.invert(node), value) {
+            let (node, node_value) = unsafe { self.node_value_unchecked(row_inner) };
+            match Self::cmp(node_value, value) {
                 Ordering::Greater => {
                     if node.left.is_some() {
                         row = node.left;
@@ -131,8 +115,8 @@ pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<
         let mut row = triee.root();
         let mut keep = None;
         while let Some(row_inner) = row {
-            let node = unsafe { triee.node_unchecked(row_inner) };
-            match Self::cmp(self.invert(node), value) {
+            let (node, node_value) = unsafe { self.node_value_unchecked(row_inner) };
+            match Self::cmp(node_value, value) {
                 Ordering::Greater => {
                     if node.left.is_some() {
                         keep = row;
@@ -170,8 +154,8 @@ pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<
         let mut row = triee.root();
         let mut keep = None;
         while let Some(row_inner) = row {
-            let node = unsafe { triee.node_unchecked(row_inner) };
-            match Self::cmp(self.invert(node), value) {
+            let (node, node_value) = unsafe { self.node_value_unchecked(row_inner) };
+            match Self::cmp(node_value, value) {
                 Ordering::Greater => {
                     if node.left.is_some() {
                         row = node.left;
@@ -209,8 +193,8 @@ pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<
         let mut row = triee.root();
         let mut start = None;
         while let Some(row_inner) = row {
-            let node = unsafe { triee.node_unchecked(row_inner) };
-            match Self::cmp(self.invert(node), start_value) {
+            let (node, node_value) = unsafe { self.node_value_unchecked(row_inner) };
+            match Self::cmp(node_value, start_value) {
                 Ordering::Greater => {
                     start = row;
                     if node.left.is_some() {
@@ -233,16 +217,12 @@ pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<
             }
         }
         if let Some(start) = start {
-            if Self::cmp(
-                self.invert(unsafe { triee.node_unchecked(start) }),
-                end_value,
-            ) != Ordering::Greater
-            {
+            if Self::cmp(unsafe { self.value_unchecked(start) }, end_value) != Ordering::Greater {
                 row = triee.root();
                 let mut end = None;
                 while let Some(row_inner) = row {
-                    let node = unsafe { triee.node_unchecked(row_inner) };
-                    match Self::cmp(self.invert(node), end_value) {
+                    let (node, node_value) = unsafe { self.node_value_unchecked(row_inner) };
+                    match Self::cmp(node_value, end_value) {
                         Ordering::Greater => {
                             if node.left.is_some() {
                                 row = node.left;
