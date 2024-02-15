@@ -13,22 +13,22 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
 
             match left_height as isize - right_height as isize {
                 2 => {
-                    let left_row = u.left.unwrap();
-                    let left = unsafe { self.node_unchecked(left_row) };
+                    let t_row = u.left.unwrap();
+                    let left = unsafe { self.node_unchecked(t_row) };
                     if self.height(left.left) < self.height(left.right) {
-                        self.rotate_left(left_row);
+                        self.rotate_left(t_row);
                     }
                     self.rotate_right(u_row);
-                    u_row = left_row;
+                    u_row = t_row;
                 }
                 -2 => {
-                    let right_row = u.right.unwrap();
-                    let right = unsafe { self.node_unchecked(right_row) };
+                    let t_row = u.right.unwrap();
+                    let right = unsafe { self.node_unchecked(t_row) };
                     if self.height(right.left) > self.height(right.right) {
-                        self.rotate_right(right_row);
+                        self.rotate_right(t_row);
                     }
                     self.rotate_left(u_row);
-                    u_row = right_row;
+                    u_row = t_row;
                 }
                 _ => {
                     let new_height = std::cmp::max(left_height, right_height) + 1;

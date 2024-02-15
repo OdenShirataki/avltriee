@@ -17,7 +17,7 @@ impl<T: Ord + Clone, A: AvltrieeAllocator<T>> AvltrieeSearch<T, T, A> for Avltri
         self.as_ref().node_unchecked(row)
     }
 
-    /// Returns node adn value of the specified row.
+    /// Returns node and value of the specified row.
     unsafe fn node_value_unchecked(&self, row: NonZeroU32) -> (&AvltrieeNode<T>, &T) {
         let node = self.as_ref().node_unchecked(row);
         (node, node)

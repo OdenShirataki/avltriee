@@ -13,6 +13,16 @@ pub trait AvltrieeUpdate<T, I: ?Sized, A: AvltrieeAllocator<T>>:
     fn convert_on_insert_unique(&mut self, input: &I) -> T;
     fn on_delete(&mut self, _row: NonZeroU32) {}
 
+    /// Creates a new row and assigns a value to it.
+    fn insert(&mut self, value: &I) -> NonZeroU32
+    where
+        T: Clone,
+    {
+        let row = unsafe { NonZeroU32::new_unchecked(self.as_ref().rows_count() + 1) };
+        self.update(row, value);
+        row
+    }
+
     /// Updates the value in the specified row.
     fn update(&mut self, row: NonZeroU32, value: &I)
     where
@@ -60,17 +70,6 @@ pub trait AvltrieeUpdate<T, I: ?Sized, A: AvltrieeAllocator<T>>:
 }
 
 impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
-    /// Creates a new row and assigns a value to it.
-    pub fn insert(&mut self, value: &I) -> NonZeroU32
-    where
-        T: Clone,
-        Self: AvltrieeUpdate<T, I, A>,
-    {
-        let row = unsafe { NonZeroU32::new_unchecked(self.rows_count() + 1) };
-        self.update(row, value);
-        row
-    }
-
     /// Insert a unique value.
     /// If you specify a row that does not exist, space will be automatically allocated. If you specify a row that is too large, memory may be allocated unnecessarily.
     /// # Safety
