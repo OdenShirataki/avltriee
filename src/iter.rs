@@ -59,10 +59,12 @@ impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> AvltrieeIter<'a, T, I, A> {
         AvltrieeIter::new(triee, row, row, Order::Asc)
     }
 
+    /// Generates an iterator that is greater than or equal to the specified value.
     pub fn from_asc<S: AvltrieeSearch<T, I, A>>(s: &'a S, value: &I) -> AvltrieeIter<'a, T, I, A> {
         Self::from_inner(s, value, Order::Asc)
     }
 
+    /// Generates a descending iterator with greater than or equal to the specified value.
     pub fn from_desc<S: AvltrieeSearch<T, I, A>>(s: &'a S, value: &I) -> AvltrieeIter<'a, T, I, A> {
         Self::from_inner(s, value, Order::Desc)
     }
@@ -77,10 +79,12 @@ impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> AvltrieeIter<'a, T, I, A> {
         AvltrieeIter::new(triee, now, now.and_then(|_| triee.max(triee.root())), order)
     }
 
+    /// Generates an iterator of nodes with values ​​less than or equal to the specified value.
     pub fn to_asc<S: AvltrieeSearch<T, I, A>>(s: &'a S, value: &I) -> AvltrieeIter<'a, T, I, A> {
         Self::to_inner(s, value, Order::Asc)
     }
 
+    /// Generates an iterator of nodes with values ​​less than or equal to the specified value. Iterates in descending order.
     pub fn to_desc<S: AvltrieeSearch<T, I, A>>(s: &'a S, value: &I) -> AvltrieeIter<'a, T, I, A> {
         Self::to_inner(s, value, Order::Desc)
     }
@@ -100,10 +104,12 @@ impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> AvltrieeIter<'a, T, I, A> {
         )
     }
 
+    /// Generates an iterator of nodes with values ​​greater than the specified value.
     pub fn over_asc<S: AvltrieeSearch<T, I, A>>(s: &'a S, value: &I) -> AvltrieeIter<'a, T, I, A> {
         Self::over_inner(s, value, Order::Asc)
     }
 
+    /// Generates an iterator of nodes with values ​​greater than the specified value. Iterates in descending order.
     pub fn over_desc<S: AvltrieeSearch<T, I, A>>(s: &'a S, value: &I) -> AvltrieeIter<'a, T, I, A> {
         Self::over_inner(s, value, Order::Desc)
     }
@@ -118,10 +124,12 @@ impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> AvltrieeIter<'a, T, I, A> {
         AvltrieeIter::new(triee, now, now.and_then(|_| triee.max(triee.root())), order)
     }
 
+    /// Generates an iterator of nodes with values ​​less than the specified value.
     pub fn under_asc<S: AvltrieeSearch<T, I, A>>(s: &'a S, value: &I) -> AvltrieeIter<'a, T, I, A> {
         Self::under_inner(s, value, Order::Asc)
     }
 
+    /// Generates an iterator of nodes with values ​​less than the specified value. Iterates in descending order.
     pub fn under_desc<S: AvltrieeSearch<T, I, A>>(
         s: &'a S,
         value: &I,
@@ -144,12 +152,22 @@ impl<'a, T, I: ?Sized, A: AvltrieeAllocator<T>> AvltrieeIter<'a, T, I, A> {
         )
     }
 
+    /// Generates an iterator of nodes with the specified range of values.
     pub fn range_asc<S: AvltrieeSearch<T, I, A>>(
         s: &'a S,
         start: &I,
         end: &I,
     ) -> AvltrieeIter<'a, T, I, A> {
         Self::range_inner(s, start, end, Order::Asc)
+    }
+
+    /// Generates an iterator of nodes with the specified range of values. Iterates in descending order.
+    pub fn range_desc<S: AvltrieeSearch<T, I, A>>(
+        s: &'a S,
+        start: &I,
+        end: &I,
+    ) -> AvltrieeIter<'a, T, I, A> {
+        Self::range_inner(s, start, end, Order::Desc)
     }
 
     fn range_inner<S: AvltrieeSearch<T, I, A>>(
@@ -267,6 +285,7 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
         AvltrieeIter::over_desc(self, value)
     }
 
+    /// Generates an iterator of nodes with values ​​less than the specified value.
     pub fn iter_under<'a>(&'a self, value: &I) -> AvltrieeIter<T, I, A>
     where
         Self: AvltrieeSearch<T, I, A>,
@@ -295,7 +314,7 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     where
         Self: AvltrieeSearch<T, I, A>,
     {
-        AvltrieeIter::range_asc(self, start, end)
+        AvltrieeIter::range_desc(self, start, end)
     }
 
     fn next(

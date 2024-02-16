@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, num::NonZeroU32, ops::Deref};
+use std::{cmp::Ordering, num::NonZeroU32};
 
 use crate::{Avltriee, AvltrieeAllocator, AvltrieeNode, AvltrieeSearch, AvltrieeUpdate};
 
@@ -9,7 +9,7 @@ impl<T: Ord + Clone, A: AvltrieeAllocator<T>> AvltrieeSearch<T, T, A> for Avltri
 
     /// Returns the value of the specified row. Returns None if the row does not exist.
     fn value(&self, row: NonZeroU32) -> Option<&T> {
-        self.as_ref().node(row).map(|v| v.deref())
+        Some(self.as_ref().node(row)?)
     }
 
     /// Returns the value of the specified row.
