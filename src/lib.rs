@@ -1,3 +1,7 @@
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeDoctests;
+
 pub mod search;
 
 mod allocator;
@@ -32,9 +36,15 @@ impl<T: Default> Avltriee<T, T, VecAvltrieeAllocator<T>> {
     }
 }
 
+impl<T: Default> Default for Avltriee<T, T, VecAvltrieeAllocator<T>> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     /// Creates the Avltriee with [AvltrieeAllocator].
-    pub fn with_allocator(allocator: A) -> Self {
+    pub fn new_in(allocator: A) -> Self {
         Self {
             allocator,
             _marker: PhantomData,
@@ -48,12 +58,16 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
             .and_then(|node| (node.height != 0).then(|| unsafe { self.node_unchecked(row) }))
     }
 
+    /// Returns the node of the specified row without checking that the row exists.
+    ///
+    /// # Safety
+    /// `row` must be within the allocated rows of the tree.
     pub unsafe fn node_unchecked(&self, row: NonZeroU32) -> &AvltrieeNode<T> {
-        &*self.allocator.as_ptr().offset(row.get() as isize)
+        unsafe { &*self.allocator.as_ptr().offset(row.get() as isize) }
     }
 
     unsafe fn node_unchecked_mut(&mut self, row: NonZeroU32) -> &mut AvltrieeNode<T> {
-        &mut *self.allocator.as_mut_ptr().offset(row.get() as isize)
+        unsafe { &mut *self.allocator.as_mut_ptr().offset(row.get() as isize) }
     }
 
     /// Checks whether the specified row is a node with a unique value.

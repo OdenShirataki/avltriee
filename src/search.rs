@@ -7,13 +7,22 @@ pub(crate) type Edge = (Option<NonZeroU32>, Ordering);
 pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<T, I, A>> {
     fn cmp(left: &I, right: &I) -> Ordering;
     fn value(&self, row: NonZeroU32) -> Option<&I>;
+    /// Returns the value of the specified row without checking that the row exists.
+    ///
+    /// # Safety
+    /// `row` must be a row that exists in the tree.
     unsafe fn value_unchecked(&self, row: NonZeroU32) -> &I;
+
+    /// Returns the node and value of the specified row without checking that the row exists.
+    ///
+    /// # Safety
+    /// `row` must be a row that exists in the tree.
     unsafe fn node_value_unchecked(&self, row: NonZeroU32) -> (&AvltrieeNode<T>, &I);
 
     /// Search row of a value.
     fn row(&self, value: &I) -> Option<NonZeroU32> {
         let edge = self.edge(value);
-        (edge.1 == Ordering::Equal).then(|| edge.0).flatten()
+        (edge.1 == Ordering::Equal).then_some(edge.0).flatten()
     }
 
     /// Finds the edge of a node from the specified value.
@@ -129,10 +138,10 @@ pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<
                     if node.right.is_some() {
                         return triee.min(node.right);
                     }
-                    if let Some(parent) = node.parent {
-                        if unsafe { triee.node_unchecked(parent).left } == row {
-                            return node.parent;
-                        }
+                    if let Some(parent) = node.parent
+                        && unsafe { triee.node_unchecked(parent).left } == row
+                    {
+                        return node.parent;
                     }
                     break;
                 }
@@ -167,10 +176,10 @@ pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<
                     if node.left.is_some() {
                         return triee.max(node.left);
                     }
-                    if let Some(parent) = node.parent {
-                        if unsafe { triee.node_unchecked(parent) }.right == row {
-                            return node.parent;
-                        }
+                    if let Some(parent) = node.parent
+                        && unsafe { triee.node_unchecked(parent) }.right == row
+                    {
+                        return node.parent;
                     }
                     break;
                 }
@@ -216,37 +225,37 @@ pub trait AvltrieeSearch<T, I: ?Sized, A: AvltrieeAllocator<T>>: AsRef<Avltriee<
                 }
             }
         }
-        if let Some(start) = start {
-            if Self::cmp(unsafe { self.value_unchecked(start) }, end_value) != Ordering::Greater {
-                row = triee.root();
-                let mut end = None;
-                while let Some(row_inner) = row {
-                    let (node, node_value) = unsafe { self.node_value_unchecked(row_inner) };
-                    match Self::cmp(node_value, end_value) {
-                        Ordering::Greater => {
-                            if node.left.is_some() {
-                                row = node.left;
-                            } else {
-                                break;
-                            }
-                        }
-                        Ordering::Equal => {
-                            end = row;
+        if let Some(start) = start
+            && Self::cmp(unsafe { self.value_unchecked(start) }, end_value) != Ordering::Greater
+        {
+            row = triee.root();
+            let mut end = None;
+            while let Some(row_inner) = row {
+                let (node, node_value) = unsafe { self.node_value_unchecked(row_inner) };
+                match Self::cmp(node_value, end_value) {
+                    Ordering::Greater => {
+                        if node.left.is_some() {
+                            row = node.left;
+                        } else {
                             break;
                         }
-                        Ordering::Less => {
-                            end = row;
-                            if node.right.is_some() {
-                                row = node.right;
-                            } else {
-                                break;
-                            }
+                    }
+                    Ordering::Equal => {
+                        end = row;
+                        break;
+                    }
+                    Ordering::Less => {
+                        end = row;
+                        if node.right.is_some() {
+                            row = node.right;
+                        } else {
+                            break;
                         }
                     }
                 }
-                if let Some(end) = end {
-                    return Some(Range { start, end });
-                }
+            }
+            if let Some(end) = end {
+                return Some(Range { start, end });
             }
         }
         None

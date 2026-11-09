@@ -3,7 +3,7 @@ mod delete;
 
 use std::{cmp::Ordering, num::NonZeroU32};
 
-use crate::{search::Edge, AvltrieeAllocator, AvltrieeSearch};
+use crate::{AvltrieeAllocator, AvltrieeSearch, search::Edge};
 
 use super::{Avltriee, AvltrieeNode};
 
@@ -75,19 +75,21 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
     /// # Safety
     /// value ​​must be unique.
     pub unsafe fn insert_unique_unchecked(&mut self, row: NonZeroU32, value: T, edge: Edge) {
-        self.allocate(row);
+        unsafe {
+            self.allocate(row);
 
-        *self.node_unchecked_mut(row) = AvltrieeNode::new(edge.0, value);
-        if let Some(found_row) = edge.0 {
-            let p = self.node_unchecked_mut(found_row);
-            if edge.1 == Ordering::Greater {
-                p.left = Some(row);
+            *self.node_unchecked_mut(row) = AvltrieeNode::new(edge.0, value);
+            if let Some(found_row) = edge.0 {
+                let p = self.node_unchecked_mut(found_row);
+                if edge.1 == Ordering::Greater {
+                    p.left = Some(row);
+                } else {
+                    p.right = Some(row);
+                }
+                self.balance(row);
             } else {
-                p.right = Some(row);
+                self.set_root(Some(row));
             }
-            self.balance(row);
-        } else {
-            self.set_root(Some(row));
         }
     }
 

@@ -87,9 +87,10 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
                             unsafe { self.node_unchecked_mut(right) }.parent = row_parent;
                         }
                         self.balance(row_parent_inner);
-                    } else if right.is_none() {
-                        unsafe { self.node_unchecked_mut(row_parent_inner) }.changeling(row, left);
-                        unsafe { self.node_unchecked_mut(left.unwrap()) }.parent = row_parent;
+                    } else if let (Some(left), None) = (left, right) {
+                        unsafe { self.node_unchecked_mut(row_parent_inner) }
+                            .changeling(row, Some(left));
+                        unsafe { self.node_unchecked_mut(left) }.parent = row_parent;
                         self.balance(row_parent_inner);
                     } else {
                         let (new_row, balance_row) = self.delete_intermediate(row);
@@ -115,9 +116,9 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
                             unsafe { self.node_unchecked_mut(right) }.parent = None;
                         }
                         self.set_root(right);
-                    } else if right.is_none() {
-                        unsafe { self.node_unchecked_mut(left.unwrap()) }.parent = None;
-                        self.set_root(left);
+                    } else if let (Some(left), None) = (left, right) {
+                        unsafe { self.node_unchecked_mut(left) }.parent = None;
+                        self.set_root(Some(left));
                     } else {
                         let (new_row, balance_row) = self.delete_intermediate(row);
                         self.set_root(Some(new_row));

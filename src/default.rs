@@ -14,13 +14,15 @@ impl<T: Ord + Clone, A: AvltrieeAllocator<T>> AvltrieeSearch<T, T, A> for Avltri
 
     /// Returns the value of the specified row.
     unsafe fn value_unchecked(&self, row: NonZeroU32) -> &T {
-        self.as_ref().node_unchecked(row)
+        unsafe { self.as_ref().node_unchecked(row) }
     }
 
     /// Returns node and value of the specified row.
     unsafe fn node_value_unchecked(&self, row: NonZeroU32) -> (&AvltrieeNode<T>, &T) {
-        let node = self.as_ref().node_unchecked(row);
-        (node, node)
+        unsafe {
+            let node = self.as_ref().node_unchecked(row);
+            (node, node)
+        }
     }
 }
 
