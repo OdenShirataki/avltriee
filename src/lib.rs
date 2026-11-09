@@ -69,9 +69,17 @@ impl<T, I: ?Sized, A: AvltrieeAllocator<T>> Avltriee<T, I, A> {
         })
     }
 
-    fn allocate(&mut self, rows: NonZeroU32) {
-        self.allocator.resize(rows.get());
-        self.set_rows_count(rows.get());
+    /// Makes sure that the specified row is allocated.
+    ///
+    /// Rows up to `rows_count` are already allocated, so this only grows.
+    /// Shrinking here would drop or overwrite existing rows when an existing
+    /// row is updated.
+    fn allocate(&mut self, row: NonZeroU32) {
+        let row = row.get();
+        if row > self.rows_count() {
+            self.allocator.resize(row);
+            self.set_rows_count(row);
+        }
     }
 
     fn min(&self, t: Option<NonZeroU32>) -> Option<NonZeroU32> {
